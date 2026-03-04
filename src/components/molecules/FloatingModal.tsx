@@ -7,9 +7,18 @@ type FloatingModalProps = {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  panelClassName?: string;
+  bodyClassName?: string;
 };
 
-function FloatingModal({ isOpen, title, onClose, children }: FloatingModalProps) {
+function FloatingModal({
+  isOpen,
+  title,
+  onClose,
+  children,
+  panelClassName = '',
+  bodyClassName = '',
+}: FloatingModalProps) {
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -41,7 +50,7 @@ function FloatingModal({ isOpen, title, onClose, children }: FloatingModalProps)
       onClick={onClose}
     >
       <div
-        className="surface-panel w-full max-w-xl rounded-3xl border border-[var(--border-subtle)] p-5 shadow-2xl md:p-6"
+        className={`surface-panel w-full max-w-xl rounded-3xl border border-[var(--border-subtle)] p-5 shadow-2xl md:p-6 ${panelClassName}`.trim()}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between gap-4">
@@ -55,7 +64,7 @@ function FloatingModal({ isOpen, title, onClose, children }: FloatingModalProps)
           </button>
         </div>
 
-        {children}
+        <div className={bodyClassName}>{children}</div>
       </div>
     </div>
   );

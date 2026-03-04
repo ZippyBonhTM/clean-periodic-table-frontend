@@ -1,6 +1,12 @@
 import publicEnv from '@/shared/config/publicEnv';
 import { requestJson } from './httpClient';
-import type { LoginInput, LoginResponse, RegisterInput, RegisterResponse } from '@/shared/types/auth';
+import type {
+  LoginInput,
+  LoginResponse,
+  RefreshResponse,
+  RegisterInput,
+  RegisterResponse,
+} from '@/shared/types/auth';
 
 async function login(input: LoginInput): Promise<LoginResponse> {
   return await requestJson<LoginResponse>(publicEnv.authApiUrl, '/login', {
@@ -18,4 +24,11 @@ async function register(input: RegisterInput): Promise<RegisterResponse> {
   });
 }
 
-export { login, register };
+async function refreshAccessToken(): Promise<RefreshResponse> {
+  return await requestJson<RefreshResponse>(publicEnv.authApiUrl, '/refresh', {
+    method: 'POST',
+    credentials: 'include',
+  });
+}
+
+export { login, refreshAccessToken, register };

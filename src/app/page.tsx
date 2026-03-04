@@ -17,7 +17,11 @@ const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'))
 
 export default function HomePage() {
   const { token, isHydrated, persistToken, removeToken } = useAuthToken();
-  const { data, isLoading, error } = useElements(token);
+  const { data, isLoading, error } = useElements({
+    token,
+    onTokenRefresh: persistToken,
+    onUnauthorized: removeToken,
+  });
 
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -43,9 +47,17 @@ export default function HomePage() {
     [closeAuthModal, persistToken],
   );
 
+  if (!isHydrated) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-[var(--app-max-width)] items-center px-[var(--app-inline-padding)] py-6">
+        <ElementsState tone="info" message="Loading local session..." />
+      </main>
+    );
+  }
+
   return (
     <AppShell
-      hasToken={token !== null}
+      hasToken={isHydrated && token !== null}
       onLogout={onLogout}
       authEntryMode="modal"
       onRequestLogin={() => openAuthModal('login')}
@@ -60,9 +72,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        {!isHydrated ? (
-          <ElementsState tone="info" message="Loading local session..." />
-        ) : token === null ? (
+        {token === null ? (
           <ElementsState
             tone="info"
             message="Authenticate to load elements from the backend API."

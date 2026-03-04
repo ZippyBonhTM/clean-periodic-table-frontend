@@ -75,13 +75,25 @@ async function requestJson<ResponseType>(
     headers.set('Authorization', `Bearer ${input.token}`);
   }
 
-  const response = await fetch(url, {
-    method: input.method ?? 'GET',
-    headers,
-    body: input.body !== undefined ? JSON.stringify(input.body) : undefined,
-    signal: input.signal,
-    credentials: input.credentials,
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(url, {
+      method: input.method ?? 'GET',
+      headers,
+      body: input.body !== undefined ? JSON.stringify(input.body) : undefined,
+      signal: input.signal,
+      credentials: input.credentials,
+    });
+  } catch (caughtError: unknown) {
+    const fallbackMessage = `Network error while calling ${url.origin}. Check if service is up, URL is correct, and CORS allows your frontend origin.`;
+
+    if (caughtError instanceof Error && caughtError.message.trim().length > 0) {
+      throw new ApiError(`${fallbackMessage} (${caughtError.message})`, 0, 'NETWORK_ERROR');
+    }
+
+    throw new ApiError(fallbackMessage, 0, 'NETWORK_ERROR');
+  }
 
   const payload = await response
     .json()

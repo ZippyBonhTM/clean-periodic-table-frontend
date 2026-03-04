@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
 
 type AppTheme = 'dark' | 'light';
 
@@ -14,15 +14,51 @@ function resolveTheme(rawTheme: string | null): AppTheme {
   return 'dark';
 }
 
-function useTheme() {
-  const [theme, setTheme] = useState<AppTheme>(() => {
-    if (typeof window === 'undefined') {
-      return 'dark';
+function readThemeSnapshot(): AppTheme {
+  if (typeof window === 'undefined') {
+    return 'dark';
+  }
+
+  return resolveTheme(window.localStorage.getItem(THEME_STORAGE_KEY));
+}
+
+function subscribe(onStoreChange: () => void): () => void {
+  if (typeof window === 'undefined') {
+    return () => {};
+  }
+
+  const onStorage = (event: StorageEvent) => {
+    if (event.key !== null && event.key !== THEME_STORAGE_KEY) {
+      return;
     }
 
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return resolveTheme(stored);
-  });
+    onStoreChange();
+  };
+  const onThemeChange = () => onStoreChange();
+
+  window.addEventListener('storage', onStorage);
+  window.addEventListener('theme-changed', onThemeChange);
+
+  return () => {
+    window.removeEventListener('storage', onStorage);
+    window.removeEventListener('theme-changed', onThemeChange);
+  };
+}
+
+function emitThemeChange(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.dispatchEvent(new Event('theme-changed'));
+}
+
+function useTheme() {
+  const theme = useSyncExternalStore<AppTheme>(
+    subscribe,
+    readThemeSnapshot,
+    () => 'dark',
+  );
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -30,15 +66,20 @@ function useTheme() {
     }
 
     document.documentElement.dataset.theme = theme;
-
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-    }
   }, [theme]);
 
-  const toggleTheme = useCallback(() => {
-    setTheme((previousTheme) => (previousTheme === 'dark' ? 'light' : 'dark'));
+  const setTheme = useCallback((nextTheme: AppTheme) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    emitThemeChange();
   }, []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  }, [setTheme, theme]);
 
   return {
     theme,

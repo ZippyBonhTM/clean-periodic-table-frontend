@@ -1,10 +1,11 @@
 'use client';
 
-import { memo, useDeferredValue, useMemo, useState, useTransition } from 'react';
+import { memo, useCallback, useDeferredValue, useMemo, useState, useTransition } from 'react';
 
 import ClassicPeriodicView from '@/components/organisms/periodic-table/ClassicPeriodicView';
 import CompactPeriodicView from '@/components/organisms/periodic-table/CompactPeriodicView';
 import CategoryPeriodicView from '@/components/organisms/periodic-table/CategoryPeriodicView';
+import ElementDetailsModal from '@/components/organisms/periodic-table/ElementDetailsModal';
 import type { ChemicalElement } from '@/shared/types/element';
 import { matchesElementQuery, sortElements } from '@/shared/utils/elementPresentation';
 
@@ -33,8 +34,17 @@ function PeriodicTable({ elements }: PeriodicTableProps) {
   const [viewMode, setViewMode] = useState<PeriodicViewMode>('classic');
   const [sortMode, setSortMode] = useState<SortMode>('number');
   const [query, setQuery] = useState('');
+  const [selectedElement, setSelectedElement] = useState<ChemicalElement | null>(null);
   const [isPendingTransition, startTransition] = useTransition();
   const deferredQuery = useDeferredValue(query);
+
+  const openElementModal = useCallback((element: ChemicalElement) => {
+    setSelectedElement(element);
+  }, []);
+
+  const closeElementModal = useCallback(() => {
+    setSelectedElement(null);
+  }, []);
 
   const filteredElements = useMemo(() => {
     return elements.filter((element) => matchesElementQuery(element, deferredQuery));
@@ -131,12 +141,18 @@ function PeriodicTable({ elements }: PeriodicTableProps) {
       </div>
 
       {viewMode === 'classic' ? (
-        <ClassicPeriodicView elements={visibleElements} />
+        <ClassicPeriodicView elements={visibleElements} onElementOpen={openElementModal} />
       ) : viewMode === 'category' ? (
-        <CategoryPeriodicView elements={visibleElements} />
+        <CategoryPeriodicView elements={visibleElements} onElementOpen={openElementModal} />
       ) : (
-        <CompactPeriodicView elements={visibleElements} />
+        <CompactPeriodicView elements={visibleElements} onElementOpen={openElementModal} />
       )}
+
+      <ElementDetailsModal
+        element={selectedElement}
+        isOpen={selectedElement !== null}
+        onClose={closeElementModal}
+      />
     </section>
   );
 }

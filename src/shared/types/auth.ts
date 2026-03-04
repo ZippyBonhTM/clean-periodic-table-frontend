@@ -19,4 +19,9 @@ type RegisterResponse = {
   message: string;
 };
 
-export type { LoginInput, LoginResponse, RegisterInput, RegisterResponse };
+type RefreshResponse = {
+  accessToken: string;
+  message: string;
+};
+
+export type { LoginInput, LoginResponse, RefreshResponse, RegisterInput, RegisterResponse };

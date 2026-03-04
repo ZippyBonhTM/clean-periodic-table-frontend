@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { refreshAccessToken } from '@/shared/api/authApi';
 import { getCachedElements, listElements } from '@/shared/api/backendApi';
 import { ApiError } from '@/shared/api/httpClient';
 import type { ChemicalElement } from '@/shared/types/element';
@@ -18,7 +19,69 @@ type ElementsState = {
   error: string | null;
 };
 
-function useElements(token: string | null): ElementsState {
+const ACCESS_TOKEN_REFRESH_WINDOW_MS = 30_000;
+let pendingRefreshPromise: Promise<string> | null = null;
+
+function readJwtExpiryMs(token: string): number | null {
+  const [, payload] = token.split('.');
+
+  if (payload === undefined || payload.length === 0) {
+    return null;
+  }
+
+  const normalized = payload
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
+    .padEnd(Math.ceil(payload.length / 4) * 4, '=');
+
+  try {
+    const decodedPayload = window.atob(normalized);
+    const parsedPayload = JSON.parse(decodedPayload) as { exp?: unknown };
+
+    if (typeof parsedPayload.exp !== 'number' || !Number.isFinite(parsedPayload.exp)) {
+      return null;
+    }
+
+    return parsedPayload.exp * 1000;
+  } catch {
+    return null;
+  }
+}
+
+function shouldRefreshBeforeRequest(token: string): boolean {
+  const expiryMs = readJwtExpiryMs(token);
+
+  if (expiryMs === null) {
+    return false;
+  }
+
+  return expiryMs - Date.now() <= ACCESS_TOKEN_REFRESH_WINDOW_MS;
+}
+
+async function refreshTokenOnce(onTokenRefresh: (token: string) => void): Promise<string> {
+  if (pendingRefreshPromise !== null) {
+    return pendingRefreshPromise;
+  }
+
+  pendingRefreshPromise = refreshAccessToken()
+    .then((refreshResponse) => {
+      onTokenRefresh(refreshResponse.accessToken);
+      return refreshResponse.accessToken;
+    })
+    .finally(() => {
+      pendingRefreshPromise = null;
+    });
+
+  return pendingRefreshPromise;
+}
+
+type UseElementsInput = {
+  token: string | null;
+  onTokenRefresh: (token: string) => void;
+  onUnauthorized: () => void;
+};
+
+function useElements({ token, onTokenRefresh, onUnauthorized }: UseElementsInput): ElementsState {
   const [snapshot, setSnapshot] = useState<ElementsSnapshot>({
     token: null,
     data: [],
@@ -32,26 +95,67 @@ function useElements(token: string | null): ElementsState {
 
     let isCancelled = false;
 
-    listElements(token)
-      .then((response) => {
+    const loadElements = async () => {
+      let activeToken = token;
+      let didAutoRefresh = false;
+
+      try {
+        if (shouldRefreshBeforeRequest(token)) {
+          activeToken = await refreshTokenOnce(onTokenRefresh);
+          didAutoRefresh = true;
+        }
+
+        const response = await listElements(activeToken, {
+          forceRefresh: didAutoRefresh,
+        });
+
         if (isCancelled) {
           return;
         }
 
         setSnapshot({
-          token,
+          token: activeToken,
           data: response,
           error: null,
         });
-      })
-      .catch((caughtError: unknown) => {
+      } catch (caughtError: unknown) {
         if (isCancelled) {
           return;
         }
 
+        if (caughtError instanceof ApiError && caughtError.statusCode === 401) {
+          try {
+            const refreshedToken = await refreshTokenOnce(onTokenRefresh);
+            const refreshedElements = await listElements(refreshedToken, { forceRefresh: true });
+
+            if (isCancelled) {
+              return;
+            }
+
+            setSnapshot({
+              token: refreshedToken,
+              data: refreshedElements,
+              error: null,
+            });
+            return;
+          } catch {
+            if (isCancelled) {
+              return;
+            }
+
+            onUnauthorized();
+            setSnapshot({
+              token,
+              data: [],
+              error: 'Your session expired. Please login again.',
+            });
+            return;
+          }
+        }
+
         if (caughtError instanceof ApiError) {
           setSnapshot({
-            token,
+            token: activeToken,
             data: [],
             error: caughtError.message,
           });
@@ -59,16 +163,19 @@ function useElements(token: string | null): ElementsState {
         }
 
         setSnapshot({
-          token,
+          token: activeToken,
           data: [],
           error: 'Could not load elements right now.',
         });
-      });
+      }
+    };
+
+    void loadElements();
 
     return () => {
       isCancelled = true;
     };
-  }, [token]);
+  }, [onTokenRefresh, onUnauthorized, token]);
 
   const cachedElements = useMemo(() => {
     if (token === null) {

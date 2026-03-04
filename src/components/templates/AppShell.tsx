@@ -27,7 +27,7 @@ function AppShell({
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-[1300px] flex-col gap-4 px-3 py-5 md:px-8 md:py-8">
+    <div className="mx-auto flex min-h-screen w-full max-w-[var(--app-max-width)] flex-col gap-4 px-[var(--app-inline-padding)] py-5 md:py-8">
       <AppHeader
         hasToken={hasToken}
         theme={theme}

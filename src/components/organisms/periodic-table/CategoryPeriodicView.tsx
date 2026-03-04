@@ -6,9 +6,10 @@ import { resolveCategoryColor } from '@/shared/utils/elementPresentation';
 
 type CategoryPeriodicViewProps = {
   elements: ChemicalElement[];
+  onElementOpen: (element: ChemicalElement) => void;
 };
 
-function CategoryPeriodicView({ elements }: CategoryPeriodicViewProps) {
+function CategoryPeriodicView({ elements, onElementOpen }: CategoryPeriodicViewProps) {
   const groupedByCategory = useMemo(() => {
     const grouped = new Map<string, ChemicalElement[]>();
 
@@ -58,7 +59,7 @@ function CategoryPeriodicView({ elements }: CategoryPeriodicViewProps) {
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {groupedElements.map((element) => (
                   <div key={element.symbol} className="render-lazy">
-                    <ElementTile element={element} density="compact" />
+                    <ElementTile element={element} density="compact" onOpen={onElementOpen} />
                   </div>
                 ))}
               </div>
