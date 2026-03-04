@@ -75,6 +75,26 @@ async function refreshTokenOnce(onTokenRefresh: (token: string) => void): Promis
   return pendingRefreshPromise;
 }
 
+function isUnauthorizedError(error: unknown): error is ApiError {
+  return error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403);
+}
+
+function mapElementsErrorMessage(error: unknown): string {
+  if (error instanceof ApiError && error.statusCode === 0) {
+    return 'Could not refresh your session due to network or CORS. Please try again.';
+  }
+
+  if (error instanceof ApiError && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  return 'Could not load elements right now.';
+}
+
 type UseElementsInput = {
   token: string | null;
   onTokenRefresh: (token: string) => void;
@@ -123,7 +143,7 @@ function useElements({ token, onTokenRefresh, onUnauthorized }: UseElementsInput
           return;
         }
 
-        if (caughtError instanceof ApiError && caughtError.statusCode === 401) {
+        if (isUnauthorizedError(caughtError)) {
           try {
             const refreshedToken = await refreshTokenOnce(onTokenRefresh);
             const refreshedElements = await listElements(refreshedToken, { forceRefresh: true });
@@ -138,8 +158,17 @@ function useElements({ token, onTokenRefresh, onUnauthorized }: UseElementsInput
               error: null,
             });
             return;
-          } catch {
+          } catch (refreshError: unknown) {
             if (isCancelled) {
+              return;
+            }
+
+            if (!isUnauthorizedError(refreshError)) {
+              setSnapshot({
+                token: activeToken,
+                data: [],
+                error: mapElementsErrorMessage(refreshError),
+              });
               return;
             }
 
@@ -153,19 +182,10 @@ function useElements({ token, onTokenRefresh, onUnauthorized }: UseElementsInput
           }
         }
 
-        if (caughtError instanceof ApiError) {
-          setSnapshot({
-            token: activeToken,
-            data: [],
-            error: caughtError.message,
-          });
-          return;
-        }
-
         setSnapshot({
           token: activeToken,
           data: [],
-          error: 'Could not load elements right now.',
+          error: mapElementsErrorMessage(caughtError),
         });
       }
     };

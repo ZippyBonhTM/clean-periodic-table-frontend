@@ -11,6 +11,7 @@ type UseAuthSessionInput = {
   token: string | null;
   onTokenRefresh: (token: string) => void;
   onUnauthorized: () => void;
+  allowAnonymousRefresh?: boolean;
 };
 
 type VerificationSnapshot = {
@@ -41,10 +42,15 @@ function mapVerificationErrorMessage(error: unknown): string {
   return 'Could not verify your session right now.';
 }
 
+function isUnauthorizedError(error: unknown): error is ApiError {
+  return error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403);
+}
+
 function useAuthSession({
   token,
   onTokenRefresh,
   onUnauthorized,
+  allowAnonymousRefresh = true,
 }: UseAuthSessionInput): UseAuthSessionOutput {
   const [snapshot, setSnapshot] = useState<VerificationSnapshot>({
     token: null,
@@ -52,28 +58,55 @@ function useAuthSession({
     message: null,
   });
   const [validationVersion, setValidationVersion] = useState(0);
+  const [isRestoringAnonymousSession, setIsRestoringAnonymousSession] = useState(false);
 
   const revalidate = useCallback(() => {
     setValidationVersion((previous) => previous + 1);
   }, []);
 
   useEffect(() => {
-    if (token === null) {
-      return;
-    }
-
     let isCancelled = false;
 
-    const resolveSession = async () => {
+    const resolveAnonymousSession = async () => {
+      if (!allowAnonymousRefresh) {
+        setIsRestoringAnonymousSession(false);
+        return;
+      }
+
+      setIsRestoringAnonymousSession(true);
+
       try {
-        await validateAccessToken(token);
+        const refreshResponse = await refreshAccessToken();
+
+        if (isCancelled) {
+          return;
+        }
+
+        onTokenRefresh(refreshResponse.accessToken);
+        setSnapshot({
+          token: refreshResponse.accessToken,
+          status: 'authenticated',
+          message: null,
+        });
+      } catch {
+        // Keep anonymous when no refresh session exists.
+      } finally {
+        if (!isCancelled) {
+          setIsRestoringAnonymousSession(false);
+        }
+      }
+    };
+
+    const resolveSession = async (currentToken: string) => {
+      try {
+        await validateAccessToken(currentToken);
 
         if (isCancelled) {
           return;
         }
 
         setSnapshot({
-          token,
+          token: currentToken,
           status: 'authenticated',
           message: null,
         });
@@ -83,7 +116,7 @@ function useAuthSession({
           return;
         }
 
-        if (validationError instanceof ApiError && validationError.statusCode === 401) {
+        if (isUnauthorizedError(validationError)) {
           try {
             const refreshResponse = await refreshAccessToken();
 
@@ -103,9 +136,9 @@ function useAuthSession({
               return;
             }
 
-            if (refreshError instanceof ApiError && refreshError.statusCode === 0) {
+            if (!isUnauthorizedError(refreshError)) {
               setSnapshot({
-                token,
+                token: currentToken,
                 status: 'unverified',
                 message: mapVerificationErrorMessage(refreshError),
               });
@@ -118,24 +151,35 @@ function useAuthSession({
         }
 
         setSnapshot({
-          token,
+          token: currentToken,
           status: 'unverified',
           message: mapVerificationErrorMessage(validationError),
         });
       }
     };
 
-    void resolveSession();
+    if (token === null) {
+      void resolveAnonymousSession();
+
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    setIsRestoringAnonymousSession(false);
+    void resolveSession(token);
 
     return () => {
       isCancelled = true;
     };
-  }, [onTokenRefresh, onUnauthorized, token, validationVersion]);
+  }, [allowAnonymousRefresh, onTokenRefresh, onUnauthorized, token, validationVersion]);
 
   useEffect(() => {
     const currentStatus =
       token === null
-        ? 'anonymous'
+        ? isRestoringAnonymousSession
+          ? 'checking'
+          : 'anonymous'
         : snapshot.token === token
           ? snapshot.status
           : 'checking';
@@ -153,20 +197,22 @@ function useAuthSession({
     return () => {
       window.removeEventListener('online', onOnline);
     };
-  }, [revalidate, snapshot.status, snapshot.token, token]);
+  }, [isRestoringAnonymousSession, revalidate, snapshot.status, snapshot.token, token]);
 
   return useMemo(
     () => ({
       status:
         token === null
-          ? 'anonymous'
+          ? isRestoringAnonymousSession
+            ? 'checking'
+            : 'anonymous'
           : snapshot.token === token
             ? snapshot.status
             : 'checking',
       message: token === null ? null : snapshot.token === token ? snapshot.message : null,
       revalidate,
     }),
-    [revalidate, snapshot.message, snapshot.status, snapshot.token, token],
+    [isRestoringAnonymousSession, revalidate, snapshot.message, snapshot.status, snapshot.token, token],
   );
 }
 

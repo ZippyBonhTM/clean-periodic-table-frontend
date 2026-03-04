@@ -10,11 +10,12 @@ import useAuthToken from '@/shared/hooks/useAuthToken';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { token, persistToken, removeToken } = useAuthToken();
+  const { token, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
   const authSession = useAuthSession({
     token,
     onTokenRefresh: persistToken,
     onUnauthorized: removeToken,
+    allowAnonymousRefresh: !isSilentRefreshBlocked,
   });
 
   const onSuccess = useCallback(
@@ -26,7 +27,7 @@ export default function RegisterPage() {
   );
 
   const onLogout = useCallback(() => {
-    removeToken();
+    removeToken({ blockSilentRefresh: true });
   }, [removeToken]);
 
   return (

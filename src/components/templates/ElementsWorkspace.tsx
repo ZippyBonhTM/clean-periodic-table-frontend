@@ -23,11 +23,12 @@ type ElementsWorkspaceProps = {
 };
 
 function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
-  const { token, isHydrated, persistToken, removeToken } = useAuthToken();
+  const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
   const authSession = useAuthSession({
     token,
     onTokenRefresh: persistToken,
     onUnauthorized: removeToken,
+    allowAnonymousRefresh: !isSilentRefreshBlocked,
   });
   const hasValidSession = authSession.status === 'authenticated';
   const tokenStatus: TokenStatusType = authSession.status;
@@ -41,7 +42,7 @@ function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const onLogout = useCallback(() => {
-    removeToken();
+    removeToken({ blockSilentRefresh: true });
   }, [removeToken]);
 
   const openAuthModal = useCallback((mode: AuthModalMode) => {

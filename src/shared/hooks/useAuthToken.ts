@@ -5,8 +5,14 @@ import { useCallback, useSyncExternalStore } from 'react';
 import {
   clearAccessToken,
   readAccessToken,
+  readSilentRefreshBlocked,
   saveAccessToken,
+  setSilentRefreshBlocked,
 } from '@/shared/storage/accessTokenStorage';
+
+type RemoveTokenOptions = {
+  blockSilentRefresh?: boolean;
+};
 
 function subscribe(onStoreChange: () => void): () => void {
   if (typeof window === 'undefined') {
@@ -40,20 +46,28 @@ function useAuthToken() {
     () => true,
     () => false,
   );
+  const isSilentRefreshBlocked = useSyncExternalStore(
+    subscribe,
+    readSilentRefreshBlocked,
+    () => false,
+  );
 
   const persistToken = useCallback((nextToken: string) => {
     saveAccessToken(nextToken);
+    setSilentRefreshBlocked(false);
     emitTokenChange();
   }, []);
 
-  const removeToken = useCallback(() => {
+  const removeToken = useCallback((options: RemoveTokenOptions = {}) => {
     clearAccessToken();
+    setSilentRefreshBlocked(options.blockSilentRefresh === true);
     emitTokenChange();
   }, []);
 
   return {
     token,
     isHydrated,
+    isSilentRefreshBlocked,
     persistToken,
     removeToken,
   };
