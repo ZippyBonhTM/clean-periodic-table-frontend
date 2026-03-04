@@ -3,7 +3,6 @@
 import { createElement, memo, useEffect, useMemo, useState } from 'react';
 
 import FloatingModal from '@/components/molecules/FloatingModal';
-import useConnectionQuality from '@/shared/hooks/useConnectionQuality';
 import type { ChemicalElement } from '@/shared/types/element';
 import { formatAtomicMass, isElementRadioactive } from '@/shared/utils/elementPresentation';
 
@@ -156,7 +155,6 @@ function LinkButton({ href, label }: { href: string | null | undefined; label: s
 }
 
 function ElementDetailsModal({ element, isOpen, onClose }: ElementDetailsModalProps) {
-  const connectionQuality = useConnectionQuality();
   const [viewerMode, setViewerMode] = useState<ViewerMode>('2d');
   const [detailsViewMode, setDetailsViewMode] = useState<DetailsViewMode>('cards');
   const [is3DViewerReady, setIs3DViewerReady] = useState(false);
@@ -166,19 +164,6 @@ function ElementDetailsModal({ element, isOpen, onClose }: ElementDetailsModalPr
     ? normalizeText(element?.bohr_model_image)
     : normalizeText(element?.image?.url);
   const has2D = twoDImageUrl.length > 0;
-
-  useEffect(() => {
-    if (!isOpen || element === null) {
-      return;
-    }
-
-    if (connectionQuality === 'wifi' && has3D) {
-      setViewerMode('3d');
-      return;
-    }
-
-    setViewerMode('2d');
-  }, [connectionQuality, element, has3D, isOpen]);
 
   const dataRows = useMemo(() => {
     if (element === null) {
@@ -201,10 +186,6 @@ function ElementDetailsModal({ element, isOpen, onClose }: ElementDetailsModalPr
       return;
     }
 
-    if (connectionQuality === 'limited') {
-      window.alert('3D visualization can be heavy on limited internet.');
-    }
-
     setViewerMode('3d');
   };
 
@@ -217,7 +198,8 @@ function ElementDetailsModal({ element, isOpen, onClose }: ElementDetailsModalPr
   };
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || viewerMode !== '3d' || !has3D) {
+      setIs3DViewerReady(false);
       return;
     }
 
@@ -245,13 +227,14 @@ function ElementDetailsModal({ element, isOpen, onClose }: ElementDetailsModalPr
     return () => {
       isMounted = false;
     };
-  }, [isOpen]);
+  }, [has3D, isOpen, viewerMode]);
 
   useEffect(() => {
     if (!isOpen || element === null) {
       return;
     }
 
+    setViewerMode('2d');
     setDetailsViewMode('cards');
   }, [element, isOpen]);
 
@@ -265,22 +248,12 @@ function ElementDetailsModal({ element, isOpen, onClose }: ElementDetailsModalPr
       onClose={onClose}
       title={`${element.name} (${element.symbol})`}
       panelClassName="max-w-5xl"
-      bodyClassName="element-modal-scroll max-h-[75vh] overflow-y-auto scroll-smooth pr-1"
+      bodyClassName="element-modal-scroll max-h-[75vh] overflow-y-auto pr-1"
     >
       <div className="space-y-5">
         <section className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
           <div>
             <p className="text-xs uppercase tracking-[0.15em] text-[var(--text-muted)]">Element Details</p>
-            <p className="text-sm text-[var(--text-muted)]">
-              Connection mode:{' '}
-              <span className="font-semibold text-[var(--text-strong)]">
-                {connectionQuality === 'wifi'
-                  ? 'Wi-Fi / high bandwidth'
-                  : connectionQuality === 'limited'
-                    ? 'Limited internet'
-                    : 'Unknown'}
-              </span>
-            </p>
             {isRadioactive ? (
               <p className="mt-1 inline-flex rounded-md border border-rose-400/60 bg-rose-500/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-rose-300">
                 Radioactive
@@ -298,7 +271,7 @@ function ElementDetailsModal({ element, isOpen, onClose }: ElementDetailsModalPr
                   : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-strong)]'
               }`}
             >
-              2D (Limited Internet)
+              2D
             </button>
 
             <button
@@ -311,7 +284,7 @@ function ElementDetailsModal({ element, isOpen, onClose }: ElementDetailsModalPr
                   : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-strong)]'
               } disabled:cursor-not-allowed disabled:opacity-55`}
             >
-              3D (Wi-Fi)
+              3D
             </button>
           </div>
         </section>
@@ -405,7 +378,7 @@ function ElementDetailsModal({ element, isOpen, onClose }: ElementDetailsModalPr
                   {dataRows.map((row, index) => (
                     <tr
                       key={row.label}
-                      className={index % 2 === 0 ? 'bg-[color-mix(in_srgb,var(--surface-2)_65%,transparent)]' : 'bg-transparent'}
+                      className={index % 2 === 0 ? 'bg-[var(--surface-2)]/60' : 'bg-transparent'}
                     >
                       <td className="whitespace-nowrap px-3 py-2 align-top text-xs font-semibold text-[var(--text-muted)]">
                         {row.label}

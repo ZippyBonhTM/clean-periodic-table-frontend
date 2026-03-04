@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 
 import ElementTile from '@/components/molecules/ElementTile';
 import type { ChemicalElement } from '@/shared/types/element';
@@ -18,11 +18,25 @@ type ScrollFadeState = {
 
 function ClassicPeriodicView({ elements, onElementOpen }: ClassicPeriodicViewProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const [scrollFadeState, setScrollFadeState] = useState<ScrollFadeState>({
+  const fadeRef = useRef<HTMLDivElement | null>(null);
+  const pendingFrameRef = useRef<number | null>(null);
+  const lastFadeStateRef = useRef<ScrollFadeState>({
     hasOverflow: false,
     showLeftFade: false,
     showRightFade: false,
   });
+
+  const applyScrollFadeClass = useCallback((nextState: ScrollFadeState) => {
+    const fadeElement = fadeRef.current;
+
+    if (fadeElement === null) {
+      return;
+    }
+
+    fadeElement.classList.toggle('is-overflow', nextState.hasOverflow);
+    fadeElement.classList.toggle('show-left', nextState.showLeftFade);
+    fadeElement.classList.toggle('show-right', nextState.showRightFade);
+  }, []);
 
   const updateScrollFade = useCallback(() => {
     const scrollElement = scrollRef.current;
@@ -33,25 +47,42 @@ function ClassicPeriodicView({ elements, onElementOpen }: ClassicPeriodicViewPro
 
     const hasOverflow = scrollElement.scrollWidth > scrollElement.clientWidth + 1;
 
-    if (!hasOverflow) {
-      setScrollFadeState({
-        hasOverflow: false,
-        showLeftFade: false,
-        showRightFade: false,
-      });
+    const nextState: ScrollFadeState = !hasOverflow
+      ? {
+          hasOverflow: false,
+          showLeftFade: false,
+          showRightFade: false,
+        }
+      : {
+          hasOverflow: true,
+          showLeftFade: scrollElement.scrollLeft > 1,
+          showRightFade:
+            scrollElement.scrollLeft < scrollElement.scrollWidth - scrollElement.clientWidth - 1,
+        };
+
+    const previousState = lastFadeStateRef.current;
+    if (
+      previousState.hasOverflow === nextState.hasOverflow &&
+      previousState.showLeftFade === nextState.showLeftFade &&
+      previousState.showRightFade === nextState.showRightFade
+    ) {
       return;
     }
 
-    const maxScrollLeft = scrollElement.scrollWidth - scrollElement.clientWidth;
-    const showLeftFade = scrollElement.scrollLeft > 1;
-    const showRightFade = scrollElement.scrollLeft < maxScrollLeft - 1;
+    lastFadeStateRef.current = nextState;
+    applyScrollFadeClass(nextState);
+  }, [applyScrollFadeClass]);
 
-    setScrollFadeState({
-      hasOverflow: true,
-      showLeftFade,
-      showRightFade,
+  const scheduleScrollFadeUpdate = useCallback(() => {
+    if (pendingFrameRef.current !== null) {
+      return;
+    }
+
+    pendingFrameRef.current = window.requestAnimationFrame(() => {
+      pendingFrameRef.current = null;
+      updateScrollFade();
     });
-  }, []);
+  }, [updateScrollFade]);
 
   useEffect(() => {
     const scrollElement = scrollRef.current;
@@ -60,40 +91,33 @@ function ClassicPeriodicView({ elements, onElementOpen }: ClassicPeriodicViewPro
       return;
     }
 
-    const initialFrame = window.requestAnimationFrame(() => {
-      updateScrollFade();
-    });
+    scheduleScrollFadeUpdate();
 
-    scrollElement.addEventListener('scroll', updateScrollFade, { passive: true });
+    scrollElement.addEventListener('scroll', scheduleScrollFadeUpdate, { passive: true });
 
     const resizeObserver = new ResizeObserver(() => {
-      updateScrollFade();
+      scheduleScrollFadeUpdate();
     });
 
     resizeObserver.observe(scrollElement);
 
-    window.addEventListener('resize', updateScrollFade);
+    window.addEventListener('resize', scheduleScrollFadeUpdate);
 
     return () => {
-      window.cancelAnimationFrame(initialFrame);
-      scrollElement.removeEventListener('scroll', updateScrollFade);
-      window.removeEventListener('resize', updateScrollFade);
+      if (pendingFrameRef.current !== null) {
+        window.cancelAnimationFrame(pendingFrameRef.current);
+        pendingFrameRef.current = null;
+      }
+
+      scrollElement.removeEventListener('scroll', scheduleScrollFadeUpdate);
+      window.removeEventListener('resize', scheduleScrollFadeUpdate);
       resizeObserver.disconnect();
     };
-  }, [updateScrollFade]);
-
-  const fadeClassName = [
-    'scroll-fade-x',
-    scrollFadeState.hasOverflow ? 'is-overflow' : '',
-    scrollFadeState.showLeftFade ? 'show-left' : '',
-    scrollFadeState.showRightFade ? 'show-right' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  }, [scheduleScrollFadeUpdate]);
 
   return (
     <section className="surface-panel rounded-2xl border border-[var(--border-subtle)] p-3 md:p-4">
-      <div className={fadeClassName}>
+      <div ref={fadeRef} className="scroll-fade-x">
         <div ref={scrollRef} className="classic-scroll overflow-x-scroll pb-2">
           <div
             className="classic-scroll-safe mx-auto grid w-max gap-1.5 [--classic-size:92px] lg:[--classic-size:var(--classic-size-desktop)]"

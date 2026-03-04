@@ -80,7 +80,7 @@ function ElementTile({ element, density = 'regular', mode = 'default', onOpen }:
         style={{
           background: `linear-gradient(145deg, rgba(${color.rgb}, 0.2), rgba(${color.rgb}, 0.05) 58%, rgba(6, 12, 25, 0.34))`,
           borderColor: `rgba(${color.rgb}, 0.7)`,
-          boxShadow: `0 0 0 1px var(--neon-border), 0 0 14px rgba(${color.rgb}, 0.22)`,
+          boxShadow: `0 0 0 1px var(--neon-border), 0 0 8px rgba(${color.rgb}, 0.18)`,
         }}
       >
         <div className="element-classic-tile__content">
@@ -138,7 +138,7 @@ function ElementTile({ element, density = 'regular', mode = 'default', onOpen }:
       style={{
         background: `linear-gradient(145deg, rgba(${color.rgb}, 0.2), rgba(${color.rgb}, 0.05) 58%, rgba(6, 12, 25, 0.34))`,
         borderColor: `rgba(${color.rgb}, 0.65)`,
-        boxShadow: `0 0 0 1px var(--neon-border), 0 0 14px rgba(${color.rgb}, 0.24)`,
+        boxShadow: `0 0 0 1px var(--neon-border), 0 0 8px rgba(${color.rgb}, 0.2)`,
       }}
     >
       <span className="pointer-events-none absolute inset-0" />

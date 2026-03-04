@@ -60,12 +60,11 @@ body {
   margin: 0;
   color: var(--text-strong);
   background:
-    radial-gradient(circle at 12% 16%, var(--glow-cyan), transparent 36%),
-    radial-gradient(circle at 82% 6%, var(--glow-pink), transparent 40%),
-    radial-gradient(circle at 70% 75%, rgba(14, 165, 233, 0.1), transparent 35%),
+    radial-gradient(circle at 14% 18%, var(--glow-cyan), transparent 34%),
+    radial-gradient(circle at 84% 8%, var(--glow-pink), transparent 36%),
     linear-gradient(180deg, var(--background-top) 0%, var(--background-base) 100%);
-  background-attachment: fixed;
-  transition: background 250ms ease, color 180ms ease;
+  background-attachment: scroll;
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
 a {
@@ -75,7 +74,8 @@ a {
 
 .surface-panel {
   background: var(--surface-1);
-  box-shadow: 0 14px 28px rgba(2, 8, 23, 0.28);
+  box-shadow: 0 8px 18px rgba(2, 8, 23, 0.2);
+  contain: paint;
 }
 
 .scroll-fade-x {
@@ -134,11 +134,12 @@ a {
 }
 
 .tile-enter {
-  animation: rise-fade 280ms ease both;
+  animation: rise-fade 220ms ease both;
 }
 
 .element-classic-tile {
   padding: clamp(4px, calc(var(--classic-size) * 0.072), 8px);
+  contain: layout paint;
 }
 
 .element-classic-tile__content {
@@ -296,6 +297,12 @@ a {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile-enter {
+    animation: none;
   }
 }
 
