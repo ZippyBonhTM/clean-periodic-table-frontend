@@ -59,7 +59,7 @@ function FloatingModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/72 p-4 overscroll-contain"
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/72 p-4 overscroll-contain"
       role="dialog"
       aria-modal="true"
       aria-label={title}

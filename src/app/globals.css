@@ -180,6 +180,8 @@ a {
   grid-template-columns: 1fr auto;
   align-items: center;
   min-height: 0;
+  padding-inline: clamp(2px, calc(var(--classic-size) * 0.026), 7px);
+  padding-top: clamp(1px, calc(var(--classic-size) * 0.016), 3px);
 }
 
 .element-classic-tile__number {
@@ -259,7 +261,7 @@ a {
 .element-classic-tile__name {
   max-width: 100%;
   margin: 0;
-  font-size: clamp(4px, calc(var(--classic-size) * 0.11), 18px);
+  font-size: clamp(4.5px, calc(var(--classic-size) * 0.122), 20px);
   line-height: 1.08;
   font-weight: 600;
   color: color-mix(in oklab, var(--text-strong) 74%, var(--text-muted));
@@ -272,11 +274,11 @@ a {
 }
 
 .element-classic-tile__name--long {
-  font-size: clamp(3.6px, calc(var(--classic-size) * 0.101), 16px);
+  font-size: clamp(4px, calc(var(--classic-size) * 0.111), 18px);
 }
 
 .element-classic-tile__name--very-long {
-  font-size: clamp(3.4px, calc(var(--classic-size) * 0.094), 15px);
+  font-size: clamp(3.8px, calc(var(--classic-size) * 0.104), 17px);
 }
 
 .element-classic-tile__stats {
@@ -285,6 +287,8 @@ a {
   gap: clamp(1px, calc(var(--classic-size) * 0.03), 8px);
   min-height: 0;
   align-items: center;
+  padding-inline: clamp(2px, calc(var(--classic-size) * 0.026), 7px);
+  padding-bottom: clamp(1px, calc(var(--classic-size) * 0.016), 3px);
 }
 
 .element-classic-tile__chip {
