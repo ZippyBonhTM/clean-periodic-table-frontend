@@ -12,7 +12,7 @@ function CompactPeriodicView({ elements }: CompactPeriodicViewProps) {
     <section className="surface-panel rounded-2xl border border-[var(--border-subtle)] p-3 md:p-4">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
         {elements.map((element) => (
-          <div key={element.symbol} className="tile-enter">
+          <div key={element.symbol} className="tile-enter render-lazy">
             <ElementTile element={element} density="regular" />
           </div>
         ))}

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import { listElements } from '@/shared/api/backendApi';
+import { getCachedElements, listElements } from '@/shared/api/backendApi';
 import { ApiError } from '@/shared/api/httpClient';
 import type { ChemicalElement } from '@/shared/types/element';
 
@@ -30,10 +30,14 @@ function useElements(token: string | null): ElementsState {
       return;
     }
 
-    const abortController = new AbortController();
+    let isCancelled = false;
 
-    listElements(token, abortController.signal)
+    listElements(token)
       .then((response) => {
+        if (isCancelled) {
+          return;
+        }
+
         setSnapshot({
           token,
           data: response,
@@ -41,7 +45,7 @@ function useElements(token: string | null): ElementsState {
         });
       })
       .catch((caughtError: unknown) => {
-        if (abortController.signal.aborted) {
+        if (isCancelled) {
           return;
         }
 
@@ -62,30 +66,53 @@ function useElements(token: string | null): ElementsState {
       });
 
     return () => {
-      abortController.abort();
+      isCancelled = true;
     };
   }, [token]);
 
-  const sortedElements = useMemo(() => {
-    if (snapshot.token !== token || token === null) {
-      return [];
-    }
-
-    return [...snapshot.data].sort((first, second) => first.number - second.number);
-  }, [snapshot, token]);
-
-  const error = useMemo(() => {
-    if (snapshot.token !== token || token === null) {
+  const cachedElements = useMemo(() => {
+    if (token === null) {
       return null;
     }
 
-    return snapshot.error;
-  }, [snapshot, token]);
+    return getCachedElements(token);
+  }, [token]);
 
-  const isLoading = useMemo(
-    () => token !== null && snapshot.token !== token,
-    [snapshot.token, token],
-  );
+  const activeData = useMemo(() => {
+    if (token === null) {
+      return [];
+    }
+
+    if (snapshot.token === token) {
+      return snapshot.data;
+    }
+
+    return cachedElements ?? [];
+  }, [cachedElements, snapshot.data, snapshot.token, token]);
+
+  const sortedElements = useMemo(() => {
+    return [...activeData].sort((first, second) => first.number - second.number);
+  }, [activeData]);
+
+  const error = useMemo(() => {
+    if (token === null) {
+      return null;
+    }
+
+    if (snapshot.token === token) {
+      return snapshot.error;
+    }
+
+    return null;
+  }, [snapshot.error, snapshot.token, token]);
+
+  const isLoading = useMemo(() => {
+    if (token === null) {
+      return false;
+    }
+
+    return snapshot.token !== token && cachedElements === null;
+  }, [cachedElements, snapshot.token, token]);
 
   return {
     data: sortedElements,

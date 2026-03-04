@@ -78,6 +78,11 @@ a {
   animation: rise-fade 280ms ease both;
 }
 
+.render-lazy {
+  content-visibility: auto;
+  contain-intrinsic-size: 108px 88px;
+}
+
 @keyframes rise-fade {
   from {
     opacity: 0;

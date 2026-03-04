@@ -57,7 +57,9 @@ function CategoryPeriodicView({ elements }: CategoryPeriodicViewProps) {
 
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {groupedElements.map((element) => (
-                  <ElementTile key={element.symbol} element={element} density="compact" />
+                  <div key={element.symbol} className="render-lazy">
+                    <ElementTile element={element} density="compact" />
+                  </div>
                 ))}
               </div>
             </article>

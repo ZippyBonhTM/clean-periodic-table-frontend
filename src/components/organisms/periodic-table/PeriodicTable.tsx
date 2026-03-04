@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useMemo, useState } from 'react';
+import { memo, useDeferredValue, useMemo, useState, useTransition } from 'react';
 
 import ClassicPeriodicView from '@/components/organisms/periodic-table/ClassicPeriodicView';
 import CompactPeriodicView from '@/components/organisms/periodic-table/CompactPeriodicView';
@@ -33,10 +33,12 @@ function PeriodicTable({ elements }: PeriodicTableProps) {
   const [viewMode, setViewMode] = useState<PeriodicViewMode>('classic');
   const [sortMode, setSortMode] = useState<SortMode>('number');
   const [query, setQuery] = useState('');
+  const [isPendingTransition, startTransition] = useTransition();
+  const deferredQuery = useDeferredValue(query);
 
   const filteredElements = useMemo(() => {
-    return elements.filter((element) => matchesElementQuery(element, query));
-  }, [elements, query]);
+    return elements.filter((element) => matchesElementQuery(element, deferredQuery));
+  }, [deferredQuery, elements]);
 
   const sortedElements = useMemo(() => {
     return sortElements(filteredElements, sortMode);
@@ -77,7 +79,11 @@ function PeriodicTable({ elements }: PeriodicTableProps) {
                 <button
                   key={option.mode}
                   type="button"
-                  onClick={() => setViewMode(option.mode)}
+                  onClick={() => {
+                    startTransition(() => {
+                      setViewMode(option.mode);
+                    });
+                  }}
                   className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
                     option.mode === viewMode
                       ? 'border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--text-strong)]'
@@ -100,7 +106,11 @@ function PeriodicTable({ elements }: PeriodicTableProps) {
             <select
               id="sort-mode"
               value={sortMode}
-              onChange={(event) => setSortMode(event.target.value as SortMode)}
+              onChange={(event) => {
+                startTransition(() => {
+                  setSortMode(event.target.value as SortMode);
+                });
+              }}
               className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)] lg:w-52"
             >
               {SORT_OPTIONS.map((option) => (
@@ -115,6 +125,9 @@ function PeriodicTable({ elements }: PeriodicTableProps) {
         <p className="mt-3 text-xs text-[var(--text-muted)]">
           Showing {visibleElements.length} of {elements.length} elements.
         </p>
+        {query !== deferredQuery || isPendingTransition ? (
+          <p className="mt-1 text-xs text-[var(--text-muted)]">Updating view...</p>
+        ) : null}
       </div>
 
       {viewMode === 'classic' ? (

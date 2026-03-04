@@ -1,14 +1,19 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useCallback, useState } from 'react';
 
 import ElementsState from '@/components/organisms/elements/ElementsState';
-import AuthModal from '@/components/organisms/auth/AuthModal';
 import type { AuthModalMode } from '@/components/organisms/auth/AuthModal';
-import PeriodicTable from '@/components/organisms/periodic-table/PeriodicTable';
 import AppShell from '@/components/templates/AppShell';
 import useAuthToken from '@/shared/hooks/useAuthToken';
 import useElements from '@/shared/hooks/useElements';
+
+const PeriodicTable = dynamic(() => import('@/components/organisms/periodic-table/PeriodicTable'), {
+  loading: () => <ElementsState tone="info" message="Preparing table interface..." />,
+});
+
+const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'));
 
 export default function HomePage() {
   const { token, isHydrated, persistToken, removeToken } = useAuthToken();
