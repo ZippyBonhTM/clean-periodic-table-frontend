@@ -1,12 +1,39 @@
-function normalizeBaseUrl(rawValue: string | undefined, fallback: string): string {
-  const candidate = rawValue?.trim().length ? rawValue : fallback;
+function normalizeBaseUrl(
+  rawValue: string | undefined,
+  fallback: string,
+  envName: string,
+): string {
+  const trimmed = rawValue?.trim();
+  const isProduction = process.env.NODE_ENV === 'production';
 
-  return candidate.endsWith('/') ? candidate.slice(0, -1) : candidate;
+  if ((trimmed === undefined || trimmed.length === 0) && isProduction) {
+    throw new Error(`${envName} is required in production.`);
+  }
+
+  const candidate = trimmed?.length ? trimmed : fallback;
+
+  try {
+    const parsed = new URL(candidate);
+    const normalizedPath =
+      parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/+$/, '');
+
+    return `${parsed.origin}${normalizedPath}`;
+  } catch {
+    throw new Error(`Invalid ${envName}: "${candidate}". Expected an absolute URL.`);
+  }
 }
 
 const publicEnv = {
-  authApiUrl: normalizeBaseUrl(process.env.NEXT_PUBLIC_AUTH_API_URL, 'http://localhost:3002'),
-  backendApiUrl: normalizeBaseUrl(process.env.NEXT_PUBLIC_BACKEND_API_URL, 'http://localhost:3001'),
+  authApiUrl: normalizeBaseUrl(
+    process.env.NEXT_PUBLIC_AUTH_API_URL,
+    'http://localhost:3002',
+    'NEXT_PUBLIC_AUTH_API_URL',
+  ),
+  backendApiUrl: normalizeBaseUrl(
+    process.env.NEXT_PUBLIC_BACKEND_API_URL,
+    'http://localhost:3001',
+    'NEXT_PUBLIC_BACKEND_API_URL',
+  ),
 };
 
 export default publicEnv;
