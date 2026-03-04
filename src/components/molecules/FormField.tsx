@@ -27,7 +27,7 @@ function FormField({
 }: FormFieldProps) {
   return (
     <div className="space-y-1">
-      <label htmlFor={id} className="text-sm font-medium text-slate-700">
+      <label htmlFor={id} className="text-sm font-medium text-[var(--text-muted)]">
         {label}
       </label>
       <Input

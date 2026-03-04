@@ -1,16 +1,24 @@
 import { memo } from 'react';
 
+import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 
 type ElementsStateProps = {
   message: string;
   tone: 'info' | 'error';
+  actionLabel?: string;
+  onAction?: () => void;
 };
 
-function ElementsState({ message, tone }: ElementsStateProps) {
+function ElementsState({ message, tone, actionLabel, onAction }: ElementsStateProps) {
   return (
-    <Panel>
-      <p className={`text-sm ${tone === 'error' ? 'text-rose-700' : 'text-slate-700'}`}>{message}</p>
+    <Panel className="space-y-3">
+      <p className={`text-sm ${tone === 'error' ? 'text-rose-200' : 'text-[var(--text-muted)]'}`}>{message}</p>
+      {actionLabel !== undefined && onAction !== undefined ? (
+        <Button variant="secondary" onClick={onAction}>
+          {actionLabel}
+        </Button>
+      ) : null}
     </Panel>
   );
 }

@@ -33,7 +33,7 @@ function Input({
       onChange={(event) => onChange(event.target.value)}
       autoComplete={autoComplete}
       required={required}
-      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-shadow focus:border-teal-600 focus:ring-2 focus:ring-teal-200"
+      className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)]"
     />
   );
 }

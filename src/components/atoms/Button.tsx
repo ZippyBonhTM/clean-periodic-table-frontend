@@ -15,11 +15,11 @@ type ButtonProps = {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'bg-teal-700 text-white hover:bg-teal-800 disabled:bg-teal-300 disabled:cursor-not-allowed',
+    'border border-[var(--accent-strong)] bg-[var(--accent-strong)] text-[var(--on-accent)] hover:bg-[var(--accent-strong-hover)] disabled:opacity-50 disabled:cursor-not-allowed',
   secondary:
-    'bg-amber-500 text-slate-900 hover:bg-amber-400 disabled:bg-amber-300 disabled:cursor-not-allowed',
+    'border border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--text-strong)] hover:bg-[var(--accent)]/30 disabled:opacity-50 disabled:cursor-not-allowed',
   ghost:
-    'border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed',
+    'border border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--text-strong)] disabled:opacity-50 disabled:cursor-not-allowed',
 };
 
 function Button({

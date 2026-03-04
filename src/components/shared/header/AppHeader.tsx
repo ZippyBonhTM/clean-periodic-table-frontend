@@ -4,42 +4,95 @@ import Link from 'next/link';
 import { memo } from 'react';
 
 import Button from '@/components/atoms/Button';
+import ThemeToggle from '@/components/molecules/ThemeToggle';
 import TokenStatus from '@/components/molecules/TokenStatus';
+import UserAvatarPlaceholder from '@/components/molecules/UserAvatarPlaceholder';
+import type { AppTheme } from '@/shared/hooks/useTheme';
+
+type AuthEntryMode = 'modal' | 'route';
 
 type AppHeaderProps = {
   hasToken: boolean;
+  theme: AppTheme;
+  onToggleTheme: () => void;
   onLogout?: () => void;
+  authEntryMode?: AuthEntryMode;
+  onRequestLogin?: () => void;
+  onRequestRegister?: () => void;
 };
 
-function AppHeader({ hasToken, onLogout }: AppHeaderProps) {
+function AppHeader({
+  hasToken,
+  theme,
+  onToggleTheme,
+  onLogout,
+  authEntryMode = 'route',
+  onRequestLogin,
+  onRequestRegister,
+}: AppHeaderProps) {
   return (
-    <header className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Clean Periodic Table</p>
-          <h1 className="text-xl font-bold text-slate-900">Chemical Explorer</h1>
+    <header className="surface-panel rounded-3xl border border-[var(--border-subtle)] p-4 shadow-sm backdrop-blur md:p-5">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-[var(--text-muted)]">Clean Periodic Table</p>
+            <h1 className="text-2xl font-black tracking-tight text-[var(--text-strong)] md:text-3xl">
+              Chemical Explorer
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <TokenStatus hasToken={hasToken} />
+            <ThemeToggle theme={theme} onToggleTheme={onToggleTheme} />
+            <UserAvatarPlaceholder hasToken={hasToken} />
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <TokenStatus hasToken={hasToken} />
-          <Link href="/" className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
-            Elements
+          <Link
+            href="/"
+            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
+          >
+            Periodic Table
           </Link>
-          {!hasToken ? (
-            <Link href="/login" className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
-              Login
-            </Link>
+
+          {!hasToken && authEntryMode === 'modal' ? (
+            <>
+              <Button variant="ghost" onClick={onRequestLogin}>
+                Login
+              </Button>
+              <Button variant="ghost" onClick={onRequestRegister}>
+                Register
+              </Button>
+            </>
           ) : null}
-          {!hasToken ? (
-            <Link href="/register" className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
-              Register
-            </Link>
+
+          {!hasToken && authEntryMode === 'route' ? (
+            <>
+              <Link
+                href="/login"
+                className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
+              >
+                Login
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
+              >
+                Register
+              </Link>
+            </>
           ) : null}
+
           {hasToken && onLogout !== undefined ? (
-            <Button variant="ghost" onClick={onLogout}>
+            <Button variant="secondary" onClick={onLogout}>
               Logout
             </Button>
           ) : null}
+
+          <span className="ml-auto rounded-xl border border-[var(--border-subtle)] bg-black/20 px-3 py-2 text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">
+            {theme === 'dark' ? 'Night Theme' : 'Light Theme'}
+          </span>
         </div>
       </div>
     </header>
@@ -47,3 +100,4 @@ function AppHeader({ hasToken, onLogout }: AppHeaderProps) {
 }
 
 export default memo(AppHeader);
+export type { AuthEntryMode };

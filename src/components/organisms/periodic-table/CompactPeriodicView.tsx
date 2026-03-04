@@ -1,0 +1,28 @@
+import { memo } from 'react';
+
+import ElementTile from '@/components/molecules/ElementTile';
+import type { ChemicalElement } from '@/shared/types/element';
+
+type CompactPeriodicViewProps = {
+  elements: ChemicalElement[];
+};
+
+function CompactPeriodicView({ elements }: CompactPeriodicViewProps) {
+  return (
+    <section className="surface-panel rounded-2xl border border-[var(--border-subtle)] p-3 md:p-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+        {elements.map((element) => (
+          <div key={element.symbol} className="tile-enter">
+            <ElementTile element={element} density="regular" />
+          </div>
+        ))}
+      </div>
+
+      <p className="mt-3 text-xs text-[var(--text-muted)]">
+        Compact view sorted by selected criteria for quick scanning and mobile usability.
+      </p>
+    </section>
+  );
+}
+
+export default memo(CompactPeriodicView);

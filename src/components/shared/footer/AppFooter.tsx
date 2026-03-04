@@ -2,8 +2,8 @@ import { memo } from 'react';
 
 function AppFooter() {
   return (
-    <footer className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-xs text-slate-500 shadow-sm">
-      Auth API + Elements API connected with client-side token flow.
+    <footer className="surface-panel rounded-2xl border border-[var(--border-subtle)] px-4 py-3 text-xs text-[var(--text-muted)] shadow-sm">
+      Periodic Table UI focused on visualization, theme switching, and secure API integration.
     </footer>
   );
 }

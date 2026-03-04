@@ -11,9 +11,11 @@ import { ApiError } from '@/shared/api/httpClient';
 
 type LoginFormProps = {
   onSuccess: (token: string) => void;
+  mode?: 'page' | 'modal';
+  onSwitchToRegister?: () => void;
 };
 
-function LoginForm({ onSuccess }: LoginFormProps) {
+function LoginForm({ onSuccess, mode = 'page', onSwitchToRegister }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,12 +46,12 @@ function LoginForm({ onSuccess }: LoginFormProps) {
     [email, onSuccess, password],
   );
 
-  return (
-    <Panel className="mx-auto w-full max-w-lg">
+  const content = (
+    <>
       <div className="mb-4">
-        <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Authentication</p>
-        <h2 className="text-2xl font-bold text-slate-900">Login</h2>
-        <p className="mt-1 text-sm text-slate-600">Use your auth microservice credentials to get a JWT token.</p>
+        <p className="text-xs uppercase tracking-[0.25em] text-[var(--text-muted)]">Authentication</p>
+        <h2 className="text-2xl font-bold text-[var(--text-strong)]">Login</h2>
+        <p className="mt-1 text-sm text-[var(--text-muted)]">Sign in to unlock the periodic table data.</p>
       </div>
 
       <form className="space-y-4" onSubmit={onSubmit}>
@@ -78,7 +80,9 @@ function LoginForm({ onSuccess }: LoginFormProps) {
         />
 
         {error !== null ? (
-          <p className="rounded-lg bg-rose-100 px-3 py-2 text-sm text-rose-800">{error}</p>
+          <p className="rounded-lg border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-600">
+            {error}
+          </p>
         ) : null}
 
         <Button type="submit" disabled={isSubmitting} className="w-full">
@@ -86,14 +90,33 @@ function LoginForm({ onSuccess }: LoginFormProps) {
         </Button>
       </form>
 
-      <p className="mt-4 text-sm text-slate-600">
-        Need an account?{' '}
-        <Link href="/register" className="font-semibold text-teal-700 hover:text-teal-900">
-          Register here
-        </Link>
-      </p>
-    </Panel>
+      {mode === 'modal' ? (
+        <p className="mt-4 text-sm text-[var(--text-muted)]">
+          Need an account?{' '}
+          <button
+            type="button"
+            onClick={onSwitchToRegister}
+            className="font-semibold text-[var(--accent)] transition-colors hover:text-[var(--accent-strong)]"
+          >
+            Register here
+          </button>
+        </p>
+      ) : (
+        <p className="mt-4 text-sm text-[var(--text-muted)]">
+          Need an account?{' '}
+          <Link href="/register" className="font-semibold text-[var(--accent)] transition-colors hover:text-[var(--accent-strong)]">
+            Register here
+          </Link>
+        </p>
+      )}
+    </>
   );
+
+  if (mode === 'modal') {
+    return <div>{content}</div>;
+  }
+
+  return <Panel className="mx-auto w-full max-w-lg">{content}</Panel>;
 }
 
 export default memo(LoginForm);

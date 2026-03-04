@@ -7,11 +7,13 @@ type TokenStatusProps = {
 function TokenStatus({ hasToken }: TokenStatusProps) {
   return (
     <span
-      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-        hasToken ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+      className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+        hasToken
+          ? 'border-[rgba(16,185,129,0.55)] bg-[rgba(16,185,129,0.18)] text-[var(--text-strong)]'
+          : 'border-[rgba(245,158,11,0.48)] bg-[rgba(245,158,11,0.15)] text-[var(--text-strong)]'
       }`}
     >
-      {hasToken ? 'Token loaded' : 'Not authenticated'}
+      {hasToken ? 'Authenticated' : 'No token'}
     </span>
   );
 }
