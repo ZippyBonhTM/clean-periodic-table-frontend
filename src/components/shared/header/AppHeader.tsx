@@ -28,6 +28,9 @@ function AppHeader({ hasToken, onLogout }: AppHeaderProps) {
           <Link href="/login" className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
             Login
           </Link>
+          <Link href="/register" className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
+            Register
+          </Link>
           {hasToken && onLogout !== undefined ? (
             <Button variant="ghost" onClick={onLogout}>
               Logout

@@ -21,6 +21,13 @@ npm install
 npm run dev
 ```
 
+Frontend runs on `http://localhost:3000` by default.
+
+## Deploy
+
+- Vercel guide (recommended): `DEPLOY_VERCEL.md`
+- Railway guide (optional): `DEPLOY_RAILWAY.md`
+
 ## Structure
 
 - `src/components/atoms`
@@ -37,4 +44,5 @@ npm run dev
 Pages:
 
 - `/login`: simple auth form (client-side)
+- `/register`: simple registration form (client-side)
 - `/`: elements list fetched from backend with bearer token

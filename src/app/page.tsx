@@ -47,6 +47,10 @@ export default function HomePage() {
           <Link href="/login" className="font-semibold text-teal-700 hover:text-teal-900">
             Go to login page
           </Link>
+          {' · '}
+          <Link href="/register" className="font-semibold text-teal-700 hover:text-teal-900">
+            Go to register page
+          </Link>
         </div>
       </section>
     </AppShell>

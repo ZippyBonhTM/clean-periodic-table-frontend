@@ -6,16 +6,18 @@ import { memo, useCallback, useState } from 'react';
 import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import FormField from '@/components/molecules/FormField';
-import { login } from '@/shared/api/authApi';
+import { register } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
 
-type LoginFormProps = {
+type RegisterFormProps = {
   onSuccess: (token: string) => void;
 };
 
-function LoginForm({ onSuccess }: LoginFormProps) {
+function RegisterForm({ onSuccess }: RegisterFormProps) {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,11 +25,16 @@ function LoginForm({ onSuccess }: LoginFormProps) {
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
 
+      if (password !== passwordConfirmation) {
+        setError('Password confirmation does not match.');
+        return;
+      }
+
       setIsSubmitting(true);
       setError(null);
 
       try {
-        const response = await login({ email, password });
+        const response = await register({ name, email, password });
         onSuccess(response.accessToken);
       } catch (caughtError: unknown) {
         if (caughtError instanceof ApiError) {
@@ -35,24 +42,35 @@ function LoginForm({ onSuccess }: LoginFormProps) {
         } else if (caughtError instanceof Error && caughtError.message.trim().length > 0) {
           setError(caughtError.message);
         } else {
-          setError('Could not sign in right now.');
+          setError('Could not create your account right now.');
         }
       } finally {
         setIsSubmitting(false);
       }
     },
-    [email, onSuccess, password],
+    [email, name, onSuccess, password, passwordConfirmation],
   );
 
   return (
     <Panel className="mx-auto w-full max-w-lg">
       <div className="mb-4">
         <p className="text-xs uppercase tracking-[0.25em] text-slate-500">Authentication</p>
-        <h2 className="text-2xl font-bold text-slate-900">Login</h2>
-        <p className="mt-1 text-sm text-slate-600">Use your auth microservice credentials to get a JWT token.</p>
+        <h2 className="text-2xl font-bold text-slate-900">Register</h2>
+        <p className="mt-1 text-sm text-slate-600">Create your account to get a JWT token and access the elements API.</p>
       </div>
 
       <form className="space-y-4" onSubmit={onSubmit}>
+        <FormField
+          id="name"
+          label="Name"
+          name="name"
+          placeholder="Ada Lovelace"
+          value={name}
+          onChange={setName}
+          autoComplete="name"
+          required
+        />
+
         <FormField
           id="email"
           label="Email"
@@ -73,7 +91,19 @@ function LoginForm({ onSuccess }: LoginFormProps) {
           placeholder="********"
           value={password}
           onChange={setPassword}
-          autoComplete="current-password"
+          autoComplete="new-password"
+          required
+        />
+
+        <FormField
+          id="passwordConfirmation"
+          label="Confirm password"
+          name="passwordConfirmation"
+          type="password"
+          placeholder="********"
+          value={passwordConfirmation}
+          onChange={setPasswordConfirmation}
+          autoComplete="new-password"
           required
         />
 
@@ -82,18 +112,18 @@ function LoginForm({ onSuccess }: LoginFormProps) {
         ) : null}
 
         <Button type="submit" disabled={isSubmitting} className="w-full">
-          {isSubmitting ? 'Signing in...' : 'Sign in'}
+          {isSubmitting ? 'Creating account...' : 'Create account'}
         </Button>
       </form>
 
       <p className="mt-4 text-sm text-slate-600">
-        Need an account?{' '}
-        <Link href="/register" className="font-semibold text-teal-700 hover:text-teal-900">
-          Register here
+        Already have an account?{' '}
+        <Link href="/login" className="font-semibold text-teal-700 hover:text-teal-900">
+          Sign in
         </Link>
       </p>
     </Panel>
   );
 }
 
-export default memo(LoginForm);
+export default memo(RegisterForm);

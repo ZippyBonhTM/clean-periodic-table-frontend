@@ -5,6 +5,7 @@ type HttpRequestInput = {
   body?: unknown;
   token?: string | null;
   signal?: AbortSignal;
+  credentials?: RequestCredentials;
 };
 
 type ApiErrorPayload = {
@@ -79,6 +80,7 @@ async function requestJson<ResponseType>(
     headers,
     body: input.body !== undefined ? JSON.stringify(input.body) : undefined,
     signal: input.signal,
+    credentials: input.credentials,
   });
 
   const payload = await response
