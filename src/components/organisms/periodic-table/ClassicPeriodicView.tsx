@@ -182,7 +182,7 @@ function ClassicPeriodicView({
   return (
     <section className="surface-panel rounded-2xl border border-[var(--border-subtle)] p-4">
       <div ref={fadeRef} className="scroll-fade-x relative">
-        <div className="pointer-events-none absolute right-2 top-2 z-20">
+        <div className="pointer-events-none absolute right-3 top-3 z-20">
           <div className="pointer-events-auto flex items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-1)]/92 px-2 py-1 backdrop-blur-sm">
             <button
               type="button"
@@ -217,7 +217,7 @@ function ClassicPeriodicView({
           </div>
         </div>
 
-        <div ref={scrollRef} className="classic-scroll overflow-x-auto pb-2 pt-11">
+        <div ref={scrollRef} className="classic-scroll overflow-x-auto pb-2 pt-14">
           <div
             className="classic-scroll-safe mx-auto grid w-max [--classic-size:calc(92px*var(--classic-scale))] lg:[--classic-size:calc(var(--classic-size-desktop)*var(--classic-scale))]"
             style={

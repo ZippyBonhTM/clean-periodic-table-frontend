@@ -24,6 +24,12 @@ type ElementMetaRow = {
   value: string;
 };
 
+type ExpandedImageState = {
+  kind: 'bohr' | 'element';
+  src: string;
+  alt: string;
+};
+
 type ModelViewerConstructor = {
   minimumRenderScale: number;
 };
@@ -196,6 +202,7 @@ function ElementDetailsModal({
   const [viewerMode, setViewerMode] = useState<ViewerMode>('image');
   const [detailsViewMode, setDetailsViewMode] = useState<DetailsViewMode>('cards');
   const [is3DViewerReady, setIs3DViewerReady] = useState(false);
+  const [expandedImage, setExpandedImage] = useState<ExpandedImageState | null>(null);
   const [failedImageUrls, setFailedImageUrls] = useState<Record<string, true>>({});
   const wasOpenRef = useRef(false);
 
@@ -268,6 +275,26 @@ function ElementDetailsModal({
     setDetailsViewMode((previous) => (previous === 'cards' ? 'table' : 'cards'));
   };
 
+  const openExpandedImage = (
+    sourceUrl: string,
+    altText: string,
+    kind: ExpandedImageState['kind'],
+  ) => {
+    if (sourceUrl.trim().length === 0) {
+      return;
+    }
+
+    setExpandedImage({
+      kind,
+      src: sourceUrl,
+      alt: altText,
+    });
+  };
+
+  const closeExpandedImage = () => {
+    setExpandedImage(null);
+  };
+
   useEffect(() => {
     if (!isOpen || viewerMode !== '3d' || !has3D) {
       setIs3DViewerReady(false);
@@ -303,18 +330,36 @@ function ElementDetailsModal({
   useEffect(() => {
     if (!isOpen || element === null) {
       wasOpenRef.current = false;
+      setExpandedImage(null);
       setFailedImageUrls({});
       return;
     }
 
-    // Only initialize default modes when opening the modal.
-    // Navigating with previous/next must preserve current view state.
+    // Only initialize viewer mode when opening the modal.
+    // Keep details (card/table) mode persistent across opens and navigation.
     if (!wasOpenRef.current) {
       setViewerMode(hasElementImage ? 'image' : '2d');
-      setDetailsViewMode('cards');
       wasOpenRef.current = true;
     }
   }, [element, hasElementImage, isOpen]);
+
+  useEffect(() => {
+    if (expandedImage === null) {
+      return;
+    }
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setExpandedImage(null);
+      }
+    };
+
+    window.addEventListener('keydown', onEscape);
+
+    return () => {
+      window.removeEventListener('keydown', onEscape);
+    };
+  }, [expandedImage]);
 
   if (element === null) {
     return null;
@@ -337,36 +382,37 @@ function ElementDetailsModal({
   };
 
   return (
-    <FloatingModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={`${element.name} (${element.symbol})`}
-      panelClassName="max-w-5xl"
-      bodyClassName="element-modal-scroll max-h-[75vh] overflow-y-auto pr-1"
-      headerActions={
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onClickPrevious}
-            disabled={!hasPreviousElement}
-            aria-label="Previous element"
-            className="rounded-lg border border-[var(--border-subtle)] px-2.5 py-1.5 text-sm font-semibold text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)] disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            ←
-          </button>
-          <button
-            type="button"
-            onClick={onClickNext}
-            disabled={!hasNextElement}
-            aria-label="Next element"
-            className="rounded-lg border border-[var(--border-subtle)] px-2.5 py-1.5 text-sm font-semibold text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)] disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            →
-          </button>
-        </div>
-      }
-    >
-      <div className="space-y-5">
+    <>
+      <FloatingModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={`${element.name} (${element.symbol})`}
+        panelClassName="max-w-5xl"
+        bodyClassName="element-modal-scroll max-h-[75vh] overflow-y-auto pr-1"
+        headerActions={
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClickPrevious}
+              disabled={!hasPreviousElement}
+              aria-label="Previous element"
+              className="rounded-lg border border-[var(--border-subtle)] px-2.5 py-1.5 text-sm font-semibold text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)] disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              onClick={onClickNext}
+              disabled={!hasNextElement}
+              aria-label="Next element"
+              className="rounded-lg border border-[var(--border-subtle)] px-2.5 py-1.5 text-sm font-semibold text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)] disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              →
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-5">
         <section className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
           <div>
             <p className="text-xs uppercase tracking-[0.15em] text-[var(--text-muted)]">Element Details</p>
@@ -432,8 +478,15 @@ function ElementDetailsModal({
               <img
                 src={twoDImageUrl}
                 alt={`2D Bohr model of ${formatNullableValue(element.name)}`}
-                className="h-56 w-full rounded-xl object-contain md:h-72"
+                className="h-56 w-full cursor-zoom-in rounded-xl object-contain transition-transform hover:scale-[1.01] md:h-72"
                 loading="lazy"
+                onClick={() => {
+                  openExpandedImage(
+                    twoDImageUrl,
+                    `2D Bohr model of ${formatNullableValue(element.name)}`,
+                    'bohr',
+                  );
+                }}
                 onError={(event) => {
                   event.currentTarget.style.display = 'none';
                   onImageLoadError(twoDImageUrl);
@@ -448,8 +501,15 @@ function ElementDetailsModal({
               <img
                 src={elementImageUrl}
                 alt={`Image of ${formatNullableValue(element.name)}`}
-                className="h-56 w-full rounded-xl object-contain md:h-72"
+                className="h-56 w-full cursor-zoom-in rounded-xl object-contain transition-transform hover:scale-[1.01] md:h-72"
                 loading="lazy"
+                onClick={() => {
+                  openExpandedImage(
+                    elementImageUrl,
+                    `Image of ${formatNullableValue(element.name)}`,
+                    'element',
+                  );
+                }}
                 onError={(event) => {
                   event.currentTarget.style.display = 'none';
                   onImageLoadError(elementImageUrl);
@@ -556,8 +616,47 @@ function ElementDetailsModal({
             <LinkButton href={element.spectral_img} label="Open Spectral Image" />
           </div>
         </section>
-      </div>
-    </FloatingModal>
+        </div>
+      </FloatingModal>
+
+      {expandedImage !== null ? (
+        <div
+          className="fixed inset-0 z-[140] flex items-center justify-center bg-black/85 p-3 md:p-6"
+          onClick={closeExpandedImage}
+          role="button"
+          tabIndex={0}
+          aria-label="Close expanded image"
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              closeExpandedImage();
+            }
+          }}
+        >
+          <div
+            className="relative flex max-h-[94vh] w-full max-w-7xl items-center justify-center rounded-2xl border border-white/20 bg-[var(--surface-2)] p-2 shadow-2xl md:p-3"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={closeExpandedImage}
+              className="absolute right-3 top-3 z-20 rounded-lg border border-white/35 bg-black/60 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-white transition-colors hover:border-white/75"
+            >
+              Close
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={expandedImage.src}
+              alt={expandedImage.alt}
+              className={
+                expandedImage.kind === 'bohr'
+                  ? 'max-h-[84vh] w-[min(92vw,1200px)] rounded-xl object-contain'
+                  : 'max-h-[84vh] w-auto max-w-[92vw] rounded-xl object-contain'
+              }
+            />
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 
