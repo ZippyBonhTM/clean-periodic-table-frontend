@@ -45,6 +45,7 @@ const ElementDetailsModal = dynamic(
 
 function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
   const [viewMode, setViewMode] = useState<PeriodicViewMode>('classic');
+  const [classicZoomPercent, setClassicZoomPercent] = useState(100);
   const [sortMode, setSortMode] = useState<SortMode>('number');
   const [query, setQuery] = useState('');
   const [selectedElement, setSelectedElement] = useState<ChemicalElement | null>(null);
@@ -242,7 +243,12 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
       )}
 
       {activeViewMode === 'classic' ? (
-        <ClassicPeriodicView elements={visibleElements} onElementOpen={openElementModal} />
+        <ClassicPeriodicView
+          elements={visibleElements}
+          onElementOpen={openElementModal}
+          zoomPercent={classicZoomPercent}
+          onZoomChange={setClassicZoomPercent}
+        />
       ) : activeViewMode === 'category' ? (
         <CategoryPeriodicView elements={visibleElements} onElementOpen={openElementModal} />
       ) : (

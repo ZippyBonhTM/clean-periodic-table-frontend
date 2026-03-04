@@ -86,7 +86,7 @@ function ElementTile({ element, density = 'regular', mode = 'default', onOpen }:
       <button
         type="button"
         onClick={() => onOpen?.(element)}
-        className={`element-classic-tile relative h-full w-full overflow-hidden rounded-xl border text-left text-[var(--text-strong)] transition-transform duration-200 hover:-translate-y-0.5 ${
+        className={`element-classic-tile relative h-full w-full overflow-hidden border text-left text-[var(--text-strong)] transition-transform duration-200 hover:-translate-y-0.5 ${
           onOpen !== undefined ? 'cursor-pointer' : 'cursor-default'
         }`}
         aria-label={`Open details of ${element.name}`}

@@ -81,7 +81,7 @@ a {
 .scroll-fade-x {
   position: relative;
   --scroll-fade-width: 34px;
-  --scroll-fade-safe: 28px;
+  --scroll-fade-safe: 0px;
 }
 
 .scroll-fade-x::before,
@@ -127,6 +127,27 @@ a {
 
 .classic-scroll {
   scroll-padding-inline: var(--scroll-fade-safe);
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--accent) 62%, transparent) transparent;
+}
+
+.classic-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+
+.classic-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.classic-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  background: color-mix(in oklab, var(--accent) 54%, transparent);
+}
+
+.classic-scroll:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--accent) 76%, transparent);
 }
 
 .classic-scroll-safe {
@@ -138,19 +159,20 @@ a {
 }
 
 .element-classic-tile {
-  padding: clamp(4px, calc(var(--classic-size) * 0.072), 8px);
+  padding: 0;
+  border-radius: clamp(3px, calc(var(--classic-size) * 0.14), 12px);
   contain: layout paint;
 }
 
 .element-classic-tile__content {
   display: grid;
   grid-template-rows:
-    minmax(clamp(12px, calc(var(--classic-size) * 0.19), 17px), auto)
+    minmax(clamp(6px, calc(var(--classic-size) * 0.19), 30px), auto)
     minmax(0, 1fr)
-    minmax(clamp(12px, calc(var(--classic-size) * 0.2), 18px), auto);
+    minmax(clamp(6px, calc(var(--classic-size) * 0.2), 30px), auto);
   height: 100%;
   min-height: 0;
-  gap: clamp(1px, calc(var(--classic-size) * 0.012), 2px);
+  gap: clamp(0px, calc(var(--classic-size) * 0.012), 4px);
 }
 
 .element-classic-tile__top {
@@ -164,11 +186,12 @@ a {
   justify-self: start;
   max-width: 100%;
   border: 1px solid rgb(255 255 255 / 0.2);
-  border-radius: 0.35rem;
+  border-radius: clamp(2px, calc(var(--classic-size) * 0.06), 6px);
   background: rgb(0 0 0 / 0.2);
-  padding: 0.1rem 0.28rem;
-  font-size: clamp(7px, calc(var(--classic-size) * 0.11), 10px);
-  line-height: 1.02;
+  padding: clamp(0.5px, calc(var(--classic-size) * 0.014), 1.6px)
+    clamp(1px, calc(var(--classic-size) * 0.03), 6px);
+  font-size: clamp(4px, calc(var(--classic-size) * 0.11), 18px);
+  line-height: 1;
   font-weight: 700;
   color: var(--text-muted);
   white-space: nowrap;
@@ -179,13 +202,13 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: clamp(12px, calc(var(--classic-size) * 0.185), 18px);
-  height: clamp(12px, calc(var(--classic-size) * 0.185), 18px);
+  width: clamp(7px, calc(var(--classic-size) * 0.185), 26px);
+  height: clamp(7px, calc(var(--classic-size) * 0.185), 26px);
   border-radius: 999px;
   border: 1px solid rgb(252 211 77 / 0.68);
   background: rgb(251 191 36 / 0.2);
   color: rgb(253 230 138 / 1);
-  font-size: clamp(7px, calc(var(--classic-size) * 0.098), 10px);
+  font-size: clamp(4px, calc(var(--classic-size) * 0.098), 14px);
   line-height: 1;
   box-shadow: 0 0 10px rgb(251 191 36 / 0.35);
 }
@@ -198,14 +221,14 @@ a {
   min-height: 0;
   display: grid;
   grid-template-rows:
-    minmax(clamp(14px, calc(var(--classic-size) * 0.28), 26px), auto)
-    minmax(clamp(8px, calc(var(--classic-size) * 0.13), 12px), auto);
+    minmax(clamp(9px, calc(var(--classic-size) * 0.3), 44px), auto)
+    minmax(clamp(7px, calc(var(--classic-size) * 0.16), 24px), auto);
   align-items: center;
   justify-items: center;
   align-content: center;
   text-align: center;
-  gap: clamp(1px, calc(var(--classic-size) * 0.01), 2px);
-  padding-inline: clamp(1px, calc(var(--classic-size) * 0.02), 4px);
+  gap: clamp(1px, calc(var(--classic-size) * 0.012), 4px);
+  padding-inline: clamp(0px, calc(var(--classic-size) * 0.02), 4px);
 }
 
 .element-classic-tile__symbol {
@@ -214,62 +237,66 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100%;
+  min-height: 0;
+  height: 100%;
   margin: 0;
-  line-height: 0.92;
+  line-height: 1.08;
   font-weight: 700;
   letter-spacing: -0.03em;
   text-align: center;
   white-space: nowrap;
+  padding-bottom: clamp(0.5px, calc(var(--classic-size) * 0.01), 2px);
 }
 
 .element-classic-tile__symbol--single {
-  font-size: clamp(16px, calc(var(--classic-size) * 0.35), 29px);
+  font-size: clamp(7px, calc(var(--classic-size) * 0.35), 52px);
 }
 
 .element-classic-tile__symbol--multi {
-  font-size: clamp(14px, calc(var(--classic-size) * 0.3), 25px);
+  font-size: clamp(6px, calc(var(--classic-size) * 0.3), 44px);
 }
 
 .element-classic-tile__name {
   max-width: 100%;
   margin: 0;
-  font-size: clamp(7px, calc(var(--classic-size) * 0.11), 11px);
-  line-height: 1;
+  font-size: clamp(4px, calc(var(--classic-size) * 0.11), 18px);
+  line-height: 1.08;
   font-weight: 600;
   color: color-mix(in oklab, var(--text-strong) 74%, var(--text-muted));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: clip;
   width: 100%;
-  min-height: 1em;
+  min-height: 1.18em;
+  padding-bottom: clamp(0.5px, calc(var(--classic-size) * 0.016), 2px);
 }
 
 .element-classic-tile__name--long {
-  font-size: clamp(6.5px, calc(var(--classic-size) * 0.101), 10px);
+  font-size: clamp(3.6px, calc(var(--classic-size) * 0.101), 16px);
 }
 
 .element-classic-tile__name--very-long {
-  font-size: clamp(6px, calc(var(--classic-size) * 0.094), 9px);
+  font-size: clamp(3.4px, calc(var(--classic-size) * 0.094), 15px);
 }
 
 .element-classic-tile__stats {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: clamp(2px, calc(var(--classic-size) * 0.03), 4px);
+  gap: clamp(1px, calc(var(--classic-size) * 0.03), 8px);
   min-height: 0;
   align-items: center;
 }
 
 .element-classic-tile__chip {
   min-width: 0;
-  border-radius: 0.35rem;
+  border-radius: clamp(2px, calc(var(--classic-size) * 0.06), 6px);
   border: 1px solid rgb(255 255 255 / 0.14);
   background: rgb(2 10 24 / 0.34);
-  padding: 0.08rem 0.22rem;
+  padding: clamp(0.5px, calc(var(--classic-size) * 0.008), 1.4px)
+    clamp(1px, calc(var(--classic-size) * 0.022), 6px);
   text-align: center;
-  font-size: clamp(7px, calc(var(--classic-size) * 0.095), 10px);
-  line-height: 1.08;
+  font-size: clamp(4px, calc(var(--classic-size) * 0.095), 16px);
+  line-height: 1;
   font-weight: 700;
   letter-spacing: -0.01em;
   color: color-mix(in oklab, var(--text-strong) 82%, var(--text-muted));
@@ -279,7 +306,7 @@ a {
 }
 
 .element-classic-tile__chip--compact {
-  font-size: clamp(6.5px, calc(var(--classic-size) * 0.088), 9px);
+  font-size: clamp(3.8px, calc(var(--classic-size) * 0.088), 14px);
   letter-spacing: -0.015em;
 }
 
