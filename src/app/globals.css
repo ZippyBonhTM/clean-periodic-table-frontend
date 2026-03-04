@@ -215,6 +215,13 @@ a {
   box-shadow: 0 0 10px rgb(251 191 36 / 0.35);
 }
 
+.element-classic-tile__radio-icon {
+  width: 72%;
+  height: 72%;
+  display: block;
+  transform-origin: center;
+}
+
 .element-classic-tile__radio--hidden {
   visibility: hidden;
 }

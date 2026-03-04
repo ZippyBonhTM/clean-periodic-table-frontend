@@ -20,6 +20,21 @@ const compactMassFormatter = new Intl.NumberFormat('en-US', {
   maximumSignificantDigits: 4,
 });
 
+function RadioactiveIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="element-classic-tile__radio-icon"
+    >
+      <path
+        fill="currentColor"
+        d="M11.5 1.5a10 10 0 0 0-10 10 10 10 0 0 0 10 10 10 10 0 0 0 10-10 10 10 0 0 0-10-10zm1.5 2a8 8 0 0 1 6.76 4l-4.79 1.68a3 3 0 0 0-2-1.15l.03-4.53zm-3 .05v4.48a3 3 0 0 0-2 1.15L3.24 7.5a8 8 0 0 1 6.76-3.95zm-5.64 5.67 4.81 1.69a3 3 0 0 0 0 2.19l-4.81 1.68a8 8 0 0 1 0-5.56zm14.28 0a8 8 0 0 1 0 5.56l-4.81-1.68a3 3 0 0 0 0-2.19l4.81-1.69zm-11.47 5.61a3 3 0 0 0 8.66 0l1.71 4.77a8 8 0 0 1-5.24 0l-1.71-4.77z"
+      />
+    </svg>
+  );
+}
+
 function compactPhase(phase: unknown): string {
   if (typeof phase !== 'string') {
     return 'n/a';
@@ -109,11 +124,14 @@ function ElementTile({ element, density = 'regular', mode = 'default', onOpen }:
                 title="Radioactive"
                 aria-label="Radioactive element"
               >
-                ☢
+                <RadioactiveIcon />
               </span>
             ) : (
-              <span className="element-classic-tile__radio element-classic-tile__radio--hidden" aria-hidden="true">
-                ☢
+              <span
+                className="element-classic-tile__radio element-classic-tile__radio--hidden"
+                aria-hidden="true"
+              >
+                <RadioactiveIcon />
               </span>
             )}
           </div>
