@@ -1,5 +1,7 @@
 import { memo } from 'react';
 
+import LinkButton from '@/components/atoms/LinkButton';
+
 function AppFooter() {
   return (
     <footer className="surface-panel rounded-2xl border border-[var(--border-subtle)] px-4 py-4 text-xs text-[var(--text-muted)] shadow-sm">
@@ -13,22 +15,28 @@ function AppFooter() {
         </div>
 
         <nav aria-label="Project repositories" className="flex flex-wrap gap-2">
-          <a
+          <LinkButton
             href="https://github.com/ZippyBonhTM/clean-periodic-table"
+            external
             target="_blank"
             rel="noreferrer"
-            className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-1.5 text-xs font-semibold text-[var(--accent)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent-strong-hover)]"
+            variant="ghost"
+            size="md"
+            className="rounded-md px-3 text-xs text-[var(--accent)] hover:text-[var(--accent-strong-hover)]"
           >
             Backend Repo
-          </a>
-          <a
+          </LinkButton>
+          <LinkButton
             href="https://github.com/ZippyBonhTM/clean-auth"
+            external
             target="_blank"
             rel="noreferrer"
-            className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-1.5 text-xs font-semibold text-[var(--accent)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent-strong-hover)]"
+            variant="ghost"
+            size="md"
+            className="rounded-md px-3 text-xs text-[var(--accent)] hover:text-[var(--accent-strong-hover)]"
           >
             Auth Repo
-          </a>
+          </LinkButton>
         </nav>
       </div>
 

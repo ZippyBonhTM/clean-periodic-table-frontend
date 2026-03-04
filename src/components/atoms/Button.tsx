@@ -1,45 +1,53 @@
 'use client';
 
-import { memo } from 'react';
+import { forwardRef, memo } from 'react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+import { buildButtonClass } from '@/components/atoms/buttonStyles';
+import type { ButtonAlign, ButtonSize, ButtonVariant } from '@/components/atoms/buttonStyles';
 
-type ButtonProps = {
+type ButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'type'> & {
   type?: 'button' | 'submit' | 'reset';
   variant?: ButtonVariant;
-  onClick?: () => void;
-  disabled?: boolean;
-  className?: string;
-  children: React.ReactNode;
+  size?: ButtonSize;
+  align?: ButtonAlign;
+  uppercase?: boolean;
 };
 
-const variantStyles: Record<ButtonVariant, string> = {
-  primary:
-    'border border-[var(--accent-strong)] bg-[var(--accent-strong)] text-[var(--on-accent)] hover:bg-[var(--accent-strong-hover)] disabled:opacity-50 disabled:cursor-not-allowed',
-  secondary:
-    'border border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--text-strong)] hover:bg-[var(--accent)]/30 disabled:opacity-50 disabled:cursor-not-allowed',
-  ghost:
-    'border border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--text-strong)] disabled:opacity-50 disabled:cursor-not-allowed',
-};
+const Button = memo(
+  forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+    {
+      type = 'button',
+      variant = 'primary',
+      size = 'lg',
+      align = 'center',
+      uppercase = false,
+      disabled = false,
+      className = '',
+      children,
+      ...restProps
+    },
+    ref,
+  ) {
+    return (
+      <button
+        ref={ref}
+        type={type}
+        disabled={disabled}
+        className={buildButtonClass({
+          variant,
+          size,
+          align,
+          uppercase,
+          className,
+        })}
+        {...restProps}
+      >
+        {children}
+      </button>
+    );
+  }),
+);
 
-function Button({
-  type = 'button',
-  variant = 'primary',
-  onClick,
-  disabled = false,
-  className = '',
-  children,
-}: ButtonProps) {
-  return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${variantStyles[variant]} ${className}`.trim()}
-    >
-      {children}
-    </button>
-  );
-}
+Button.displayName = 'Button';
 
-export default memo(Button);
+export default Button;
