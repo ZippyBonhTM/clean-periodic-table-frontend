@@ -61,10 +61,25 @@ function ElementTile({ element, density = 'regular', mode = 'default', onOpen }:
   const compactPhaseLabel = compactPhase(element.phase);
   const compactMassLabel = compactAtomicMass(element.atomic_mass);
   const symbolLength = element.symbol.trim().length;
+  const nameLength = element.name.trim().length;
   const symbolClassName =
     symbolLength > 1
       ? 'element-classic-tile__symbol element-classic-tile__symbol--multi'
       : 'element-classic-tile__symbol element-classic-tile__symbol--single';
+  const nameClassName =
+    nameLength > 14
+      ? 'element-classic-tile__name element-classic-tile__name--very-long'
+      : nameLength > 10
+        ? 'element-classic-tile__name element-classic-tile__name--long'
+        : 'element-classic-tile__name';
+  const massChipClassName =
+    compactMassLabel.length > 6
+      ? 'element-classic-tile__chip element-classic-tile__chip--compact'
+      : 'element-classic-tile__chip';
+  const phaseChipClassName =
+    compactPhaseLabel.length > 6
+      ? 'element-classic-tile__chip element-classic-tile__chip--compact'
+      : 'element-classic-tile__chip';
 
   if (mode === 'classic') {
     return (
@@ -107,16 +122,16 @@ function ElementTile({ element, density = 'regular', mode = 'default', onOpen }:
             <p className={symbolClassName} title={element.symbol}>
               {element.symbol}
             </p>
-            <p className="element-classic-tile__name" title={element.name}>
+            <p className={nameClassName} title={element.name}>
               {element.name}
             </p>
           </div>
 
           <div className="element-classic-tile__stats">
-            <span className="element-classic-tile__chip" title={compactMassLabel}>
+            <span className={massChipClassName} title={compactMassLabel}>
               {compactMassLabel}
             </span>
-            <span className="element-classic-tile__chip" title={compactPhaseLabel}>
+            <span className={phaseChipClassName} title={compactPhaseLabel}>
               {compactPhaseLabel}
             </span>
           </div>

@@ -1,18 +1,22 @@
 'use client';
 
-import { createElement, memo, useEffect, useMemo, useState } from 'react';
+import { createElement, memo, useEffect, useMemo, useRef, useState } from 'react';
 
 import FloatingModal from '@/components/molecules/FloatingModal';
 import type { ChemicalElement } from '@/shared/types/element';
 import { formatAtomicMass, isElementRadioactive } from '@/shared/utils/elementPresentation';
 
-type ViewerMode = '2d' | '3d';
+type ViewerMode = '2d' | '3d' | 'image';
 type DetailsViewMode = 'cards' | 'table';
 
 type ElementDetailsModalProps = {
   element: ChemicalElement | null;
   isOpen: boolean;
   onClose: () => void;
+  hasPreviousElement?: boolean;
+  hasNextElement?: boolean;
+  onOpenPreviousElement?: () => void;
+  onOpenNextElement?: () => void;
 };
 
 type ElementMetaRow = {
@@ -25,6 +29,7 @@ type ModelViewerConstructor = {
 };
 
 const HIGH_QUALITY_MIN_RENDER_SCALE = 0.95;
+const GENERIC_ELEMENT_IMAGE_PATH = '/s/transactinoid.png';
 
 function normalizeText(value: unknown): string {
   if (typeof value !== 'string') {
@@ -36,6 +41,20 @@ function normalizeText(value: unknown): string {
 
 function hasDisplayText(value: unknown): boolean {
   return normalizeText(value).length > 0;
+}
+
+function normalizeElementImageUrl(value: unknown): string {
+  const normalized = normalizeText(value);
+
+  if (normalized.length === 0) {
+    return '';
+  }
+
+  if (normalized.toLowerCase().includes(GENERIC_ELEMENT_IMAGE_PATH)) {
+    return '';
+  }
+
+  return normalized;
 }
 
 function formatNullableValue(value: unknown): string {
@@ -126,7 +145,10 @@ function buildElementRows(element: ChemicalElement): ElementMetaRow[] {
       label: 'Spectral Image Link',
       value: hasDisplayText(element.spectral_img) ? 'Available below' : 'Not informed',
     },
-    { label: 'Image URL', value: hasDisplayText(element.image?.url) ? 'Available below' : 'Not informed' },
+    {
+      label: 'Image URL',
+      value: normalizeElementImageUrl(element.image?.url).length > 0 ? 'Available below' : 'Not informed',
+    },
     { label: 'Summary', value: formatNullableValue(element.summary) },
   ];
 }
@@ -154,15 +176,35 @@ function LinkButton({ href, label }: { href: string | null | undefined; label: s
   );
 }
 
-function ElementDetailsModal({ element, isOpen, onClose }: ElementDetailsModalProps) {
-  const [viewerMode, setViewerMode] = useState<ViewerMode>('2d');
+function ImageUnavailableState({ elementName }: { elementName: string }) {
+  return (
+    <div className="flex h-56 items-center justify-center rounded-xl border border-dashed border-[var(--border-subtle)] px-4 text-center text-sm text-[var(--text-muted)] md:h-72">
+      {`Image of element ${elementName}; Not available.`}
+    </div>
+  );
+}
+
+function ElementDetailsModal({
+  element,
+  isOpen,
+  onClose,
+  hasPreviousElement = false,
+  hasNextElement = false,
+  onOpenPreviousElement,
+  onOpenNextElement,
+}: ElementDetailsModalProps) {
+  const [viewerMode, setViewerMode] = useState<ViewerMode>('image');
   const [detailsViewMode, setDetailsViewMode] = useState<DetailsViewMode>('cards');
   const [is3DViewerReady, setIs3DViewerReady] = useState(false);
+  const [failedImageUrls, setFailedImageUrls] = useState<Record<string, true>>({});
+  const wasOpenRef = useRef(false);
 
   const has3D = hasDisplayText(element?.bohr_model_3d);
+  const elementImageUrl = normalizeElementImageUrl(element?.image?.url);
+  const hasElementImage = elementImageUrl.length > 0;
   const twoDImageUrl = hasDisplayText(element?.bohr_model_image)
     ? normalizeText(element?.bohr_model_image)
-    : normalizeText(element?.image?.url);
+    : elementImageUrl;
   const has2D = twoDImageUrl.length > 0;
 
   const dataRows = useMemo(() => {
@@ -191,6 +233,35 @@ function ElementDetailsModal({ element, isOpen, onClose }: ElementDetailsModalPr
 
   const onClick2D = () => {
     setViewerMode('2d');
+  };
+
+  const onClickElementImage = () => {
+    if (!hasElementImage) {
+      return;
+    }
+
+    setViewerMode('image');
+  };
+
+  const isImageFailed = (url: string): boolean => {
+    return failedImageUrls[url] === true;
+  };
+
+  const onImageLoadError = (url: string) => {
+    if (url.length === 0) {
+      return;
+    }
+
+    setFailedImageUrls((previous) => {
+      if (previous[url] === true) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        [url]: true,
+      };
+    });
   };
 
   const toggleDetailsViewMode = () => {
@@ -231,16 +302,39 @@ function ElementDetailsModal({ element, isOpen, onClose }: ElementDetailsModalPr
 
   useEffect(() => {
     if (!isOpen || element === null) {
+      wasOpenRef.current = false;
+      setFailedImageUrls({});
       return;
     }
 
-    setViewerMode('2d');
-    setDetailsViewMode('cards');
-  }, [element, isOpen]);
+    // Only initialize default modes when opening the modal.
+    // Navigating with previous/next must preserve current view state.
+    if (!wasOpenRef.current) {
+      setViewerMode(hasElementImage ? 'image' : '2d');
+      setDetailsViewMode('cards');
+      wasOpenRef.current = true;
+    }
+  }, [element, hasElementImage, isOpen]);
 
   if (element === null) {
     return null;
   }
+
+  const onClickPrevious = () => {
+    if (!hasPreviousElement || onOpenPreviousElement === undefined) {
+      return;
+    }
+
+    onOpenPreviousElement();
+  };
+
+  const onClickNext = () => {
+    if (!hasNextElement || onOpenNextElement === undefined) {
+      return;
+    }
+
+    onOpenNextElement();
+  };
 
   return (
     <FloatingModal
@@ -249,6 +343,28 @@ function ElementDetailsModal({ element, isOpen, onClose }: ElementDetailsModalPr
       title={`${element.name} (${element.symbol})`}
       panelClassName="max-w-5xl"
       bodyClassName="element-modal-scroll max-h-[75vh] overflow-y-auto pr-1"
+      headerActions={
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onClickPrevious}
+            disabled={!hasPreviousElement}
+            aria-label="Previous element"
+            className="rounded-lg border border-[var(--border-subtle)] px-2.5 py-1.5 text-sm font-semibold text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            onClick={onClickNext}
+            disabled={!hasNextElement}
+            aria-label="Next element"
+            className="rounded-lg border border-[var(--border-subtle)] px-2.5 py-1.5 text-sm font-semibold text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            →
+          </button>
+        </div>
+      }
     >
       <div className="space-y-5">
         <section className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
@@ -261,48 +377,86 @@ function ElementDetailsModal({ element, isOpen, onClose }: ElementDetailsModalPr
             ) : null}
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-end gap-2">
             <button
               type="button"
-              onClick={onClick2D}
+              onClick={onClickElementImage}
+              disabled={!hasElementImage}
               className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
-                viewerMode === '2d'
-                  ? 'border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--text-strong)]'
-                  : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-strong)]'
-              }`}
-            >
-              2D
-            </button>
-
-            <button
-              type="button"
-              onClick={onClick3D}
-              disabled={!has3D}
-              className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
-                viewerMode === '3d'
+                viewerMode === 'image'
                   ? 'border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--text-strong)]'
                   : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-strong)]'
               } disabled:cursor-not-allowed disabled:opacity-55`}
             >
-              3D
+              Element Image
             </button>
+
+            <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] p-2">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                Borh
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={onClick2D}
+                  className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
+                    viewerMode === '2d'
+                      ? 'border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--text-strong)]'
+                      : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-strong)]'
+                  }`}
+                >
+                  2D
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onClick3D}
+                  disabled={!has3D}
+                  className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
+                    viewerMode === '3d'
+                      ? 'border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--text-strong)]'
+                      : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-strong)]'
+                  } disabled:cursor-not-allowed disabled:opacity-55`}
+                >
+                  3D
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 
         <section className="surface-panel rounded-2xl border border-[var(--border-subtle)] p-3">
           {viewerMode === '2d' ? (
-            has2D ? (
+            has2D && !isImageFailed(twoDImageUrl) ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={twoDImageUrl}
                 alt={`2D Bohr model of ${formatNullableValue(element.name)}`}
                 className="h-56 w-full rounded-xl object-contain md:h-72"
                 loading="lazy"
+                onError={(event) => {
+                  event.currentTarget.style.display = 'none';
+                  onImageLoadError(twoDImageUrl);
+                }}
               />
             ) : (
-              <div className="flex h-56 items-center justify-center rounded-xl border border-dashed border-[var(--border-subtle)] text-sm text-[var(--text-muted)] md:h-72">
-                2D preview is unavailable for this element.
-              </div>
+              <ImageUnavailableState elementName={formatNullableValue(element.name)} />
+            )
+          ) : viewerMode === 'image' ? (
+            hasElementImage && !isImageFailed(elementImageUrl) ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={elementImageUrl}
+                alt={`Image of ${formatNullableValue(element.name)}`}
+                className="h-56 w-full rounded-xl object-contain md:h-72"
+                loading="lazy"
+                onError={(event) => {
+                  event.currentTarget.style.display = 'none';
+                  onImageLoadError(elementImageUrl);
+                }}
+              />
+            ) : (
+              <ImageUnavailableState elementName={formatNullableValue(element.name)} />
             )
           ) : has3D ? (
             <div className="space-y-3">
@@ -396,7 +550,7 @@ function ElementDetailsModal({ element, isOpen, onClose }: ElementDetailsModalPr
           <p className="mb-2 text-xs uppercase tracking-[0.15em] text-[var(--text-muted)]">External Links</p>
           <div className="flex flex-wrap gap-3">
             <LinkButton href={element.source} label="Open Official Source" />
-            <LinkButton href={element.image?.url} label="Open Element Image" />
+            <LinkButton href={elementImageUrl} label="Open Element Image" />
             <LinkButton href={element.bohr_model_image} label="Open Bohr 2D" />
             <LinkButton href={element.bohr_model_3d} label="Open Bohr 3D" />
             <LinkButton href={element.spectral_img} label="Open Spectral Image" />

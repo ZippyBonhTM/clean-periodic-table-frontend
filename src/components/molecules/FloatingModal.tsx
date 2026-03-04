@@ -9,6 +9,7 @@ type FloatingModalProps = {
   children: React.ReactNode;
   panelClassName?: string;
   bodyClassName?: string;
+  headerActions?: React.ReactNode;
 };
 
 function FloatingModal({
@@ -18,6 +19,7 @@ function FloatingModal({
   children,
   panelClassName = '',
   bodyClassName = '',
+  headerActions,
 }: FloatingModalProps) {
   const didPointerStartOnBackdrop = useRef(false);
 
@@ -84,13 +86,16 @@ function FloatingModal({
       >
         <div className="mb-4 flex items-center justify-between gap-4">
           <h2 className="text-xl font-semibold text-[var(--text-strong)]">{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
-          >
-            Close
-          </button>
+          <div className="flex items-center gap-2">
+            {headerActions}
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
+            >
+              Close
+            </button>
+          </div>
         </div>
 
         <div className={bodyClassName}>{children}</div>

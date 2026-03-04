@@ -102,6 +102,42 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
     setSelectedElement(randomElement);
   }, [elements]);
 
+  const selectedElementIndex = useMemo(() => {
+    if (selectedElement === null) {
+      return -1;
+    }
+
+    return visibleElements.findIndex((element) => element.symbol === selectedElement.symbol);
+  }, [selectedElement, visibleElements]);
+
+  const hasPreviousElement = selectedElementIndex > 0;
+  const hasNextElement =
+    selectedElementIndex >= 0 && selectedElementIndex < visibleElements.length - 1;
+
+  const openPreviousElement = useCallback(() => {
+    if (!hasPreviousElement) {
+      return;
+    }
+
+    const previousElement = visibleElements[selectedElementIndex - 1];
+
+    if (previousElement !== undefined) {
+      setSelectedElement(previousElement);
+    }
+  }, [hasPreviousElement, selectedElementIndex, visibleElements]);
+
+  const openNextElement = useCallback(() => {
+    if (!hasNextElement) {
+      return;
+    }
+
+    const nextElement = visibleElements[selectedElementIndex + 1];
+
+    if (nextElement !== undefined) {
+      setSelectedElement(nextElement);
+    }
+  }, [hasNextElement, selectedElementIndex, visibleElements]);
+
   return (
     <section className="space-y-4">
       {isExploreMode ? (
@@ -217,6 +253,10 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
         element={selectedElement}
         isOpen={selectedElement !== null}
         onClose={closeElementModal}
+        hasPreviousElement={hasPreviousElement}
+        hasNextElement={hasNextElement}
+        onOpenPreviousElement={openPreviousElement}
+        onOpenNextElement={openNextElement}
       />
     </section>
   );

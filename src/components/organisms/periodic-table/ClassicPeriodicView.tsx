@@ -115,6 +115,10 @@ function ClassicPeriodicView({ elements, onElementOpen }: ClassicPeriodicViewPro
     };
   }, [scheduleScrollFadeUpdate]);
 
+  useEffect(() => {
+    scheduleScrollFadeUpdate();
+  }, [elements.length, scheduleScrollFadeUpdate]);
+
   return (
     <section className="surface-panel rounded-2xl border border-[var(--border-subtle)] p-3 md:p-4">
       <div ref={fadeRef} className="scroll-fade-x">
