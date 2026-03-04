@@ -46,6 +46,7 @@ const ElementDetailsModal = dynamic(
 function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
   const [viewMode, setViewMode] = useState<PeriodicViewMode>('classic');
   const [classicZoomPercent, setClassicZoomPercent] = useState(100);
+  const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('number');
   const [query, setQuery] = useState('');
   const [selectedElement, setSelectedElement] = useState<ChemicalElement | null>(null);
@@ -143,7 +144,7 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
     <section className="space-y-4">
       {isExploreMode ? (
         <div className="surface-panel rounded-2xl border border-[var(--border-subtle)] p-4 md:p-5">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+          <div className="flex flex-col gap-3 min-[1120px]:flex-row min-[1120px]:items-start">
             <div className="min-w-0 flex-1">
               <label
                 htmlFor="element-search"
@@ -209,8 +210,8 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
               ) : null}
             </div>
 
-            <div className="w-fit lg:ml-auto">
-              <div className="rounded-xl border border-[var(--border-subtle)] px-3 py-2.5">
+            <div className="w-full min-[1120px]:ml-auto min-[1120px]:w-fit">
+              <div className="hidden rounded-xl border border-[var(--border-subtle)] px-3 py-2.5 min-[1120px]:block">
                 <p className="mb-1 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]">View</p>
                 <div className="flex flex-col gap-2">
                   {VIEW_OPTIONS.map((option) => (
@@ -232,6 +233,49 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div className="min-[1120px]:hidden">
+                <button
+                  type="button"
+                  onClick={() => setIsViewMenuOpen((previous) => !previous)}
+                  className="inline-flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
+                  aria-expanded={isViewMenuOpen}
+                  aria-label="Toggle view options"
+                >
+                  View
+                  <span
+                    className={`inline-block text-sm leading-none transition-transform duration-200 ${
+                      isViewMenuOpen ? 'rotate-180' : 'rotate-0'
+                    }`}
+                  >
+                    ⌄
+                  </span>
+                </button>
+
+                {isViewMenuOpen ? (
+                  <div className="mt-2 flex flex-wrap gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] p-2">
+                    {VIEW_OPTIONS.map((option) => (
+                      <button
+                        key={option.mode}
+                        type="button"
+                        onClick={() => {
+                          startTransition(() => {
+                            setViewMode(option.mode);
+                          });
+                          setIsViewMenuOpen(false);
+                        }}
+                        className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
+                          option.mode === viewMode
+                            ? 'border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--text-strong)]'
+                            : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-strong)]'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
