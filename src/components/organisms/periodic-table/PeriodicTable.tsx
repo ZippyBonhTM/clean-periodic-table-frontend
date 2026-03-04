@@ -294,7 +294,6 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
 
   useEffect(() => {
     if (!isViewMenuOpen) {
-      setViewMenuPosition(null);
       return;
     }
 
@@ -323,7 +322,6 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
 
   useEffect(() => {
     if (!isSortMenuOpen) {
-      setSortMenuPosition(null);
       return;
     }
 
