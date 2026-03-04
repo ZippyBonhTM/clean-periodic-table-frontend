@@ -472,7 +472,7 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
             </div>
 
             <div className="hidden min-[518px]:ml-auto min-[518px]:w-fit min-[518px]:shrink-0 min-[518px]:block">
-              <div className="rounded-xl border border-[var(--border-subtle)] px-2.5 py-2">
+              <div className="min-w-[150px] rounded-xl border border-[var(--border-subtle)] px-2.5 py-2">
                 <p className="mb-1 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]">View</p>
                 <div className="flex flex-col items-start gap-1.5">
                   {VIEW_OPTIONS.map((option) => (

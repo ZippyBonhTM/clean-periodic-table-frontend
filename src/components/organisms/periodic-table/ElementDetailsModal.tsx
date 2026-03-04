@@ -335,11 +335,10 @@ function ElementDetailsModal({
       return;
     }
 
-    // Only initialize default modes when opening the modal.
-    // Navigating with previous/next must preserve current view state.
+    // Only initialize viewer mode when opening the modal.
+    // Keep details (card/table) mode persistent across opens and navigation.
     if (!wasOpenRef.current) {
       setViewerMode(hasElementImage ? 'image' : '2d');
-      setDetailsViewMode('cards');
       wasOpenRef.current = true;
     }
   }, [element, hasElementImage, isOpen]);
