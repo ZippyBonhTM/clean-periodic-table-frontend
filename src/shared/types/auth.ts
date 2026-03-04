@@ -24,4 +24,17 @@ type RefreshResponse = {
   message: string;
 };
 
-export type { LoginInput, LoginResponse, RefreshResponse, RegisterInput, RegisterResponse };
+type ValidateTokenResponse = {
+  valid: boolean;
+  userId: string;
+  message: string;
+};
+
+export type {
+  LoginInput,
+  LoginResponse,
+  RefreshResponse,
+  RegisterInput,
+  RegisterResponse,
+  ValidateTokenResponse,
+};

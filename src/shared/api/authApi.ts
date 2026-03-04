@@ -6,6 +6,7 @@ import type {
   RefreshResponse,
   RegisterInput,
   RegisterResponse,
+  ValidateTokenResponse,
 } from '@/shared/types/auth';
 
 async function login(input: LoginInput): Promise<LoginResponse> {
@@ -31,4 +32,12 @@ async function refreshAccessToken(): Promise<RefreshResponse> {
   });
 }
 
-export { login, refreshAccessToken, register };
+async function validateAccessToken(accessToken: string): Promise<ValidateTokenResponse> {
+  return await requestJson<ValidateTokenResponse>(publicEnv.authApiUrl, '/validate-token', {
+    method: 'GET',
+    token: accessToken,
+    credentials: 'include',
+  });
+}
+
+export { login, refreshAccessToken, register, validateAccessToken };
