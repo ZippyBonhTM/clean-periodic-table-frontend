@@ -1,0 +1,118 @@
+'use client';
+
+import dynamic from 'next/dynamic';
+import { useCallback, useState } from 'react';
+
+import ElementsState from '@/components/organisms/elements/ElementsState';
+import type { AuthModalMode } from '@/components/organisms/auth/AuthModal';
+import AppShell from '@/components/templates/AppShell';
+import type { TokenStatusType } from '@/components/molecules/TokenStatus';
+import type { PeriodicTableMode } from '@/components/organisms/periodic-table/PeriodicTable';
+import useAuthSession from '@/shared/hooks/useAuthSession';
+import useAuthToken from '@/shared/hooks/useAuthToken';
+import useElements from '@/shared/hooks/useElements';
+
+const PeriodicTable = dynamic(() => import('@/components/organisms/periodic-table/PeriodicTable'), {
+  loading: () => <ElementsState tone="info" message="Preparing table interface..." />,
+});
+
+const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'));
+
+type ElementsWorkspaceProps = {
+  tableMode: PeriodicTableMode;
+};
+
+function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
+  const { token, isHydrated, persistToken, removeToken } = useAuthToken();
+  const authSession = useAuthSession({
+    token,
+    onTokenRefresh: persistToken,
+    onUnauthorized: removeToken,
+  });
+  const hasValidSession = authSession.status === 'authenticated';
+  const tokenStatus: TokenStatusType = authSession.status;
+  const { data, isLoading, error } = useElements({
+    token: hasValidSession ? token : null,
+    onTokenRefresh: persistToken,
+    onUnauthorized: removeToken,
+  });
+
+  const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  const onLogout = useCallback(() => {
+    removeToken();
+  }, [removeToken]);
+
+  const openAuthModal = useCallback((mode: AuthModalMode) => {
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+  }, []);
+
+  const closeAuthModal = useCallback(() => {
+    setIsAuthModalOpen(false);
+  }, []);
+
+  const onAuthSuccess = useCallback(
+    (nextToken: string) => {
+      persistToken(nextToken);
+      closeAuthModal();
+    },
+    [closeAuthModal, persistToken],
+  );
+
+  if (!isHydrated) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-[var(--app-max-width)] items-center px-[var(--app-inline-padding)] py-6">
+        <ElementsState tone="info" message="Loading local session..." />
+      </main>
+    );
+  }
+
+  return (
+    <AppShell
+      hasToken={hasValidSession}
+      authStatus={isHydrated ? tokenStatus : 'checking'}
+      onLogout={onLogout}
+      authEntryMode="modal"
+      onRequestLogin={() => openAuthModal('login')}
+      onRequestRegister={() => openAuthModal('register')}
+      showFooter={false}
+    >
+      <section className="space-y-4">
+        {authSession.status === 'checking' ? (
+          <ElementsState tone="info" message="Validating session..." />
+        ) : authSession.status === 'unverified' ? (
+          <ElementsState
+            tone="error"
+            message={authSession.message ?? 'Could not verify your session right now.'}
+            actionLabel="Try again"
+            onAction={authSession.revalidate}
+          />
+        ) : !hasValidSession ? (
+          <ElementsState
+            tone="info"
+            message="Authenticate to load elements from the backend API."
+            actionLabel="Open login"
+            onAction={() => openAuthModal('login')}
+          />
+        ) : isLoading ? (
+          <ElementsState tone="info" message="Loading periodic table data from backend..." />
+        ) : error !== null ? (
+          <ElementsState tone="error" message={error} />
+        ) : (
+          <PeriodicTable elements={data} mode={tableMode} />
+        )}
+      </section>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        mode={authModalMode}
+        onClose={closeAuthModal}
+        onSuccess={onAuthSuccess}
+      />
+    </AppShell>
+  );
+}
+
+export default ElementsWorkspace;
