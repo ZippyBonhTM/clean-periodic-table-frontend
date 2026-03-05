@@ -217,6 +217,68 @@ function ImageUnavailableState({ elementName }: { elementName: string }) {
   );
 }
 
+type NativeElementImageProps = {
+  src: string;
+  alt: string;
+  containerClassName: string;
+  imageClassName: string;
+  loading?: 'eager' | 'lazy';
+  onClick?: () => void;
+  onError?: (src: string) => void;
+};
+
+function NativeElementImage({
+  src,
+  alt,
+  containerClassName,
+  imageClassName,
+  loading = 'lazy',
+  onClick,
+  onError,
+}: NativeElementImageProps) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasErrored, setHasErrored] = useState(false);
+
+  if (hasErrored) {
+    return null;
+  }
+
+  return (
+    <div className={`relative overflow-hidden bg-[var(--surface-2)] ${containerClassName}`}>
+      <div
+        aria-hidden="true"
+        className={`absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(251,146,60,0.12),transparent_52%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(30,41,59,0.72))] transition-opacity duration-300 ${
+          isLoaded ? 'opacity-0' : 'opacity-100'
+        }`}
+      />
+      <div
+        aria-hidden="true"
+        className={`absolute inset-0 animate-pulse bg-white/4 transition-opacity duration-300 ${
+          isLoaded ? 'opacity-0' : 'opacity-100'
+        }`}
+      />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        loading={loading}
+        decoding="async"
+        className={`${imageClassName} transition-[opacity,filter,transform] duration-300 ${
+          onClick !== undefined ? 'cursor-zoom-in hover:scale-[1.01]' : ''
+        } ${isLoaded ? 'scale-100 blur-0 opacity-100' : 'scale-[1.01] blur-[6px] opacity-70'}`}
+        onLoad={() => {
+          setIsLoaded(true);
+        }}
+        onClick={onClick}
+        onError={() => {
+          setHasErrored(true);
+          onError?.(src);
+        }}
+      />
+    </div>
+  );
+}
+
 type DetailBadgeTone = 'neutral' | 'radioactive';
 
 function DetailBadge({ label, tone = 'neutral' }: { label: string; tone?: DetailBadgeTone }) {
@@ -535,12 +597,12 @@ function ElementDetailsModal({
           <section className="surface-panel rounded-2xl border border-[var(--border-subtle)] p-3">
           {viewerMode === '2d' ? (
             has2D && !isImageFailed(twoDImageUrl) ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <NativeElementImage
+                key={twoDImageUrl}
                 src={twoDImageUrl}
                 alt={`2D Bohr model of ${formatNullableValue(element.name)}`}
-                className="h-56 w-full cursor-zoom-in rounded-xl object-contain transition-transform hover:scale-[1.01] md:h-72"
-                loading="lazy"
+                containerClassName="h-56 rounded-xl md:h-72"
+                imageClassName="h-full w-full rounded-xl object-contain"
                 onClick={() => {
                   openExpandedImage(
                     twoDImageUrl,
@@ -548,8 +610,7 @@ function ElementDetailsModal({
                     'bohr',
                   );
                 }}
-                onError={(event) => {
-                  event.currentTarget.style.display = 'none';
+                onError={() => {
                   onImageLoadError(twoDImageUrl);
                 }}
               />
@@ -558,12 +619,12 @@ function ElementDetailsModal({
             )
           ) : viewerMode === 'image' ? (
             hasElementImage && !isImageFailed(elementImageUrl) ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <NativeElementImage
+                key={elementImageUrl}
                 src={elementImageUrl}
                 alt={`Image of ${formatNullableValue(element.name)}`}
-                className="h-56 w-full cursor-zoom-in rounded-xl object-contain transition-transform hover:scale-[1.01] md:h-72"
-                loading="lazy"
+                containerClassName="h-56 rounded-xl md:h-72"
+                imageClassName="h-full w-full rounded-xl object-contain"
                 onClick={() => {
                   openExpandedImage(
                     elementImageUrl,
@@ -571,8 +632,7 @@ function ElementDetailsModal({
                     'element',
                   );
                 }}
-                onError={(event) => {
-                  event.currentTarget.style.display = 'none';
+                onError={() => {
                   onImageLoadError(elementImageUrl);
                 }}
               />
@@ -704,15 +764,17 @@ function ElementDetailsModal({
             >
               Close
             </button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <NativeElementImage
+              key={`${expandedImage.kind}:${expandedImage.src}`}
               src={expandedImage.src}
               alt={expandedImage.alt}
-              className={
+              loading="eager"
+              containerClassName={
                 expandedImage.kind === 'bohr'
-                  ? 'max-h-[84vh] w-[min(92vw,1200px)] rounded-xl object-contain'
-                  : 'max-h-[84vh] w-auto max-w-[92vw] rounded-xl object-contain'
+                  ? 'max-h-[84vh] w-[min(92vw,1200px)] rounded-xl'
+                  : 'max-h-[84vh] w-auto max-w-[92vw] rounded-xl'
               }
+              imageClassName="h-full w-full rounded-xl object-contain"
             />
           </div>
         </div>

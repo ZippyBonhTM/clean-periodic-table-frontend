@@ -289,14 +289,7 @@ function AppHeader({
 
     setIsLogoutConfirmOpen(false);
     closeUserMenu();
-
-    // Defer heavy auth teardown until after at least one paint cycle,
-    // improving interaction responsiveness (INP) on the click itself.
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        onLogout();
-      });
-    });
+    onLogout();
   }, [closeUserMenu, onLogout]);
 
   const onUserMenuHandlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {

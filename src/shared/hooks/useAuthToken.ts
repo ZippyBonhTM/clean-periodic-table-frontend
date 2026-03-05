@@ -14,6 +14,10 @@ type RemoveTokenOptions = {
   blockSilentRefresh?: boolean;
 };
 
+type PersistTokenOptions = {
+  clearSilentRefreshBlocked?: boolean;
+};
+
 function subscribe(onStoreChange: () => void): () => void {
   if (typeof window === 'undefined') {
     return () => {};
@@ -52,9 +56,20 @@ function useAuthToken() {
     () => false,
   );
 
-  const persistToken = useCallback((nextToken: string) => {
+  const persistToken = useCallback((nextToken: string, options: PersistTokenOptions = {}) => {
+    const shouldClearSilentRefreshBlocked = options.clearSilentRefreshBlocked === true;
+    const isSilentRefreshCurrentlyBlocked = readSilentRefreshBlocked();
+
+    if (!shouldClearSilentRefreshBlocked && isSilentRefreshCurrentlyBlocked) {
+      return;
+    }
+
     saveAccessToken(nextToken);
-    setSilentRefreshBlocked(false);
+
+    if (shouldClearSilentRefreshBlocked) {
+      setSilentRefreshBlocked(false);
+    }
+
     emitTokenChange();
   }, []);
 

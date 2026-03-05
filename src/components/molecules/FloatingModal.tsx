@@ -24,10 +24,34 @@ function FloatingModal({
   const didPointerStartOnBackdrop = useRef(false);
   const onCloseRef = useRef(onClose);
   const modalHistoryKeyRef = useRef<string | null>(null);
-  const isClosingFromPopStateRef = useRef(false);
+  const isClosingThroughHistoryRef = useRef(false);
   const wasOpenRef = useRef(false);
   const resolvedPanelClassName =
     panelClassName.trim().length > 0 ? panelClassName : 'max-w-xl';
+
+  const requestClose = () => {
+    const modalHistoryKey = modalHistoryKeyRef.current;
+
+    if (modalHistoryKey === null) {
+      onCloseRef.current();
+      return;
+    }
+
+    const currentHistoryState = window.history.state;
+    const historyModalKey =
+      currentHistoryState !== null && typeof currentHistoryState === 'object'
+        ? (currentHistoryState as Record<string, unknown>).__modalKey
+        : undefined;
+
+    if (typeof historyModalKey === 'string' && historyModalKey === modalHistoryKey) {
+      isClosingThroughHistoryRef.current = true;
+      window.history.back();
+      return;
+    }
+
+    modalHistoryKeyRef.current = null;
+    onCloseRef.current();
+  };
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -64,7 +88,7 @@ function FloatingModal({
 
     const onEscapeKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onCloseRef.current();
+        requestClose();
       }
     };
 
@@ -73,7 +97,7 @@ function FloatingModal({
         return;
       }
 
-      isClosingFromPopStateRef.current = true;
+      isClosingThroughHistoryRef.current = true;
       modalHistoryKeyRef.current = null;
       onCloseRef.current();
     };
@@ -106,7 +130,7 @@ function FloatingModal({
             : undefined;
 
         const shouldPopHistory =
-          !isClosingFromPopStateRef.current &&
+          !isClosingThroughHistoryRef.current &&
           typeof historyModalKey === 'string' &&
           historyModalKey === modalHistoryKeyRef.current;
 
@@ -118,8 +142,8 @@ function FloatingModal({
         }
       }
 
-      if (isClosingFromPopStateRef.current) {
-        isClosingFromPopStateRef.current = false;
+      if (isClosingThroughHistoryRef.current) {
+        isClosingThroughHistoryRef.current = false;
       }
     }
   }, [isOpen]);
@@ -141,7 +165,7 @@ function FloatingModal({
         const endedOnBackdrop = event.target === event.currentTarget;
 
         if (didPointerStartOnBackdrop.current && endedOnBackdrop) {
-          onClose();
+          requestClose();
         }
 
         didPointerStartOnBackdrop.current = false;
@@ -161,7 +185,7 @@ function FloatingModal({
             {headerActions}
             <button
               type="button"
-              onClick={onClose}
+              onClick={requestClose}
               className="rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
             >
               Close

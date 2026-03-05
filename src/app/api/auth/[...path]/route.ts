@@ -8,6 +8,7 @@ const ALLOWED_AUTH_PATHS = new Set([
   'login',
   'register',
   'refresh',
+  'logout',
   'validate-token',
   'profile',
 ]);

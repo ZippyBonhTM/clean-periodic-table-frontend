@@ -5,6 +5,7 @@ import { useCallback } from 'react';
 
 import LoginForm from '@/components/organisms/login/LoginForm';
 import AppShell from '@/components/templates/AppShell';
+import { logoutSession } from '@/shared/api/authApi';
 import useAuthSession from '@/shared/hooks/useAuthSession';
 import useAuthToken from '@/shared/hooks/useAuthToken';
 
@@ -20,13 +21,14 @@ export default function LoginPage() {
 
   const onSuccess = useCallback(
     (nextToken: string) => {
-      persistToken(nextToken);
-      router.push('/search');
+      persistToken(nextToken, { clearSilentRefreshBlocked: true });
+      router.replace('/search');
     },
     [persistToken, router],
   );
 
   const onLogout = useCallback(() => {
+    void logoutSession().catch(() => undefined);
     removeToken({ blockSilentRefresh: true });
   }, [removeToken]);
 

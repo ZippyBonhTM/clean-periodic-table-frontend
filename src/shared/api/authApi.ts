@@ -41,6 +41,14 @@ async function refreshAccessToken(): Promise<RefreshResponse> {
   });
 }
 
+async function logoutSession(): Promise<void> {
+  await requestJson<{ message: string }>(resolveAuthRequestBaseUrl(), '/api/auth/logout', {
+    method: 'POST',
+    credentials: 'include',
+    keepalive: true,
+  });
+}
+
 async function validateAccessToken(accessToken: string): Promise<ValidateTokenResponse> {
   return await requestJson<ValidateTokenResponse>(resolveAuthRequestBaseUrl(), '/api/auth/validate-token', {
     method: 'GET',
@@ -57,4 +65,4 @@ async function fetchProfile(accessToken: string): Promise<ProfileResponse> {
   });
 }
 
-export { fetchProfile, login, refreshAccessToken, register, validateAccessToken };
+export { fetchProfile, login, logoutSession, refreshAccessToken, register, validateAccessToken };

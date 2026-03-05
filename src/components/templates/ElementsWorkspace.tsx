@@ -8,6 +8,7 @@ import type { AuthModalMode } from '@/components/organisms/auth/AuthModal';
 import AppShell from '@/components/templates/AppShell';
 import type { TokenStatusType } from '@/components/molecules/TokenStatus';
 import type { PeriodicTableMode } from '@/components/organisms/periodic-table/PeriodicTable';
+import { logoutSession } from '@/shared/api/authApi';
 import useAuthSession from '@/shared/hooks/useAuthSession';
 import useAuthToken from '@/shared/hooks/useAuthToken';
 import useElements from '@/shared/hooks/useElements';
@@ -42,6 +43,7 @@ function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const onLogout = useCallback(() => {
+    void logoutSession().catch(() => undefined);
     removeToken({ blockSilentRefresh: true });
   }, [removeToken]);
 
@@ -56,7 +58,7 @@ function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
 
   const onAuthSuccess = useCallback(
     (nextToken: string) => {
-      persistToken(nextToken);
+      persistToken(nextToken, { clearSilentRefreshBlocked: true });
       closeAuthModal();
     },
     [closeAuthModal, persistToken],

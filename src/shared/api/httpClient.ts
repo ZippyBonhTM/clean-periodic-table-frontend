@@ -6,6 +6,7 @@ type HttpRequestInput = {
   token?: string | null;
   signal?: AbortSignal;
   credentials?: RequestCredentials;
+  keepalive?: boolean;
 };
 
 type ApiErrorPayload = {
@@ -84,6 +85,7 @@ async function requestJson<ResponseType>(
       body: input.body !== undefined ? JSON.stringify(input.body) : undefined,
       signal: input.signal,
       credentials: input.credentials,
+      keepalive: input.keepalive,
     });
   } catch (caughtError: unknown) {
     const fallbackMessage = `Network error while calling ${url.origin}. Check if service is up, URL is correct, and CORS allows your frontend origin.`;
