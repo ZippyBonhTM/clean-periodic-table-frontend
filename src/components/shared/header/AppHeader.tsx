@@ -251,14 +251,18 @@ function AppHeader({
     setIsRouteMenuOpen(true);
   };
 
-  const onOpenUserMenu = () => {
+  const onOpenUserMenu = useCallback(() => {
+    if (isUserMenuOpen) {
+      return;
+    }
+
     setIsRouteMenuOpen(false);
     resetUserMenuDrag();
     setUserProfileStatus('loading');
     setUserProfileError(null);
     setIsLogoutConfirmOpen(false);
     setIsUserMenuOpen(true);
-  };
+  }, [isUserMenuOpen, resetUserMenuDrag]);
 
   const onRequestLoginFromButton = () => {
     closeAllMenus();
@@ -341,13 +345,13 @@ function AppHeader({
 
   return (
     <>
-      <header className="hidden rounded-3xl border border-[var(--border-subtle)] p-4 shadow-sm md:block md:p-5 surface-panel">
+      <header className="hidden rounded-3xl border border-(--border-subtle) p-4 shadow-sm md:block md:p-5 surface-panel">
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[auto_auto] md:items-stretch">
           <div className="min-w-0 md:col-start-1 md:row-start-1">
-            <p className="whitespace-nowrap text-[9px] uppercase tracking-[0.22em] text-[var(--text-muted)] sm:text-[10px]">
+            <p className="whitespace-nowrap text-[9px] uppercase tracking-[0.22em] text-(--text-muted) sm:text-[10px]">
               Clean Periodic Table
             </p>
-            <h1 className="mt-1 whitespace-nowrap text-lg font-extrabold leading-none text-[var(--text-strong)] sm:text-xl">
+            <h1 className="mt-1 whitespace-nowrap text-lg font-extrabold leading-none text-foreground sm:text-xl">
               Chemical Explorer
             </h1>
           </div>
@@ -369,7 +373,7 @@ function AppHeader({
               <button
                 type="button"
                 onClick={onOpenUserMenu}
-                className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
                 aria-label="Open user menu"
                 title="Open user menu"
               >
@@ -449,10 +453,10 @@ function AppHeader({
       </header>
 
       <div className="md:hidden">
-        <p className="mb-2 text-center text-[9px] uppercase tracking-[0.24em] text-[var(--text-muted)]">
+        <p className="mb-2 text-center text-[9px] uppercase tracking-[0.24em] text-(--text-muted)">
           Clean Periodic Table
         </p>
-        <header className="surface-panel rounded-3xl border border-[var(--border-subtle)] p-3 shadow-sm">
+        <header className="surface-panel rounded-3xl border border-(--border-subtle) p-3 shadow-sm">
           <div className="flex items-center justify-between gap-2">
             <Button
               type="button"
@@ -464,9 +468,9 @@ function AppHeader({
               title="Open routes menu"
             >
               <span className="inline-flex flex-col items-center justify-center gap-0.5" aria-hidden="true">
-                <span className="h-[2px] w-4 rounded-full bg-[var(--text-strong)]" />
-                <span className="h-[2px] w-4 rounded-full bg-[var(--text-strong)]" />
-                <span className="h-[2px] w-4 rounded-full bg-[var(--text-strong)]" />
+                <span className="h-0.5 w-4 rounded-full bg-foreground" />
+                <span className="h-0.5 w-4 rounded-full bg-foreground" />
+                <span className="h-0.5 w-4 rounded-full bg-foreground" />
               </span>
             </Button>
 
@@ -486,7 +490,7 @@ function AppHeader({
               <button
                 type="button"
                 onClick={onOpenUserMenu}
-                className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
                 aria-label="Open user menu"
                 title="Open user menu"
               >
@@ -550,7 +554,7 @@ function AppHeader({
       </div>
 
       <div
-        className={`fixed inset-0 z-[150] transition-opacity duration-300 md:hidden ${
+        className={`fixed inset-0 z-150 transition-opacity duration-300 md:hidden ${
           isRouteMenuOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
         }`}
         aria-hidden={!isRouteMenuOpen}
@@ -563,7 +567,7 @@ function AppHeader({
         />
 
         <aside
-          className={`absolute left-0 top-0 h-full w-[min(84vw,320px)] border-r border-[var(--border-subtle)] bg-[var(--surface-1)]/92 p-4 shadow-2xl backdrop-blur-sm transition-transform duration-300 ${
+          className={`absolute left-0 top-0 h-full w-[min(84vw,320px)] border-r border-(--border-subtle) bg-(--surface-1)/92 p-4 shadow-2xl backdrop-blur-sm transition-transform duration-300 ${
             isRouteMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
           role="dialog"
@@ -571,7 +575,7 @@ function AppHeader({
           aria-label="Routes menu"
         >
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">Routes</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-(--text-muted)">Routes</p>
             <Button
               type="button"
               variant="ghost"
@@ -607,7 +611,7 @@ function AppHeader({
       </div>
 
       <div
-        className={`fixed inset-0 z-[160] transition-opacity duration-300 ${
+        className={`fixed inset-0 z-160 transition-opacity duration-300 ${
           isUserMenuOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
         }`}
         aria-hidden={!isUserMenuOpen}
@@ -620,7 +624,7 @@ function AppHeader({
         />
 
         <aside
-          className="absolute right-0 top-0 h-full w-[min(84vw,320px)] border-l border-[var(--border-subtle)] bg-[rgba(9,17,34,0.34)] p-4 shadow-2xl backdrop-blur-xl transition-transform duration-300"
+          className="absolute right-0 top-0 h-full w-[min(84vw,320px)] border-l border-(--border-subtle) bg-[rgba(9,17,34,0.34)] p-4 shadow-2xl backdrop-blur-xl transition-transform duration-300"
           style={userMenuPanelStyle}
           role="dialog"
           aria-modal="true"
@@ -634,14 +638,14 @@ function AppHeader({
             onPointerUp={(event) => finishUserMenuDrag(event)}
             onPointerCancel={(event) => finishUserMenuDrag(event)}
             onLostPointerCapture={resetUserMenuDrag}
-            className="absolute left-0 top-0 h-full w-4 -translate-x-full border-r border-[var(--border-subtle)]/55 bg-transparent"
+            className="absolute left-0 top-0 h-full w-4 -translate-x-full border-r border-(--border-subtle)/55 bg-transparent"
             aria-label="Drag or tap edge to close user menu"
             title="Drag or tap edge to close user menu"
           />
 
           <div className="flex items-center justify-between gap-2">
             <p
-              className="max-w-[210px] truncate text-sm font-semibold text-[var(--text-strong)]"
+              className="max-w-52.5 truncate text-sm font-semibold text-foreground"
               title={userDisplayName}
             >
               {userDisplayName}
@@ -658,44 +662,44 @@ function AppHeader({
             </Button>
           </div>
 
-          <p className="mt-1 text-xs text-[var(--text-muted)]">User menu</p>
+          <p className="mt-1 text-xs text-(--text-muted)">User menu</p>
 
-          <section className="mt-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)]/55 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">Profile</p>
+          <section className="mt-4 rounded-xl border border-(--border-subtle) bg-(--surface-2)/55 p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-(--text-muted)">Profile</p>
 
             {!hasToken ? (
-              <p className="mt-2 text-xs text-[var(--text-muted)]">Not authenticated.</p>
+              <p className="mt-2 text-xs text-(--text-muted)">Not authenticated.</p>
             ) : userProfileStatus === 'loading' ? (
-              <p className="mt-2 text-xs text-[var(--text-muted)]">Loading profile...</p>
+              <p className="mt-2 text-xs text-(--text-muted)">Loading profile...</p>
             ) : userProfileStatus === 'error' ? (
               <p className="mt-2 text-xs text-rose-200">{userProfileError ?? 'Profile unavailable.'}</p>
             ) : userProfile !== null ? (
               <dl className="mt-2 space-y-1.5">
                 <div className="flex items-start justify-between gap-3">
-                  <dt className="text-[10px] uppercase tracking-[0.1em] text-[var(--text-muted)]">Name</dt>
-                  <dd className="max-w-[170px] truncate text-xs font-semibold text-[var(--text-strong)]" title={userProfile.name}>
+                  <dt className="text-[10px] uppercase tracking-widest text-(--text-muted)">Name</dt>
+                  <dd className="max-w-42.5 truncate text-xs font-semibold text-foreground" title={userProfile.name}>
                     {userProfile.name}
                   </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3">
-                  <dt className="text-[10px] uppercase tracking-[0.1em] text-[var(--text-muted)]">Email</dt>
-                  <dd className="max-w-[170px] truncate text-xs text-[var(--text-strong)]" title={userProfile.email}>
+                  <dt className="text-[10px] uppercase tracking-widest text-(--text-muted)">Email</dt>
+                  <dd className="max-w-42.5 truncate text-xs text-foreground" title={userProfile.email}>
                     {userProfile.email}
                   </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3">
-                  <dt className="text-[10px] uppercase tracking-[0.1em] text-[var(--text-muted)]">Role</dt>
-                  <dd className="text-xs font-semibold text-[var(--text-strong)]">{userProfile.role}</dd>
+                  <dt className="text-[10px] uppercase tracking-widest text-(--text-muted)">Role</dt>
+                  <dd className="text-xs font-semibold text-foreground">{userProfile.role}</dd>
                 </div>
                 <div className="flex items-start justify-between gap-3">
-                  <dt className="text-[10px] uppercase tracking-[0.1em] text-[var(--text-muted)]">ID</dt>
-                  <dd className="max-w-[170px] break-all text-[11px] font-medium text-[var(--text-strong)]">
+                  <dt className="text-[10px] uppercase tracking-widest text-(--text-muted)">ID</dt>
+                  <dd className="max-w-42.5 break-all text-[11px] font-medium text-foreground">
                     {userProfile.id}
                   </dd>
                 </div>
               </dl>
             ) : (
-              <p className="mt-2 text-xs text-[var(--text-muted)]">Profile unavailable.</p>
+              <p className="mt-2 text-xs text-(--text-muted)">Profile unavailable.</p>
             )}
           </section>
 
