@@ -108,6 +108,7 @@ function AppHeader({
   const { token, persistToken } = useAuthToken();
   const [isRouteMenuOpen, setIsRouteMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [userMenuDragOffset, setUserMenuDragOffset] = useState(0);
   const [userProfileStatus, setUserProfileStatus] = useState<UserProfileRequestStatus>('idle');
   const [userProfile, setUserProfile] = useState<AuthUserProfile | null>(null);
@@ -145,6 +146,7 @@ function AppHeader({
 
   const closeUserMenu = useCallback(() => {
     setIsUserMenuOpen(false);
+    setIsLogoutConfirmOpen(false);
     resetUserMenuDrag();
   }, [resetUserMenuDrag]);
 
@@ -254,6 +256,7 @@ function AppHeader({
     resetUserMenuDrag();
     setUserProfileStatus('loading');
     setUserProfileError(null);
+    setIsLogoutConfirmOpen(false);
     setIsUserMenuOpen(true);
   };
 
@@ -267,19 +270,29 @@ function AppHeader({
     onRequestRegister?.();
   };
 
+  const onRequestLogoutConfirm = () => {
+    setIsLogoutConfirmOpen(true);
+  };
+
+  const onCancelLogoutConfirm = () => {
+    setIsLogoutConfirmOpen(false);
+  };
+
   const onConfirmLogout = useCallback(() => {
     if (onLogout === undefined) {
       return;
     }
 
-    const shouldLogout = window.confirm('Do you really want to logout?');
-
-    if (!shouldLogout) {
-      return;
-    }
-
+    setIsLogoutConfirmOpen(false);
     closeUserMenu();
-    onLogout();
+
+    // Defer heavy auth teardown until after at least one paint cycle,
+    // improving interaction responsiveness (INP) on the click itself.
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        onLogout();
+      });
+    });
   }, [closeUserMenu, onLogout]);
 
   const onUserMenuHandlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -688,15 +701,41 @@ function AppHeader({
 
           <div className="mt-4">
             {hasToken && onLogout !== undefined ? (
-              <Button
-                type="button"
-                size="sm"
-                align="center"
-                className="w-full border border-rose-500/65 bg-rose-500/12 px-3 text-[10px] uppercase tracking-[0.08em] text-rose-200 hover:bg-rose-500/22"
-                onClick={onConfirmLogout}
-              >
-                Logout
-              </Button>
+              isLogoutConfirmOpen ? (
+                <div className="space-y-2 rounded-lg border border-rose-500/45 bg-rose-500/10 p-2">
+                  <p className="text-[11px] text-rose-100">Confirm logout?</p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      align="center"
+                      className="flex-1 px-2 text-[10px] uppercase tracking-[0.06em]"
+                      onClick={onCancelLogoutConfirm}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      align="center"
+                      className="flex-1 border border-rose-500/65 bg-rose-500/12 px-2 text-[10px] uppercase tracking-[0.06em] text-rose-200 hover:bg-rose-500/22"
+                      onClick={onConfirmLogout}
+                    >
+                      Logout
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  align="center"
+                  className="w-full border border-rose-500/65 bg-rose-500/12 px-3 text-[10px] uppercase tracking-[0.08em] text-rose-200 hover:bg-rose-500/22"
+                  onClick={onRequestLogoutConfirm}
+                >
+                  Logout
+                </Button>
+              )
             ) : null}
           </div>
         </aside>
