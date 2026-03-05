@@ -22,12 +22,34 @@ function FloatingModal({
   headerActions,
 }: FloatingModalProps) {
   const didPointerStartOnBackdrop = useRef(false);
+  const onCloseRef = useRef(onClose);
+  const modalHistoryKeyRef = useRef<string | null>(null);
+  const isClosingFromPopStateRef = useRef(false);
+  const wasOpenRef = useRef(false);
   const resolvedPanelClassName =
     panelClassName.trim().length > 0 ? panelClassName : 'max-w-xl';
 
   useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
     if (!isOpen) {
       return;
+    }
+
+    if (modalHistoryKeyRef.current === null) {
+      const modalHistoryKey = `clean-periodic-table-modal-${Date.now().toString(36)}-${Math.random()
+        .toString(36)
+        .slice(2, 10)}`;
+      const currentHistoryState = window.history.state;
+      const nextHistoryState =
+        currentHistoryState !== null && typeof currentHistoryState === 'object'
+          ? { ...(currentHistoryState as Record<string, unknown>), __modalKey: modalHistoryKey }
+          : { __modalKey: modalHistoryKey };
+
+      modalHistoryKeyRef.current = modalHistoryKey;
+      window.history.pushState(nextHistoryState, '', window.location.href);
     }
 
     const body = document.body;
@@ -42,18 +64,65 @@ function FloatingModal({
 
     const onEscapeKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose();
+        onCloseRef.current();
       }
     };
 
+    const onPopState = () => {
+      if (modalHistoryKeyRef.current === null) {
+        return;
+      }
+
+      isClosingFromPopStateRef.current = true;
+      modalHistoryKeyRef.current = null;
+      onCloseRef.current();
+    };
+
     window.addEventListener('keydown', onEscapeKeyDown);
+    window.addEventListener('popstate', onPopState);
 
     return () => {
       window.removeEventListener('keydown', onEscapeKeyDown);
+      window.removeEventListener('popstate', onPopState);
       body.style.overflow = previousOverflow;
       body.style.paddingRight = previousPaddingRight;
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!wasOpenRef.current && isOpen) {
+      wasOpenRef.current = true;
+      return;
+    }
+
+    if (wasOpenRef.current && !isOpen) {
+      wasOpenRef.current = false;
+
+      if (modalHistoryKeyRef.current !== null) {
+        const currentHistoryState = window.history.state;
+        const historyModalKey =
+          currentHistoryState !== null && typeof currentHistoryState === 'object'
+            ? (currentHistoryState as Record<string, unknown>).__modalKey
+            : undefined;
+
+        const shouldPopHistory =
+          !isClosingFromPopStateRef.current &&
+          typeof historyModalKey === 'string' &&
+          historyModalKey === modalHistoryKeyRef.current;
+
+        modalHistoryKeyRef.current = null;
+
+        if (shouldPopHistory) {
+          window.history.back();
+          return;
+        }
+      }
+
+      if (isClosingFromPopStateRef.current) {
+        isClosingFromPopStateRef.current = false;
+      }
+    }
+  }, [isOpen]);
 
   if (!isOpen) {
     return null;

@@ -411,7 +411,19 @@ function ElementDetailsModal({
   }, [expandedImage]);
 
   if (element === null) {
-    return null;
+    return (
+      <>
+        <FloatingModal
+          isOpen={isOpen}
+          onClose={onClose}
+          title="Element Details"
+          panelClassName="max-w-5xl self-start mt-1 sm:mt-3"
+          bodyClassName="element-modal-scroll pr-1 pb-1"
+        >
+          {null}
+        </FloatingModal>
+      </>
+    );
   }
 
   const onClickPrevious = () => {
