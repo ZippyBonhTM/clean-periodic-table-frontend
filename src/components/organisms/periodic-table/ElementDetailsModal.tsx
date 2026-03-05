@@ -387,7 +387,7 @@ function ElementDetailsModal({
         isOpen={isOpen}
         onClose={onClose}
         title={`${element.name} (${element.symbol})`}
-        panelClassName="max-w-5xl"
+        panelClassName="max-w-5xl self-start mt-2 sm:mt-4"
         bodyClassName="element-modal-scroll max-h-[75vh] overflow-y-auto pr-1"
         headerActions={
           <div className="flex items-center gap-2">
@@ -413,65 +413,65 @@ function ElementDetailsModal({
         }
       >
         <div className="space-y-5">
-        <section className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-          <div>
-            <p className="text-xs uppercase tracking-[0.15em] text-[var(--text-muted)]">Element Details</p>
-            {isRadioactive ? (
-              <p className="mt-1 inline-flex rounded-md border border-rose-400/60 bg-rose-500/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-rose-300">
-                Radioactive
-              </p>
-            ) : null}
-          </div>
+          <section className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 max-[344px]:grid-cols-1">
+            <div>
+              <p className="text-xs uppercase tracking-[0.15em] text-[var(--text-muted)]">Element Details</p>
+              {isRadioactive ? (
+                <p className="mt-1 inline-flex rounded-md border border-rose-400/60 bg-rose-500/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-rose-300">
+                  Radioactive
+                </p>
+              ) : null}
+            </div>
 
-          <div className="flex flex-wrap items-end gap-2">
-            <button
-              type="button"
-              onClick={onClickElementImage}
-              disabled={!hasElementImage}
-              className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
-                viewerMode === 'image'
-                  ? 'border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--text-strong)]'
-                  : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-strong)]'
-              } disabled:cursor-not-allowed disabled:opacity-55`}
-            >
-              Element Image
-            </button>
+            <div className="flex items-end gap-2 max-[464px]:flex-col max-[464px]:items-stretch">
+              <button
+                type="button"
+                onClick={onClickElementImage}
+                disabled={!hasElementImage}
+                className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors max-[464px]:order-1 max-[464px]:w-full max-[464px]:text-center ${
+                  viewerMode === 'image'
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--text-strong)]'
+                    : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-strong)]'
+                } disabled:cursor-not-allowed disabled:opacity-55`}
+              >
+                Element Image
+              </button>
 
-            <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] p-2">
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-                Borh
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={onClick2D}
-                  className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
-                    viewerMode === '2d'
-                      ? 'border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--text-strong)]'
-                      : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-strong)]'
-                  }`}
-                >
-                  2D
-                </button>
+              <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] p-2 max-[464px]:order-2 max-[464px]:w-full">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                  Borh
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={onClick2D}
+                    className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
+                      viewerMode === '2d'
+                        ? 'border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--text-strong)]'
+                        : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-strong)]'
+                    }`}
+                  >
+                    2D
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={onClick3D}
-                  disabled={!has3D}
-                  className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
-                    viewerMode === '3d'
-                      ? 'border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--text-strong)]'
-                      : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-strong)]'
-                  } disabled:cursor-not-allowed disabled:opacity-55`}
-                >
-                  3D
-                </button>
+                  <button
+                    type="button"
+                    onClick={onClick3D}
+                    disabled={!has3D}
+                    className={`rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] transition-colors ${
+                      viewerMode === '3d'
+                        ? 'border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--text-strong)]'
+                        : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-strong)]'
+                    } disabled:cursor-not-allowed disabled:opacity-55`}
+                  >
+                    3D
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section className="surface-panel rounded-2xl border border-[var(--border-subtle)] p-3">
+          <section className="surface-panel rounded-2xl border border-[var(--border-subtle)] p-3">
           {viewerMode === '2d' ? (
             has2D && !isImageFailed(twoDImageUrl) ? (
               // eslint-disable-next-line @next/next/no-img-element

@@ -160,16 +160,16 @@ a {
 
 .element-classic-tile {
   padding: 0;
-  border-radius: clamp(3px, calc(var(--classic-size) * 0.14), 12px);
+  border-radius: clamp(calc(3px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.14), 12px);
   contain: layout paint;
 }
 
 .element-classic-tile__content {
   display: grid;
   grid-template-rows:
-    minmax(clamp(6px, calc(var(--classic-size) * 0.19), 30px), auto)
+    minmax(clamp(calc(6px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.19), 30px), auto)
     minmax(0, 1fr)
-    minmax(clamp(6px, calc(var(--classic-size) * 0.2), 30px), auto);
+    minmax(clamp(calc(6px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.2), 30px), auto);
   height: 100%;
   min-height: 0;
   gap: clamp(0px, calc(var(--classic-size) * 0.012), 4px);
@@ -180,19 +180,19 @@ a {
   grid-template-columns: 1fr auto;
   align-items: center;
   min-height: 0;
-  padding-inline: clamp(2px, calc(var(--classic-size) * 0.026), 7px);
-  padding-top: clamp(1px, calc(var(--classic-size) * 0.016), 3px);
+  padding-inline: clamp(calc(2px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.026), 7px);
+  padding-top: clamp(calc(1px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.016), 3px);
 }
 
 .element-classic-tile__number {
   justify-self: start;
   max-width: 100%;
   border: 1px solid rgb(255 255 255 / 0.2);
-  border-radius: clamp(2px, calc(var(--classic-size) * 0.06), 6px);
+  border-radius: clamp(calc(2px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.06), 6px);
   background: rgb(0 0 0 / 0.2);
-  padding: clamp(0.5px, calc(var(--classic-size) * 0.014), 1.6px)
-    clamp(1px, calc(var(--classic-size) * 0.03), 6px);
-  font-size: clamp(4px, calc(var(--classic-size) * 0.11), 18px);
+  padding: clamp(calc(0.5px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.014), 1.6px)
+    clamp(calc(1px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.03), 6px);
+  font-size: clamp(calc(10px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.11), 18px);
   line-height: 1;
   font-weight: 700;
   color: var(--text-muted);
@@ -204,20 +204,20 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: clamp(7px, calc(var(--classic-size) * 0.185), 26px);
-  height: clamp(7px, calc(var(--classic-size) * 0.185), 26px);
+  width: clamp(calc(7px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.185), 26px);
+  height: clamp(calc(7px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.185), 26px);
   border-radius: 999px;
   border: 1px solid rgb(252 211 77 / 0.68);
   background: rgb(251 191 36 / 0.2);
   color: rgb(253 230 138 / 1);
-  font-size: clamp(4px, calc(var(--classic-size) * 0.098), 14px);
+  font-size: clamp(calc(4px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.098), 14px);
   line-height: 1;
   box-shadow: 0 0 10px rgb(251 191 36 / 0.35);
 }
 
 .element-classic-tile__radio-icon {
-  width: 72%;
-  height: 72%;
+  width: 100%;
+  height: 100%;
   display: block;
   transform-origin: center;
 }
@@ -230,13 +230,13 @@ a {
   min-height: 0;
   display: grid;
   grid-template-rows:
-    minmax(clamp(9px, calc(var(--classic-size) * 0.3), 44px), auto)
-    minmax(clamp(7px, calc(var(--classic-size) * 0.16), 24px), auto);
+    minmax(clamp(calc(9px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.3), 44px), auto)
+    minmax(clamp(calc(7px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.16), 24px), auto);
   align-items: center;
   justify-items: center;
   align-content: center;
   text-align: center;
-  gap: clamp(1px, calc(var(--classic-size) * 0.012), 4px);
+  gap: clamp(calc(1px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.012), 4px);
   padding-inline: clamp(0px, calc(var(--classic-size) * 0.02), 4px);
 }
 
@@ -254,21 +254,21 @@ a {
   letter-spacing: -0.03em;
   text-align: center;
   white-space: nowrap;
-  padding-bottom: clamp(0.5px, calc(var(--classic-size) * 0.01), 2px);
+  padding-bottom: clamp(calc(0.5px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.01), 2px);
 }
 
 .element-classic-tile__symbol--single {
-  font-size: clamp(7px, calc(var(--classic-size) * 0.35), 52px);
+  font-size: clamp(calc(7px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.35), 52px);
 }
 
 .element-classic-tile__symbol--multi {
-  font-size: clamp(6px, calc(var(--classic-size) * 0.3), 44px);
+  font-size: clamp(calc(6px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.3), 44px);
 }
 
 .element-classic-tile__name {
   max-width: 100%;
   margin: 0;
-  font-size: clamp(4.5px, calc(var(--classic-size) * 0.122), 20px);
+  font-size: clamp(calc(4.5px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.122), 20px);
   line-height: 1.08;
   font-weight: 600;
   color: color-mix(in oklab, var(--text-strong) 74%, var(--text-muted));
@@ -277,39 +277,38 @@ a {
   text-overflow: clip;
   width: 100%;
   min-height: 1.18em;
-  padding-bottom: clamp(0.5px, calc(var(--classic-size) * 0.016), 2px);
+  padding-bottom: clamp(calc(0.5px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.016), 2px);
 }
 
 .element-classic-tile__name--long {
-  font-size: clamp(4px, calc(var(--classic-size) * 0.111), 18px);
+  font-size: clamp(calc(4px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.111), 18px);
 }
 
 .element-classic-tile__name--very-long {
-  font-size: clamp(3.8px, calc(var(--classic-size) * 0.104), 17px);
+  font-size: clamp(calc(3.8px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.104), 17px);
 }
 
 .element-classic-tile__stats {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: clamp(1px, calc(var(--classic-size) * 0.03), 8px);
+  gap: clamp(calc(1px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.03), 8px);
   min-height: 0;
   align-items: center;
-  padding-inline: clamp(2px, calc(var(--classic-size) * 0.026), 7px);
-  padding-bottom: clamp(1px, calc(var(--classic-size) * 0.016), 3px);
+  padding-inline: clamp(calc(2px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.026), 7px);
+  padding-bottom: clamp(calc(1px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.016), 3px);
 }
 
 .element-classic-tile__chip {
   min-width: 0;
-  border-radius: clamp(2px, calc(var(--classic-size) * 0.06), 6px);
+  border-radius: clamp(calc(2px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.06), 6px);
   border: 1px solid rgb(255 255 255 / 0.14);
   background: rgb(2 10 24 / 0.34);
-  padding: clamp(0.5px, calc(var(--classic-size) * 0.008), 1.4px)
-    clamp(1px, calc(var(--classic-size) * 0.022), 6px);
+  padding: clamp(calc(0.5px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.008), 1.4px)
+    clamp(calc(1px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.022), 6px);
   text-align: center;
-  font-size: clamp(4px, calc(var(--classic-size) * 0.095), 16px);
-  line-height: 1;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-size: clamp(calc(6px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.095), 16px);
+  line-height: 1.3;
+  font-weight: 600;
   color: color-mix(in oklab, var(--text-strong) 82%, var(--text-muted));
   white-space: nowrap;
   overflow: hidden;
@@ -317,7 +316,7 @@ a {
 }
 
 .element-classic-tile__chip--compact {
-  font-size: clamp(3.8px, calc(var(--classic-size) * 0.088), 14px);
+  font-size: clamp(calc(3.8px * var(--classic-floor-scale, 1)), calc(var(--classic-size) * 0.088), 14px);
   letter-spacing: -0.015em;
 }
 

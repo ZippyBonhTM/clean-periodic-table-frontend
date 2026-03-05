@@ -21,16 +21,20 @@ const compactMassFormatter = new Intl.NumberFormat('en-US', {
 });
 
 function RadioactiveIcon() {
+  const bladePath = 'M12 5.4a6.6 6.6 0 0 1 5.2 2.52l-3.46 2a2.62 2.62 0 0 0-1.74-1V5.4Z';
+
   return (
     <svg
       viewBox="0 0 24 24"
       aria-hidden="true"
       className="element-classic-tile__radio-icon"
     >
-      <path
-        fill="currentColor"
-        d="M11.5 1.5a10 10 0 0 0-10 10 10 10 0 0 0 10 10 10 10 0 0 0 10-10 10 10 0 0 0-10-10zm1.5 2a8 8 0 0 1 6.76 4l-4.79 1.68a3 3 0 0 0-2-1.15l.03-4.53zm-3 .05v4.48a3 3 0 0 0-2 1.15L3.24 7.5a8 8 0 0 1 6.76-3.95zm-5.64 5.67 4.81 1.69a3 3 0 0 0 0 2.19l-4.81 1.68a8 8 0 0 1 0-5.56zm14.28 0a8 8 0 0 1 0 5.56l-4.81-1.68a3 3 0 0 0 0-2.19l4.81-1.69zm-11.47 5.61a3 3 0 0 0 8.66 0l1.71 4.77a8 8 0 0 1-5.24 0l-1.71-4.77z"
-      />
+      <g transform="translate(12 12) scale(1.58) translate(-12 -12)">
+        <path fill="currentColor" d={bladePath} />
+        <path fill="currentColor" d={bladePath} transform="rotate(120 12 12)" />
+        <path fill="currentColor" d={bladePath} transform="rotate(240 12 12)" />
+        <circle cx="12" cy="12" r="1.75" fill="currentColor" />
+      </g>
     </svg>
   );
 }

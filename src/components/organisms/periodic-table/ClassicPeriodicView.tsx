@@ -223,6 +223,7 @@ function ClassicPeriodicView({
             style={
               {
                 '--classic-scale': zoomScale.toString(),
+                '--classic-floor-scale': Math.min(1, zoomScale).toString(),
                 gridTemplateColumns: 'repeat(18, var(--classic-size))',
                 gridTemplateRows: 'repeat(10, var(--classic-size))',
                 gap: 'clamp(2px, calc(var(--classic-size) * 0.095), 10px)',
