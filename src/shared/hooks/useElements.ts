@@ -21,7 +21,6 @@ type ElementsState = {
 };
 
 const ACCESS_TOKEN_REFRESH_WINDOW_MS = 30_000;
-let pendingRefreshPromise: Promise<string> | null = null;
 
 function shouldRefreshBeforeRequest(token: string): boolean {
   const expiryMs = readJwtExpiryMs(token);
@@ -34,20 +33,9 @@ function shouldRefreshBeforeRequest(token: string): boolean {
 }
 
 async function refreshTokenOnce(onTokenRefresh: (token: string) => void): Promise<string> {
-  if (pendingRefreshPromise !== null) {
-    return pendingRefreshPromise;
-  }
-
-  pendingRefreshPromise = refreshAccessToken()
-    .then((refreshResponse) => {
-      onTokenRefresh(refreshResponse.accessToken);
-      return refreshResponse.accessToken;
-    })
-    .finally(() => {
-      pendingRefreshPromise = null;
-    });
-
-  return pendingRefreshPromise;
+  const refreshResponse = await refreshAccessToken();
+  onTokenRefresh(refreshResponse.accessToken);
+  return refreshResponse.accessToken;
 }
 
 function isUnauthorizedError(error: unknown): error is ApiError {

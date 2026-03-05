@@ -10,6 +10,9 @@ import type {
   ValidateTokenResponse,
 } from '@/shared/types/auth';
 
+let pendingRefreshRequest: Promise<RefreshResponse> | null = null;
+const pendingValidationRequests = new Map<string, Promise<ValidateTokenResponse>>();
+
 function resolveAuthRequestBaseUrl(): string {
   if (typeof window !== 'undefined') {
     return window.location.origin;
@@ -34,11 +37,23 @@ async function register(input: RegisterInput): Promise<RegisterResponse> {
   });
 }
 
-async function refreshAccessToken(): Promise<RefreshResponse> {
+async function requestRefreshAccessToken(): Promise<RefreshResponse> {
   return await requestJson<RefreshResponse>(resolveAuthRequestBaseUrl(), '/api/auth/refresh', {
     method: 'POST',
     credentials: 'include',
   });
+}
+
+async function refreshAccessToken(): Promise<RefreshResponse> {
+  if (pendingRefreshRequest !== null) {
+    return pendingRefreshRequest;
+  }
+
+  pendingRefreshRequest = requestRefreshAccessToken().finally(() => {
+    pendingRefreshRequest = null;
+  });
+
+  return pendingRefreshRequest;
 }
 
 async function logoutSession(): Promise<void> {
@@ -49,12 +64,27 @@ async function logoutSession(): Promise<void> {
   });
 }
 
-async function validateAccessToken(accessToken: string): Promise<ValidateTokenResponse> {
+async function requestValidateAccessToken(accessToken: string): Promise<ValidateTokenResponse> {
   return await requestJson<ValidateTokenResponse>(resolveAuthRequestBaseUrl(), '/api/auth/validate-token', {
     method: 'GET',
     token: accessToken,
     credentials: 'include',
   });
+}
+
+async function validateAccessToken(accessToken: string): Promise<ValidateTokenResponse> {
+  const pendingRequest = pendingValidationRequests.get(accessToken);
+
+  if (pendingRequest !== undefined) {
+    return pendingRequest;
+  }
+
+  const nextRequest = requestValidateAccessToken(accessToken).finally(() => {
+    pendingValidationRequests.delete(accessToken);
+  });
+
+  pendingValidationRequests.set(accessToken, nextRequest);
+  return nextRequest;
 }
 
 async function fetchProfile(accessToken: string): Promise<ProfileResponse> {

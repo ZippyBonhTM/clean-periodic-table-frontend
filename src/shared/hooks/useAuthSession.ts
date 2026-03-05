@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { refreshAccessToken, validateAccessToken } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
@@ -13,6 +13,7 @@ type UseAuthSessionInput = {
   onTokenRefresh: (token: string) => void;
   onUnauthorized: () => void;
   allowAnonymousRefresh?: boolean;
+  skipTokenValidation?: boolean;
 };
 
 type VerificationSnapshot = {
@@ -54,6 +55,7 @@ function useAuthSession({
   onTokenRefresh,
   onUnauthorized,
   allowAnonymousRefresh = true,
+  skipTokenValidation = false,
 }: UseAuthSessionInput): UseAuthSessionOutput {
   const [snapshot, setSnapshot] = useState<VerificationSnapshot>({
     token: null,
@@ -62,23 +64,11 @@ function useAuthSession({
   });
   const [validationVersion, setValidationVersion] = useState(0);
   const [isRestoringAnonymousSession, setIsRestoringAnonymousSession] = useState(false);
-  const pendingRefreshRef = useRef<Promise<string> | null>(null);
 
   const refreshTokenOnce = useCallback(async () => {
-    if (pendingRefreshRef.current !== null) {
-      return pendingRefreshRef.current;
-    }
-
-    pendingRefreshRef.current = refreshAccessToken()
-      .then((refreshResponse) => {
-        onTokenRefresh(refreshResponse.accessToken);
-        return refreshResponse.accessToken;
-      })
-      .finally(() => {
-        pendingRefreshRef.current = null;
-      });
-
-    return pendingRefreshRef.current;
+    const refreshResponse = await refreshAccessToken();
+    onTokenRefresh(refreshResponse.accessToken);
+    return refreshResponse.accessToken;
   }, [onTokenRefresh]);
 
   const revalidate = useCallback(() => {
@@ -155,6 +145,15 @@ function useAuthSession({
         }
       }
 
+      if (skipTokenValidation) {
+        setSnapshot({
+          token: currentToken,
+          status: 'authenticated',
+          message: null,
+        });
+        return;
+      }
+
       try {
         await validateAccessToken(currentToken);
 
@@ -228,7 +227,7 @@ function useAuthSession({
     return () => {
       isCancelled = true;
     };
-  }, [allowAnonymousRefresh, onUnauthorized, refreshTokenOnce, token, validationVersion]);
+  }, [allowAnonymousRefresh, onUnauthorized, refreshTokenOnce, skipTokenValidation, token, validationVersion]);
 
   useEffect(() => {
     if (token === null) {

@@ -31,7 +31,8 @@ function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
     token,
     onTokenRefresh: persistToken,
     onUnauthorized: removeToken,
-    allowAnonymousRefresh: !isSilentRefreshBlocked,
+    allowAnonymousRefresh: isHydrated && !isSilentRefreshBlocked,
+    skipTokenValidation: true,
   });
   const hasValidSession = authSession.status === 'authenticated';
   const tokenStatus: TokenStatusType = authSession.status;

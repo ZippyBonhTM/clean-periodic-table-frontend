@@ -11,12 +11,12 @@ import useAuthToken from '@/shared/hooks/useAuthToken';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { token, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
+  const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
   const authSession = useAuthSession({
     token,
     onTokenRefresh: persistToken,
     onUnauthorized: removeToken,
-    allowAnonymousRefresh: !isSilentRefreshBlocked,
+    allowAnonymousRefresh: isHydrated && !isSilentRefreshBlocked,
   });
 
   const onSuccess = useCallback(
