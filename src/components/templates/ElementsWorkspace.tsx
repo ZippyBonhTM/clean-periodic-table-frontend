@@ -93,7 +93,7 @@ function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
         ) : !hasValidSession ? (
           <ElementsState
             tone="info"
-            message="Authenticate to load elements from the backend API."
+            message="Authenticate to access the element data."
             actionLabel="Open login"
             onAction={() => openAuthModal('login')}
           />
