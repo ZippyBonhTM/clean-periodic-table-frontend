@@ -4,8 +4,7 @@ Recommended target for this Next.js app.
 
 ## 1) Import project
 
-- In Vercel, import the monorepo.
-- Set **Root Directory** to: `frontend`
+- In Vercel, import this repository directly.
 - Framework preset: `Next.js`
 
 ## 2) Environment variables (Vercel project)

@@ -8,7 +8,7 @@ Use this only if you intentionally want frontend outside Vercel.
 
 ```bash
 docker login
-cd /home/zippy/clean-periodic-table/frontend
+cd /home/zippy/clean-periodic-table-frontend
 NEXT_PUBLIC_AUTH_API_URL=https://<AUTH_PUBLIC_DOMAIN> \
 NEXT_PUBLIC_BACKEND_API_URL=https://<BACKEND_PUBLIC_DOMAIN> \
 npm run docker:publish -- <DOCKERHUB_USER> <VERSION_TAG>
@@ -21,6 +21,6 @@ Image names:
 
 ## Railway env vars
 
-Use `/home/zippy/clean-periodic-table/frontend/railway.env.example`.
+Use `/home/zippy/clean-periodic-table-frontend/railway.env.example`.
 
 If URLs change, rebuild and repush the image.

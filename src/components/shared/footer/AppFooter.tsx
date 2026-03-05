@@ -16,7 +16,18 @@ function AppFooter() {
 
         <nav aria-label="Project repositories" className="flex flex-wrap gap-2">
           <LinkButton
-            href="https://github.com/ZippyBonhTM/clean-periodic-table"
+            href="https://github.com/ZippyBonhTM/clean-periodic-table-frontend"
+            external
+            target="_blank"
+            rel="noreferrer"
+            variant="ghost"
+            size="md"
+            className="rounded-md px-3 text-xs text-[var(--accent)] hover:text-[var(--accent-strong-hover)]"
+          >
+            Frontend Repo
+          </LinkButton>
+          <LinkButton
+            href="https://github.com/ZippyBonhTM/clean-periodic-table-backend"
             external
             target="_blank"
             rel="noreferrer"

@@ -1,9 +1,15 @@
-# Frontend
+# Clean Periodic Table Frontend
 
 Next.js frontend for integrating with:
 
 - Auth API (`/login`, `/register`, `/validate-token`)
 - Backend API (`/elements`)
+
+## Repositories
+
+- Frontend: https://github.com/ZippyBonhTM/clean-periodic-table-frontend
+- Backend: https://github.com/ZippyBonhTM/clean-periodic-table-backend
+- Auth: https://github.com/ZippyBonhTM/clean-auth
 
 ## Environment
 
@@ -43,6 +49,7 @@ Frontend runs on `http://localhost:3000` by default.
 
 Pages:
 
-- `/login`: simple auth form (client-side)
-- `/register`: simple registration form (client-side)
-- `/`: elements list fetched from backend with bearer token
+- `/login`: auth form
+- `/register`: registration form
+- `/periodic-table`: classic table entry
+- `/search`: table/search experience
