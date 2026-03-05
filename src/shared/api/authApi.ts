@@ -10,8 +10,16 @@ import type {
   ValidateTokenResponse,
 } from '@/shared/types/auth';
 
+function resolveAuthRequestBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+
+  return publicEnv.authApiUrl;
+}
+
 async function login(input: LoginInput): Promise<LoginResponse> {
-  return await requestJson<LoginResponse>(publicEnv.authApiUrl, '/login', {
+  return await requestJson<LoginResponse>(resolveAuthRequestBaseUrl(), '/api/auth/login', {
     method: 'POST',
     body: input,
     credentials: 'include',
@@ -19,7 +27,7 @@ async function login(input: LoginInput): Promise<LoginResponse> {
 }
 
 async function register(input: RegisterInput): Promise<RegisterResponse> {
-  return await requestJson<RegisterResponse>(publicEnv.authApiUrl, '/register', {
+  return await requestJson<RegisterResponse>(resolveAuthRequestBaseUrl(), '/api/auth/register', {
     method: 'POST',
     body: input,
     credentials: 'include',
@@ -27,14 +35,14 @@ async function register(input: RegisterInput): Promise<RegisterResponse> {
 }
 
 async function refreshAccessToken(): Promise<RefreshResponse> {
-  return await requestJson<RefreshResponse>(publicEnv.authApiUrl, '/refresh', {
+  return await requestJson<RefreshResponse>(resolveAuthRequestBaseUrl(), '/api/auth/refresh', {
     method: 'POST',
     credentials: 'include',
   });
 }
 
 async function validateAccessToken(accessToken: string): Promise<ValidateTokenResponse> {
-  return await requestJson<ValidateTokenResponse>(publicEnv.authApiUrl, '/validate-token', {
+  return await requestJson<ValidateTokenResponse>(resolveAuthRequestBaseUrl(), '/api/auth/validate-token', {
     method: 'GET',
     token: accessToken,
     credentials: 'include',
@@ -42,7 +50,7 @@ async function validateAccessToken(accessToken: string): Promise<ValidateTokenRe
 }
 
 async function fetchProfile(accessToken: string): Promise<ProfileResponse> {
-  return await requestJson<ProfileResponse>(publicEnv.authApiUrl, '/profile', {
+  return await requestJson<ProfileResponse>(resolveAuthRequestBaseUrl(), '/api/auth/profile', {
     method: 'GET',
     token: accessToken,
     credentials: 'include',
