@@ -30,9 +30,24 @@ type ValidateTokenResponse = {
   message: string;
 };
 
+type AuthUserProfile = {
+  id: string;
+  name: string;
+  email: string;
+  role: 'USER' | 'ADMIN';
+};
+
+type ProfileResponse = {
+  userProfile: AuthUserProfile;
+  accessToken: string;
+  message: string;
+};
+
 export type {
+  AuthUserProfile,
   LoginInput,
   LoginResponse,
+  ProfileResponse,
   RefreshResponse,
   RegisterInput,
   RegisterResponse,

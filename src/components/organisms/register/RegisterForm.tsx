@@ -55,13 +55,13 @@ function RegisterForm({ onSuccess, mode = 'page', onSwitchToLogin }: RegisterFor
 
   const content = (
     <>
-      <div className="mb-4">
-        <p className="text-xs uppercase tracking-[0.25em] text-[var(--text-muted)]">Authentication</p>
-        <h2 className="text-2xl font-bold text-[var(--text-strong)]">Register</h2>
-        <p className="mt-1 text-sm text-[var(--text-muted)]">Create your account to request secured element data.</p>
+      <div className="auth-modal__header mb-4">
+        <p className="auth-modal__eyebrow text-xs uppercase tracking-[0.25em] text-[var(--text-muted)]">Authentication</p>
+        <h2 className="auth-modal__title text-2xl font-bold text-[var(--text-strong)]">Register</h2>
+        <p className="auth-modal__subtitle mt-1 text-sm text-[var(--text-muted)]">Create your account to request secured element data.</p>
       </div>
 
-      <form className="space-y-4" onSubmit={onSubmit}>
+      <form className="auth-modal__form space-y-4" onSubmit={onSubmit}>
         <FormField
           id="name"
           label="Name"
@@ -110,18 +110,18 @@ function RegisterForm({ onSuccess, mode = 'page', onSwitchToLogin }: RegisterFor
         />
 
         {error !== null ? (
-          <p className="rounded-lg border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-600">
+          <p className="auth-modal__error rounded-lg border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-600">
             {error}
           </p>
         ) : null}
 
-        <Button type="submit" disabled={isSubmitting} className="w-full">
+        <Button type="submit" disabled={isSubmitting} className="auth-modal__submit w-full">
           {isSubmitting ? 'Creating account...' : 'Create account'}
         </Button>
       </form>
 
       {mode === 'modal' ? (
-        <p className="mt-4 text-sm text-[var(--text-muted)]">
+        <p className="auth-modal__switch mt-4 text-sm text-[var(--text-muted)]">
           Already have an account?{' '}
           <button
             type="button"
@@ -143,7 +143,7 @@ function RegisterForm({ onSuccess, mode = 'page', onSwitchToLogin }: RegisterFor
   );
 
   if (mode === 'modal') {
-    return <div>{content}</div>;
+    return <div className="auth-modal-content">{content}</div>;
   }
 
   return <Panel className="mx-auto w-full max-w-lg">{content}</Panel>;

@@ -27,6 +27,8 @@ function AuthModal({ isOpen, mode, onClose, onSuccess }: AuthModalProps) {
       isOpen={isOpen}
       title={currentMode === 'login' ? 'Login to Access Elements' : 'Create Account'}
       onClose={onClose}
+      panelClassName="max-w-lg self-start mt-1 sm:mt-3"
+      bodyClassName="auth-modal-body pr-1 pb-1"
     >
       {currentMode === 'login' ? (
         <LoginForm

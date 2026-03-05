@@ -48,13 +48,13 @@ function LoginForm({ onSuccess, mode = 'page', onSwitchToRegister }: LoginFormPr
 
   const content = (
     <>
-      <div className="mb-4">
-        <p className="text-xs uppercase tracking-[0.25em] text-[var(--text-muted)]">Authentication</p>
-        <h2 className="text-2xl font-bold text-[var(--text-strong)]">Login</h2>
-        <p className="mt-1 text-sm text-[var(--text-muted)]">Sign in to unlock the periodic table data.</p>
+      <div className="auth-modal__header mb-4">
+        <p className="auth-modal__eyebrow text-xs uppercase tracking-[0.25em] text-[var(--text-muted)]">Authentication</p>
+        <h2 className="auth-modal__title text-2xl font-bold text-[var(--text-strong)]">Login</h2>
+        <p className="auth-modal__subtitle mt-1 text-sm text-[var(--text-muted)]">Sign in to unlock the periodic table data.</p>
       </div>
 
-      <form className="space-y-4" onSubmit={onSubmit}>
+      <form className="auth-modal__form space-y-4" onSubmit={onSubmit}>
         <FormField
           id="email"
           label="Email"
@@ -80,18 +80,18 @@ function LoginForm({ onSuccess, mode = 'page', onSwitchToRegister }: LoginFormPr
         />
 
         {error !== null ? (
-          <p className="rounded-lg border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-600">
+          <p className="auth-modal__error rounded-lg border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-600">
             {error}
           </p>
         ) : null}
 
-        <Button type="submit" disabled={isSubmitting} className="w-full">
+        <Button type="submit" disabled={isSubmitting} className="auth-modal__submit w-full">
           {isSubmitting ? 'Signing in...' : 'Sign in'}
         </Button>
       </form>
 
       {mode === 'modal' ? (
-        <p className="mt-4 text-sm text-[var(--text-muted)]">
+        <p className="auth-modal__switch mt-4 text-sm text-[var(--text-muted)]">
           Need an account?{' '}
           <button
             type="button"
@@ -113,7 +113,7 @@ function LoginForm({ onSuccess, mode = 'page', onSwitchToRegister }: LoginFormPr
   );
 
   if (mode === 'modal') {
-    return <div>{content}</div>;
+    return <div className="auth-modal-content">{content}</div>;
   }
 
   return <Panel className="mx-auto w-full max-w-lg">{content}</Panel>;

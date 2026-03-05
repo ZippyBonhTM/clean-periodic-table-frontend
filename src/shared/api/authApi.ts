@@ -3,6 +3,7 @@ import { requestJson } from './httpClient';
 import type {
   LoginInput,
   LoginResponse,
+  ProfileResponse,
   RefreshResponse,
   RegisterInput,
   RegisterResponse,
@@ -40,4 +41,12 @@ async function validateAccessToken(accessToken: string): Promise<ValidateTokenRe
   });
 }
 
-export { login, refreshAccessToken, register, validateAccessToken };
+async function fetchProfile(accessToken: string): Promise<ProfileResponse> {
+  return await requestJson<ProfileResponse>(publicEnv.authApiUrl, '/profile', {
+    method: 'GET',
+    token: accessToken,
+    credentials: 'include',
+  });
+}
+
+export { fetchProfile, login, refreshAccessToken, register, validateAccessToken };

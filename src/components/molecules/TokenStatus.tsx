@@ -41,7 +41,7 @@ function resolveStatusLabel(status: TokenStatusType): string {
 function TokenStatus({ status }: TokenStatusProps) {
   return (
     <span
-      className={`rounded-full border px-3 py-1 text-xs font-semibold ${resolveStatusStyles(status)}`}
+      className={`rounded-full border px-3 py-1 text-[10px] font-semibold ${resolveStatusStyles(status)}`}
     >
       {resolveStatusLabel(status)}
     </span>

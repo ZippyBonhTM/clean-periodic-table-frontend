@@ -22,6 +22,8 @@ function FloatingModal({
   headerActions,
 }: FloatingModalProps) {
   const didPointerStartOnBackdrop = useRef(false);
+  const resolvedPanelClassName =
+    panelClassName.trim().length > 0 ? panelClassName : 'max-w-xl';
 
   useEffect(() => {
     if (!isOpen) {
@@ -59,7 +61,7 @@ function FloatingModal({
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/72 p-4 overscroll-contain"
+      className="floating-modal-overlay fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto bg-black/72 overscroll-contain sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -80,13 +82,13 @@ function FloatingModal({
       }}
     >
       <div
-        className={`surface-panel w-full max-w-xl rounded-3xl border border-[var(--border-subtle)] p-5 shadow-xl md:p-6 ${panelClassName}`.trim()}
+        className={`floating-modal__panel surface-panel w-full rounded-3xl border border-[var(--border-subtle)] p-4 shadow-xl sm:p-5 md:p-6 ${resolvedPanelClassName}`.trim()}
         onPointerDown={(event) => event.stopPropagation()}
         onPointerUp={(event) => event.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold text-[var(--text-strong)]">{title}</h2>
-          <div className="flex items-center gap-2">
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-3 sm:mb-4">
+          <h2 className="pr-2 text-lg font-semibold leading-tight text-[var(--text-strong)] sm:text-xl">{title}</h2>
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {headerActions}
             <button
               type="button"
@@ -98,7 +100,7 @@ function FloatingModal({
           </div>
         </div>
 
-        <div className={bodyClassName}>{children}</div>
+        <div className={`floating-modal__body ${bodyClassName}`.trim()}>{children}</div>
       </div>
     </div>
   );

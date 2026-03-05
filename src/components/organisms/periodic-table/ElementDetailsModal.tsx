@@ -138,25 +138,52 @@ function buildElementRows(element: ChemicalElement): ElementMetaRow[] {
     { label: 'Wide Position Y', value: String(element.wypos) },
     { label: 'Image Title', value: formatNullableValue(element.image?.title) },
     { label: 'Image Attribution', value: formatNullableValue(element.image?.attribution) },
-    { label: 'Source Link', value: hasDisplayText(element.source) ? 'Available below' : 'Not informed' },
-    {
-      label: 'Bohr 2D Link',
-      value: hasDisplayText(element.bohr_model_image) ? 'Available below' : 'Not informed',
-    },
-    {
-      label: 'Bohr 3D Link',
-      value: hasDisplayText(element.bohr_model_3d) ? 'Available below' : 'Not informed',
-    },
-    {
-      label: 'Spectral Image Link',
-      value: hasDisplayText(element.spectral_img) ? 'Available below' : 'Not informed',
-    },
-    {
-      label: 'Image URL',
-      value: normalizeElementImageUrl(element.image?.url).length > 0 ? 'Available below' : 'Not informed',
-    },
     { label: 'Summary', value: formatNullableValue(element.summary) },
   ];
+}
+
+function buildCardOptimizedRows(rows: ElementMetaRow[]): ElementMetaRow[] {
+  const pinnedTopLabels = new Set([
+    'Name',
+    'Symbol',
+    'Atomic Number',
+    'Atomic Mass',
+    'Category',
+    'Phase',
+    'Group',
+    'Period',
+    'Block',
+  ]);
+  const pinnedBottomLabels = new Set(['Ionization Energies']);
+
+  const pinnedTop: ElementMetaRow[] = [];
+  const compactRows: ElementMetaRow[] = [];
+  const expansiveRows: ElementMetaRow[] = [];
+  const pinnedBottom: ElementMetaRow[] = [];
+
+  for (const row of rows) {
+    if (pinnedTopLabels.has(row.label)) {
+      pinnedTop.push(row);
+      continue;
+    }
+    if (pinnedBottomLabels.has(row.label)) {
+      pinnedBottom.push(row);
+      continue;
+    }
+
+    const normalizedValue = row.value.trim();
+    const visualWeight = Math.max(row.label.length, normalizedValue.length);
+    const isExpansive = visualWeight >= 22 || normalizedValue.includes(',') || normalizedValue.includes(';');
+
+    if (isExpansive) {
+      expansiveRows.push(row);
+      continue;
+    }
+
+    compactRows.push(row);
+  }
+
+  return [...pinnedTop, ...compactRows, ...expansiveRows, ...pinnedBottom];
 }
 
 function LinkButton({ href, label }: { href: string | null | undefined; label: string }) {
@@ -187,6 +214,24 @@ function ImageUnavailableState({ elementName }: { elementName: string }) {
     <div className="flex h-56 items-center justify-center rounded-xl border border-dashed border-[var(--border-subtle)] px-4 text-center text-sm text-[var(--text-muted)] md:h-72">
       {`Image of element ${elementName}; Not available.`}
     </div>
+  );
+}
+
+type DetailBadgeTone = 'neutral' | 'radioactive';
+
+function DetailBadge({ label, tone = 'neutral' }: { label: string; tone?: DetailBadgeTone }) {
+  if (tone === 'radioactive') {
+    return (
+      <span className="inline-flex rounded-md border border-rose-400/60 bg-rose-500/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-rose-300">
+        {label}
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex rounded-md border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2 py-1 text-xs font-semibold text-[var(--text-strong)]">
+      {label}
+    </span>
   );
 }
 
@@ -221,6 +266,10 @@ function ElementDetailsModal({
 
     return buildElementRows(element);
   }, [element]);
+
+  const cardRows = useMemo(() => {
+    return buildCardOptimizedRows(dataRows);
+  }, [dataRows]);
 
   const isRadioactive = useMemo(() => {
     if (element === null) {
@@ -387,8 +436,8 @@ function ElementDetailsModal({
         isOpen={isOpen}
         onClose={onClose}
         title={`${element.name} (${element.symbol})`}
-        panelClassName="max-w-5xl self-start mt-2 sm:mt-4"
-        bodyClassName="element-modal-scroll max-h-[75vh] overflow-y-auto pr-1"
+        panelClassName="max-w-5xl self-start mt-1 sm:mt-3"
+        bodyClassName="element-modal-scroll pr-1 pb-1"
         headerActions={
           <div className="flex items-center gap-2">
             <button
@@ -416,11 +465,11 @@ function ElementDetailsModal({
           <section className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 max-[344px]:grid-cols-1">
             <div>
               <p className="text-xs uppercase tracking-[0.15em] text-[var(--text-muted)]">Element Details</p>
-              {isRadioactive ? (
-                <p className="mt-1 inline-flex rounded-md border border-rose-400/60 bg-rose-500/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] text-rose-300">
-                  Radioactive
-                </p>
-              ) : null}
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                {isRadioactive ? <DetailBadge label="Radioactive" tone="radioactive" /> : null}
+                <DetailBadge label={formatNullableValue(element.category)} />
+                <DetailBadge label={formatNullableValue(element.phase)} />
+              </div>
             </div>
 
             <div className="flex items-end gap-2 max-[464px]:flex-col max-[464px]:items-stretch">
@@ -567,11 +616,11 @@ function ElementDetailsModal({
           </div>
 
           {detailsViewMode === 'cards' ? (
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {dataRows.map((row) => (
+            <div className="element-data-cards-grid grid gap-2">
+              {cardRows.map((row) => (
                 <article key={row.label} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] p-3">
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--text-muted)]">{row.label}</p>
-                  <p className="mt-1 break-words text-sm text-[var(--text-strong)]">{row.value}</p>
+                  <p className="element-data-card__label uppercase tracking-[0.12em] text-[var(--text-muted)]">{row.label}</p>
+                  <p className="element-data-card__value mt-1 break-words text-[var(--text-strong)]">{row.value}</p>
                 </article>
               ))}
             </div>
@@ -580,10 +629,10 @@ function ElementDetailsModal({
               <table className="min-w-full border-collapse text-left">
                 <thead>
                   <tr className="bg-[var(--surface-2)]">
-                    <th className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                    <th className="element-data-table__head px-2 py-2 font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)] min-[420px]:px-3">
                       Field
                     </th>
-                    <th className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                    <th className="element-data-table__head px-2 py-2 font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)] min-[420px]:px-3">
                       Value
                     </th>
                   </tr>
@@ -594,10 +643,10 @@ function ElementDetailsModal({
                       key={row.label}
                       className={index % 2 === 0 ? 'bg-[var(--surface-2)]/60' : 'bg-transparent'}
                     >
-                      <td className="whitespace-nowrap px-3 py-2 align-top text-xs font-semibold text-[var(--text-muted)]">
+                      <td className="element-data-table__field whitespace-nowrap px-2 py-2 align-top font-semibold text-[var(--text-muted)] min-[420px]:px-3">
                         {row.label}
                       </td>
-                      <td className="px-3 py-2 text-sm text-[var(--text-strong)]">{row.value}</td>
+                      <td className="element-data-table__value px-2 py-2 text-[var(--text-strong)] min-[420px]:px-3">{row.value}</td>
                     </tr>
                   ))}
                 </tbody>
