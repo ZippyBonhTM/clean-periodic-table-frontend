@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { refreshAccessToken, validateAccessToken } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
+import { readJwtExpiryMs } from '@/shared/utils/jwt';
 
 type AuthSessionStatus = 'anonymous' | 'checking' | 'authenticated' | 'unverified';
 
@@ -25,6 +26,8 @@ type UseAuthSessionOutput = {
   message: string | null;
   revalidate: () => void;
 };
+
+const ACCESS_TOKEN_REFRESH_WINDOW_MS = 30_000;
 
 function mapVerificationErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.statusCode === 0) {
@@ -59,6 +62,24 @@ function useAuthSession({
   });
   const [validationVersion, setValidationVersion] = useState(0);
   const [isRestoringAnonymousSession, setIsRestoringAnonymousSession] = useState(false);
+  const pendingRefreshRef = useRef<Promise<string> | null>(null);
+
+  const refreshTokenOnce = useCallback(async () => {
+    if (pendingRefreshRef.current !== null) {
+      return pendingRefreshRef.current;
+    }
+
+    pendingRefreshRef.current = refreshAccessToken()
+      .then((refreshResponse) => {
+        onTokenRefresh(refreshResponse.accessToken);
+        return refreshResponse.accessToken;
+      })
+      .finally(() => {
+        pendingRefreshRef.current = null;
+      });
+
+    return pendingRefreshRef.current;
+  }, [onTokenRefresh]);
 
   const revalidate = useCallback(() => {
     setValidationVersion((previous) => previous + 1);
@@ -76,15 +97,14 @@ function useAuthSession({
       setIsRestoringAnonymousSession(true);
 
       try {
-        const refreshResponse = await refreshAccessToken();
+        const refreshedToken = await refreshTokenOnce();
 
         if (isCancelled) {
           return;
         }
 
-        onTokenRefresh(refreshResponse.accessToken);
         setSnapshot({
-          token: refreshResponse.accessToken,
+          token: refreshedToken,
           status: 'authenticated',
           message: null,
         });
@@ -98,6 +118,43 @@ function useAuthSession({
     };
 
     const resolveSession = async (currentToken: string) => {
+      const expiryMs = readJwtExpiryMs(currentToken);
+      const shouldRefreshBeforeValidation =
+        expiryMs !== null && expiryMs - Date.now() <= ACCESS_TOKEN_REFRESH_WINDOW_MS;
+
+      if (shouldRefreshBeforeValidation) {
+        try {
+          const refreshedToken = await refreshTokenOnce();
+
+          if (isCancelled) {
+            return;
+          }
+
+          setSnapshot({
+            token: refreshedToken,
+            status: 'authenticated',
+            message: null,
+          });
+          return;
+        } catch (refreshError: unknown) {
+          if (isCancelled) {
+            return;
+          }
+
+          if (isUnauthorizedError(refreshError)) {
+            onUnauthorized();
+            return;
+          }
+
+          setSnapshot({
+            token: currentToken,
+            status: 'unverified',
+            message: mapVerificationErrorMessage(refreshError),
+          });
+          return;
+        }
+      }
+
       try {
         await validateAccessToken(currentToken);
 
@@ -118,15 +175,14 @@ function useAuthSession({
 
         if (isUnauthorizedError(validationError)) {
           try {
-            const refreshResponse = await refreshAccessToken();
+            const refreshedToken = await refreshTokenOnce();
 
             if (isCancelled) {
               return;
             }
 
-            onTokenRefresh(refreshResponse.accessToken);
             setSnapshot({
-              token: refreshResponse.accessToken,
+              token: refreshedToken,
               status: 'authenticated',
               message: null,
             });
@@ -172,7 +228,60 @@ function useAuthSession({
     return () => {
       isCancelled = true;
     };
-  }, [allowAnonymousRefresh, onTokenRefresh, onUnauthorized, token, validationVersion]);
+  }, [allowAnonymousRefresh, onUnauthorized, refreshTokenOnce, token, validationVersion]);
+
+  useEffect(() => {
+    if (token === null) {
+      return;
+    }
+
+    const expiryMs = readJwtExpiryMs(token);
+
+    if (expiryMs === null) {
+      return;
+    }
+
+    let isCancelled = false;
+    const refreshDelayMs = Math.max(0, expiryMs - Date.now() - ACCESS_TOKEN_REFRESH_WINDOW_MS);
+
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const refreshedToken = await refreshTokenOnce();
+
+          if (isCancelled) {
+            return;
+          }
+
+          setSnapshot({
+            token: refreshedToken,
+            status: 'authenticated',
+            message: null,
+          });
+        } catch (refreshError: unknown) {
+          if (isCancelled) {
+            return;
+          }
+
+          if (isUnauthorizedError(refreshError)) {
+            onUnauthorized();
+            return;
+          }
+
+          setSnapshot({
+            token,
+            status: 'unverified',
+            message: mapVerificationErrorMessage(refreshError),
+          });
+        }
+      })();
+    }, refreshDelayMs);
+
+    return () => {
+      isCancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [onUnauthorized, refreshTokenOnce, token]);
 
   useEffect(() => {
     const currentStatus =
