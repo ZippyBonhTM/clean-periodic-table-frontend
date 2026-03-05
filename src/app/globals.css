@@ -355,9 +355,28 @@ a {
   }
 }
 
+.elements-loading-bar {
+  animation: loading-bar 1.45s ease-in-out infinite;
+}
+
+@keyframes loading-bar {
+  0% {
+    transform: translateX(-115%);
+  }
+
+  100% {
+    transform: translateX(260%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tile-enter {
     animation: none;
+  }
+
+  .elements-loading-bar {
+    animation: none;
+    transform: translateX(0);
   }
 }
 

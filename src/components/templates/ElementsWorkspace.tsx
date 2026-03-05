@@ -14,7 +14,9 @@ import useAuthToken from '@/shared/hooks/useAuthToken';
 import useElements from '@/shared/hooks/useElements';
 
 const PeriodicTable = dynamic(() => import('@/components/organisms/periodic-table/PeriodicTable'), {
-  loading: () => <ElementsState tone="info" message="Preparing table interface..." />,
+  loading: () => (
+    <ElementsState tone="info" message="Opening the periodic table..." showProgress />
+  ),
 });
 
 const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'));
@@ -100,7 +102,11 @@ function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
             onAction={() => openAuthModal('login')}
           />
         ) : isLoading ? (
-          <ElementsState tone="info" message="Loading periodic table data from backend..." />
+          <ElementsState
+            tone="info"
+            message="Getting the periodic table ready..."
+            showProgress
+          />
         ) : error !== null ? (
           <ElementsState tone="error" message={error} />
         ) : (
