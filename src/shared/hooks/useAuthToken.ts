@@ -2,6 +2,7 @@
 
 import { useCallback, useSyncExternalStore } from 'react';
 
+import { clearElementsCache } from '@/shared/api/backendApi';
 import {
   clearAccessToken,
   readAccessToken,
@@ -59,12 +60,17 @@ function useAuthToken() {
   const persistToken = useCallback((nextToken: string, options: PersistTokenOptions = {}) => {
     const shouldClearSilentRefreshBlocked = options.clearSilentRefreshBlocked === true;
     const isSilentRefreshCurrentlyBlocked = readSilentRefreshBlocked();
+    const currentToken = readAccessToken();
 
     if (!shouldClearSilentRefreshBlocked && isSilentRefreshCurrentlyBlocked) {
       return;
     }
 
     saveAccessToken(nextToken);
+
+    if (currentToken !== null && currentToken !== nextToken) {
+      clearElementsCache(currentToken);
+    }
 
     if (shouldClearSilentRefreshBlocked) {
       setSilentRefreshBlocked(false);
@@ -74,6 +80,7 @@ function useAuthToken() {
   }, []);
 
   const removeToken = useCallback((options: RemoveTokenOptions = {}) => {
+    clearElementsCache();
     clearAccessToken();
     setSilentRefreshBlocked(options.blockSilentRefresh === true);
     emitTokenChange();
