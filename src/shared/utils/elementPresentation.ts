@@ -88,20 +88,68 @@ function formatAtomicMass(atomicMass: number): string {
 }
 
 function matchesElementQuery(element: ChemicalElement, query: string): boolean {
+  return resolveElementQueryRank(element, query) >= 0;
+}
+
+function resolveElementQueryRank(element: ChemicalElement, query: string): number {
   const normalizedQuery = query.trim().toLowerCase();
 
   if (normalizedQuery.length === 0) {
-    return true;
+    return 0;
   }
 
-  return (
-    element.name.toLowerCase().includes(normalizedQuery) ||
-    element.symbol.toLowerCase().includes(normalizedQuery) ||
-    element.category.toLowerCase().includes(normalizedQuery) ||
-    element.phase.toLowerCase().includes(normalizedQuery) ||
-    element.block.toLowerCase().includes(normalizedQuery) ||
-    String(element.number).includes(normalizedQuery)
-  );
+  const normalizedName = element.name.toLowerCase();
+  const normalizedSymbol = element.symbol.toLowerCase();
+  const normalizedCategory = element.category.toLowerCase();
+  const normalizedPhase = element.phase.toLowerCase();
+  const normalizedBlock = element.block.toLowerCase();
+  const normalizedNumber = String(element.number);
+
+  if (normalizedSymbol === normalizedQuery) {
+    return 0;
+  }
+
+  if (normalizedSymbol.startsWith(normalizedQuery)) {
+    return 1;
+  }
+
+  if (normalizedNumber === normalizedQuery) {
+    return 2;
+  }
+
+  if (normalizedName === normalizedQuery) {
+    return 3;
+  }
+
+  if (normalizedName.startsWith(normalizedQuery)) {
+    return 4;
+  }
+
+  if (normalizedSymbol.includes(normalizedQuery)) {
+    return 5;
+  }
+
+  if (normalizedName.includes(normalizedQuery)) {
+    return 6;
+  }
+
+  if (normalizedCategory.includes(normalizedQuery)) {
+    return 7;
+  }
+
+  if (normalizedPhase.includes(normalizedQuery)) {
+    return 8;
+  }
+
+  if (normalizedBlock.includes(normalizedQuery)) {
+    return 9;
+  }
+
+  if (normalizedNumber.includes(normalizedQuery)) {
+    return 10;
+  }
+
+  return -1;
 }
 
 function sortElements(
@@ -127,6 +175,7 @@ export {
   formatAtomicMass,
   isElementRadioactive,
   matchesElementQuery,
+  resolveElementQueryRank,
   resolveCategoryColor,
   sortElements,
 };

@@ -65,6 +65,30 @@ function useAuthSession({
   const [validationVersion, setValidationVersion] = useState(0);
   const [isRestoringAnonymousSession, setIsRestoringAnonymousSession] = useState(false);
 
+  const resolvedStatus: AuthSessionStatus = useMemo(() => {
+    if (token === null) {
+      return isRestoringAnonymousSession ? 'checking' : 'anonymous';
+    }
+
+    if (snapshot.token === token) {
+      return snapshot.status;
+    }
+
+    if (snapshot.status === 'authenticated' && snapshot.token !== null) {
+      return 'authenticated';
+    }
+
+    return 'checking';
+  }, [isRestoringAnonymousSession, snapshot.status, snapshot.token, token]);
+
+  const resolvedMessage = useMemo(() => {
+    if (token === null) {
+      return null;
+    }
+
+    return snapshot.token === token ? snapshot.message : null;
+  }, [snapshot.message, snapshot.token, token]);
+
   const refreshTokenOnce = useCallback(async () => {
     const refreshResponse = await refreshAccessToken();
     onTokenRefresh(refreshResponse.accessToken);
@@ -283,16 +307,7 @@ function useAuthSession({
   }, [onUnauthorized, refreshTokenOnce, token]);
 
   useEffect(() => {
-    const currentStatus =
-      token === null
-        ? isRestoringAnonymousSession
-          ? 'checking'
-          : 'anonymous'
-        : snapshot.token === token
-          ? snapshot.status
-          : 'checking';
-
-    if (currentStatus !== 'unverified') {
+    if (resolvedStatus !== 'unverified') {
       return;
     }
 
@@ -305,22 +320,15 @@ function useAuthSession({
     return () => {
       window.removeEventListener('online', onOnline);
     };
-  }, [isRestoringAnonymousSession, revalidate, snapshot.status, snapshot.token, token]);
+  }, [revalidate, resolvedStatus]);
 
   return useMemo(
     () => ({
-      status:
-        token === null
-          ? isRestoringAnonymousSession
-            ? 'checking'
-            : 'anonymous'
-          : snapshot.token === token
-            ? snapshot.status
-            : 'checking',
-      message: token === null ? null : snapshot.token === token ? snapshot.message : null,
+      status: resolvedStatus,
+      message: resolvedMessage,
       revalidate,
     }),
-    [isRestoringAnonymousSession, revalidate, snapshot.message, snapshot.status, snapshot.token, token],
+    [revalidate, resolvedMessage, resolvedStatus],
   );
 }
 
