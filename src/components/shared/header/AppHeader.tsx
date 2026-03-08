@@ -30,6 +30,7 @@ type AppHeaderProps = {
 const NAV_LINKS = [
   { href: '/periodic-table', label: 'Periodic Table' },
   { href: '/search', label: 'Search' },
+  { href: '/molecular-editor', label: 'Molecular Editor', badge: 'BETA' },
 ];
 
 const USER_MENU_DRAG_CLOSE_THRESHOLD = 70;
@@ -91,6 +92,19 @@ function ThemeGlyph({ theme }: { theme: AppTheme }) {
       <path d="m6.34 17.66-1.41 1.41" />
       <path d="m19.07 4.93-1.41 1.41" />
     </svg>
+  );
+}
+
+function NavLinkLabel({ label, badge }: { label: string; badge?: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span>{label}</span>
+      {badge === undefined ? null : (
+        <span className="inline-flex items-center rounded-full border border-(--accent)/45 bg-(--accent)/12 px-1.5 py-px text-[8px] font-bold uppercase tracking-[0.18em] text-foreground">
+          {badge}
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -437,7 +451,7 @@ function AppHeader({
                   size="sm"
                   className="rounded-lg px-2.5 text-[11px]"
                 >
-                  {item.label}
+                  <NavLinkLabel label={item.label} badge={item.badge} />
                 </LinkButton>
               );
             })}
@@ -594,7 +608,7 @@ function AppHeader({
                   align="left"
                   className="px-3 text-[11px]"
                 >
-                  {item.label}
+                  <NavLinkLabel label={item.label} badge={item.badge} />
                 </LinkButton>
               );
             })}

@@ -177,8 +177,12 @@ function useElements({ token, onTokenRefresh, onUnauthorized }: UseElementsInput
       return snapshot.data;
     }
 
+    if (snapshot.data.length > 0 && snapshot.error === null) {
+      return snapshot.data;
+    }
+
     return cachedElements ?? [];
-  }, [cachedElements, snapshot.data, snapshot.token, token]);
+  }, [cachedElements, snapshot.data, snapshot.error, snapshot.token, token]);
 
   const sortedElements = useMemo(() => {
     return [...activeData].sort((first, second) => first.number - second.number);
@@ -201,8 +205,8 @@ function useElements({ token, onTokenRefresh, onUnauthorized }: UseElementsInput
       return false;
     }
 
-    return snapshot.token !== token && cachedElements === null;
-  }, [cachedElements, snapshot.token, token]);
+    return snapshot.token !== token && cachedElements === null && snapshot.data.length === 0;
+  }, [cachedElements, snapshot.data.length, snapshot.token, token]);
 
   return {
     data: sortedElements,
