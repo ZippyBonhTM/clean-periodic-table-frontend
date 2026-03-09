@@ -39,8 +39,8 @@ function AppShell({
     ? 'mx-auto flex min-h-screen w-full max-w-[var(--app-max-width)] flex-col gap-4 px-[var(--app-inline-padding)] py-5 md:py-8'
     : viewportMain
       ? 'app-shell-viewport mx-auto flex w-full max-w-[var(--app-max-width)] flex-col px-[var(--app-inline-padding)]'
-      : 'app-shell-fullscreen mx-auto flex w-full max-w-[var(--app-max-width)] flex-col gap-4 overflow-hidden px-[var(--app-inline-padding)]';
-  const mainClassName = viewportMain ? 'flex-1 min-h-0' : 'flex-1 min-h-0';
+      : 'mx-auto flex min-h-screen w-full max-w-[var(--app-max-width)] flex-col gap-4 px-[var(--app-inline-padding)] py-5 md:py-8';
+  const mainClassName = !showFooter && !viewportMain ? 'flex-1' : 'flex-1 min-h-0';
 
   useEffect(() => {
     if (!viewportMain) {
