@@ -31,6 +31,7 @@ const NAV_LINKS = [
   { href: '/periodic-table', label: 'Periodic Table' },
   { href: '/search', label: 'Search' },
   { href: '/molecular-editor', label: 'Molecular Editor', badge: 'BETA' },
+  { href: '/molecule-gallery', label: 'Molecule Gallery', badge: 'BETA' },
 ];
 
 const USER_MENU_DRAG_CLOSE_THRESHOLD = 70;
@@ -204,7 +205,6 @@ function AppHeader({
 
   useEffect(() => {
     if (!isUserMenuOpen) {
-      fetchedProfileTokenRef.current = null;
       return;
     }
 

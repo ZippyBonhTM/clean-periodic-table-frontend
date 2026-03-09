@@ -88,6 +88,8 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
   const sortToggleRef = useRef<HTMLButtonElement | null>(null);
   const fullscreenContainerRef = useRef<HTMLDivElement | null>(null);
   const previousZoomRef = useRef<number | null>(null);
+  const viewMenuFrameRef = useRef<number | null>(null);
+  const sortMenuFrameRef = useRef<number | null>(null);
   const [isPendingTransition, startTransition] = useTransition();
   const isExploreMode = mode === 'explore';
   const deferredQuery = useDeferredValue(query);
@@ -283,6 +285,16 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
 
     setViewMenuPosition(getFloatingMenuPosition(viewToggleRef.current, 176));
   }, [getFloatingMenuPosition]);
+  const scheduleViewMenuPositionSync = useCallback(() => {
+    if (viewMenuFrameRef.current !== null) {
+      return;
+    }
+
+    viewMenuFrameRef.current = window.requestAnimationFrame(() => {
+      viewMenuFrameRef.current = null;
+      syncViewMenuPosition();
+    });
+  }, [syncViewMenuPosition]);
 
   const syncSortMenuPosition = useCallback(() => {
     if (sortToggleRef.current === null) {
@@ -291,16 +303,26 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
 
     setSortMenuPosition(getFloatingMenuPosition(sortToggleRef.current, 208));
   }, [getFloatingMenuPosition]);
+  const scheduleSortMenuPositionSync = useCallback(() => {
+    if (sortMenuFrameRef.current !== null) {
+      return;
+    }
+
+    sortMenuFrameRef.current = window.requestAnimationFrame(() => {
+      sortMenuFrameRef.current = null;
+      syncSortMenuPosition();
+    });
+  }, [syncSortMenuPosition]);
 
   useEffect(() => {
     if (!isViewMenuOpen) {
       return;
     }
 
-    syncViewMenuPosition();
+    scheduleViewMenuPositionSync();
 
     const onWindowChange = () => {
-      syncViewMenuPosition();
+      scheduleViewMenuPositionSync();
     };
 
     const onEscape = (event: KeyboardEvent) => {
@@ -314,21 +336,25 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
     window.addEventListener('keydown', onEscape);
 
     return () => {
+      if (viewMenuFrameRef.current !== null) {
+        window.cancelAnimationFrame(viewMenuFrameRef.current);
+        viewMenuFrameRef.current = null;
+      }
       window.removeEventListener('resize', onWindowChange);
       window.removeEventListener('scroll', onWindowChange, true);
       window.removeEventListener('keydown', onEscape);
     };
-  }, [isViewMenuOpen, syncViewMenuPosition]);
+  }, [isViewMenuOpen, scheduleViewMenuPositionSync]);
 
   useEffect(() => {
     if (!isSortMenuOpen) {
       return;
     }
 
-    syncSortMenuPosition();
+    scheduleSortMenuPositionSync();
 
     const onWindowChange = () => {
-      syncSortMenuPosition();
+      scheduleSortMenuPositionSync();
     };
 
     const onEscape = (event: KeyboardEvent) => {
@@ -342,11 +368,15 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
     window.addEventListener('keydown', onEscape);
 
     return () => {
+      if (sortMenuFrameRef.current !== null) {
+        window.cancelAnimationFrame(sortMenuFrameRef.current);
+        sortMenuFrameRef.current = null;
+      }
       window.removeEventListener('resize', onWindowChange);
       window.removeEventListener('scroll', onWindowChange, true);
       window.removeEventListener('keydown', onEscape);
     };
-  }, [isSortMenuOpen, syncSortMenuPosition]);
+  }, [isSortMenuOpen, scheduleSortMenuPositionSync]);
 
   useEffect(() => {
     if (typeof document === 'undefined') {

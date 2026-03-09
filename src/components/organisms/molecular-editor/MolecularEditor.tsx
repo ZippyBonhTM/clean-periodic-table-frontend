@@ -1,9 +1,22 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 
 import Button from '@/components/atoms/Button';
+import MoleculeSaveModal from '@/components/organisms/molecular-editor/MoleculeSaveModal';
+import { mapSavedMoleculesErrorMessage } from '@/shared/hooks/useSavedMolecules';
+import {
+  clearPendingSavedMoleculeId,
+  readPendingSavedMoleculeId,
+  writePendingSavedMoleculeId,
+} from '@/shared/storage/pendingSavedMoleculeStorage';
+import type {
+  SaveMoleculeInput,
+  SavedMolecule,
+  SavedMoleculeEditorState,
+} from '@/shared/types/molecule';
 import type { ChemicalElement } from '@/shared/types/element';
 import {
   matchesElementQuery,
@@ -17,10 +30,13 @@ import {
   buildMolecularFormula,
   connectAtoms,
   findAtom,
+  getUsedBondSlots,
+  normalizeMoleculeModel,
   rebalanceMoleculeLayout,
   removeAtom,
   resolveMaxBondSlots,
   summarizeMolecule,
+  syncMoleculeIdCounter,
   type BondOrder,
   type MoleculeAtom,
   type MoleculeBond,
@@ -28,10 +44,19 @@ import {
 } from '@/shared/utils/moleculeEditor';
 
 type MolecularEditorProps = {
+  pageMode: 'editor' | 'gallery';
   elements: ChemicalElement[];
+  savedMolecules: SavedMolecule[];
+  savedMoleculesError: string | null;
+  isSavedMoleculesLoading: boolean;
+  isSavedMoleculesMutating: boolean;
+  onReloadSavedMolecules: () => void;
+  onCreateSavedMolecule: (input: SaveMoleculeInput) => Promise<SavedMolecule>;
+  onUpdateSavedMolecule: (moleculeId: string, input: SaveMoleculeInput) => Promise<SavedMolecule>;
+  onDeleteSavedMolecule: (moleculeId: string) => Promise<void>;
 };
 
-type EditorViewMode = 'editor' | 'structural' | 'simplified' | 'stick';
+type EditorViewMode = SavedMoleculeEditorState['activeView'];
 
 type Bounds = {
   minX: number;
@@ -84,6 +109,13 @@ type SavedEditorDraft = {
   canvasViewport: CanvasViewport;
 };
 
+type GalleryFeedbackTone = 'info' | 'success' | 'error';
+
+type GalleryFeedback = {
+  tone: GalleryFeedbackTone;
+  message: string;
+};
+
 const VIEW_OPTIONS: Array<{ mode: EditorViewMode; label: string }> = [
   { mode: 'editor', label: 'Editor' },
   { mode: 'structural', label: 'Structural' },
@@ -129,6 +161,13 @@ const PALETTE_MOMENTUM_MIN_SPEED = 0.08;
 const PALETTE_MOMENTUM_IDLE_RELEASE_MS = 90;
 const PALETTE_TILE_LONG_PRESS_MS = 260;
 const EDITOR_HISTORY_LIMIT = 80;
+const GALLERY_FEEDBACK_AUTO_HIDE_MS = 4200;
+const SAVED_AT_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
 
 function cloneMoleculeModel(model: MoleculeModel): MoleculeModel {
   return {
@@ -151,6 +190,32 @@ function cloneEditorSnapshot(snapshot: SavedEditorDraft): SavedEditorDraft {
       offsetX: snapshot.canvasViewport.offsetX,
       offsetY: snapshot.canvasViewport.offsetY,
       scale: snapshot.canvasViewport.scale,
+    },
+  };
+}
+
+function normalizeSavedMoleculeRecord(savedMolecule: SavedMolecule): SavedMolecule {
+  const normalized = normalizeMoleculeModel(savedMolecule.molecule);
+  const normalizedModel = normalized.model;
+  const selectedAtomId =
+    savedMolecule.editorState.selectedAtomId === null
+      ? null
+      : normalized.atomIdsByOriginalId.get(savedMolecule.editorState.selectedAtomId)?.[0] ?? null;
+  const normalizedSummary = summarizeMolecule(normalizedModel);
+
+  return {
+    ...savedMolecule,
+    molecule: normalizedModel,
+    editorState: {
+      ...savedMolecule.editorState,
+      selectedAtomId,
+    },
+    summary: {
+      formula: buildMolecularFormula(normalizedModel),
+      atomCount: normalizedSummary.atomCount,
+      bondCount: normalizedSummary.bondCount,
+      totalBondOrder: normalizedSummary.totalBondOrder,
+      composition: buildCompositionRows(normalizedModel),
     },
   };
 }
@@ -471,17 +536,139 @@ function shouldHideHydrogenInStick(model: MoleculeModel, atom: MoleculeAtom): bo
     return false;
   }
 
-  const attachedBond =
-    model.bonds.find((bond) => bond.sourceId === atom.id || bond.targetId === atom.id) ?? null;
+  const attachedBonds = model.bonds.filter((bond) => bond.sourceId === atom.id || bond.targetId === atom.id);
 
-  if (attachedBond === null) {
+  if (attachedBonds.length !== 1) {
     return false;
   }
 
+  const attachedBond = attachedBonds[0];
   const neighborAtomId = attachedBond.sourceId === atom.id ? attachedBond.targetId : attachedBond.sourceId;
   const neighborAtom = findAtom(model, neighborAtomId);
 
-  return neighborAtom?.element.symbol === 'C';
+  if (neighborAtom === null) {
+    return false;
+  }
+
+  if (neighborAtom.element.symbol === 'C') {
+    return true;
+  }
+
+  if (neighborAtom.element.symbol === 'H' || attachedBond.order !== 1) {
+    return false;
+  }
+
+  return model.bonds.some((bond) => {
+    if (bond.sourceId !== neighborAtom.id && bond.targetId !== neighborAtom.id) {
+      return false;
+    }
+
+    const bondedAtomId = bond.sourceId === neighborAtom.id ? bond.targetId : bond.sourceId;
+
+    if (bondedAtomId === atom.id) {
+      return false;
+    }
+
+    const bondedAtom = findAtom(model, bondedAtomId);
+    return bondedAtom !== null && bondedAtom.element.symbol !== 'H';
+  });
+}
+
+function resolveStickAttachedHydrogenCount(model: MoleculeModel, atom: MoleculeAtom): number {
+  if (atom.element.symbol === 'C' || atom.element.symbol === 'H') {
+    return 0;
+  }
+
+  return model.bonds.reduce((count, bond) => {
+    if (bond.sourceId !== atom.id && bond.targetId !== atom.id) {
+      return count;
+    }
+
+    const neighborAtomId = bond.sourceId === atom.id ? bond.targetId : bond.sourceId;
+    const neighborAtom = findAtom(model, neighborAtomId);
+
+    if (neighborAtom === null || !shouldHideHydrogenInStick(model, neighborAtom)) {
+      return count;
+    }
+
+    return count + 1;
+  }, 0);
+}
+
+function resolveStickVisibleNeighborAtoms(model: MoleculeModel, atom: MoleculeAtom): MoleculeAtom[] {
+  return model.bonds.flatMap((bond) => {
+    if (bond.sourceId !== atom.id && bond.targetId !== atom.id) {
+      return [];
+    }
+
+    const neighborAtomId = bond.sourceId === atom.id ? bond.targetId : bond.sourceId;
+    const neighborAtom = findAtom(model, neighborAtomId);
+
+    if (neighborAtom === null || shouldHideHydrogenInStick(model, neighborAtom)) {
+      return [];
+    }
+
+    return [neighborAtom];
+  });
+}
+
+function resolveStickTextAnchor(offsetX: number): 'start' | 'middle' | 'end' {
+  if (offsetX >= 6) {
+    return 'start';
+  }
+
+  if (offsetX <= -6) {
+    return 'end';
+  }
+
+  return 'middle';
+}
+
+function resolveStickLabelPlacement(
+  model: MoleculeModel,
+  atom: MoleculeAtom,
+  hydrogenCount: number,
+): {
+  x: number;
+  y: number;
+  textAnchor: 'start' | 'middle' | 'end';
+} {
+  const visibleNeighbors = resolveStickVisibleNeighborAtoms(model, atom);
+
+  if (visibleNeighbors.length === 0) {
+    return {
+      x: atom.x,
+      y: atom.y + 5,
+      textAnchor: 'middle',
+    };
+  }
+
+  const averageVector = visibleNeighbors.reduce(
+    (current, neighborAtom) => ({
+      x: current.x + (neighborAtom.x - atom.x),
+      y: current.y + (neighborAtom.y - atom.y),
+    }),
+    { x: 0, y: 0 },
+  );
+  const vectorLength = Math.hypot(averageVector.x, averageVector.y);
+
+  if (vectorLength === 0) {
+    return {
+      x: atom.x,
+      y: atom.y + 5,
+      textAnchor: 'middle',
+    };
+  }
+
+  const offsetDistance = hydrogenCount > 0 ? 10 : 8;
+  const offsetX = (-(averageVector.x / vectorLength)) * offsetDistance;
+  const offsetY = (-(averageVector.y / vectorLength)) * offsetDistance;
+
+  return {
+    x: atom.x + offsetX,
+    y: atom.y + offsetY + 5,
+    textAnchor: resolveStickTextAnchor(offsetX),
+  };
 }
 
 function shouldHideAtomInStick(model: MoleculeModel, atom: MoleculeAtom): boolean {
@@ -642,6 +829,17 @@ function BondOrderIcon() {
       <path d="M5.5 6.5h5" />
       <path d="M5.5 8h5" />
       <path d="M5.5 9.5h5" />
+    </svg>
+  );
+}
+
+function SaveGalleryIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+      <path d="M3.2 2.8h7.1l2.5 2.4v8H3.2z" />
+      <path d="M5.2 2.8v3.3h4.6V2.8" />
+      <path d="M5.3 10.3h5.4" />
+      <path d="M5.3 12.2h4" />
     </svg>
   );
 }
@@ -887,46 +1085,59 @@ function EditorCanvas({
   onCanvasPointerCancel,
   onCanvasWheel,
   onAtomPointerDown,
+  interactive = true,
+  showGrid = true,
+  ariaLabel = 'Molecule editor canvas',
 }: {
   model: MoleculeModel;
   mode: EditorViewMode;
   viewBox: { x: number; y: number; width: number; height: number };
   selectedAtomId: string | null;
-  svgRef: React.RefObject<SVGSVGElement | null>;
-  onCanvasPointerDown: (event: ReactPointerEvent<SVGSVGElement>) => void;
-  onCanvasPointerMove: (event: ReactPointerEvent<SVGSVGElement>) => void;
-  onCanvasPointerUp: (event: ReactPointerEvent<SVGSVGElement>) => void;
-  onCanvasPointerCancel: (event: ReactPointerEvent<SVGSVGElement>) => void;
-  onCanvasWheel: (event: React.WheelEvent<SVGSVGElement>) => void;
-  onAtomPointerDown: (atomId: string, event: ReactPointerEvent<SVGGElement>) => void;
+  svgRef?: React.RefObject<SVGSVGElement | null>;
+  onCanvasPointerDown?: (event: ReactPointerEvent<SVGSVGElement>) => void;
+  onCanvasPointerMove?: (event: ReactPointerEvent<SVGSVGElement>) => void;
+  onCanvasPointerUp?: (event: ReactPointerEvent<SVGSVGElement>) => void;
+  onCanvasPointerCancel?: (event: ReactPointerEvent<SVGSVGElement>) => void;
+  onCanvasWheel?: (event: React.WheelEvent<SVGSVGElement>) => void;
+  onAtomPointerDown?: (atomId: string, event: ReactPointerEvent<SVGGElement>) => void;
+  interactive?: boolean;
+  showGrid?: boolean;
+  ariaLabel?: string;
 }) {
+  const atomById = useMemo(() => {
+    return new Map(model.atoms.map((atom) => [atom.id, atom]));
+  }, [model.atoms]);
   const modelCenter = resolveModelCenter(model);
 
   return (
     <svg
       ref={svgRef}
       viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
-      className="absolute inset-0 h-full w-full touch-none select-none"
-      style={{ touchAction: 'none', userSelect: 'none' }}
+      className={`absolute inset-0 h-full w-full select-none ${interactive ? 'touch-none' : 'pointer-events-none'}`}
+      style={{ touchAction: interactive ? 'none' : 'auto', userSelect: 'none' }}
       role="img"
-      aria-label="Molecule editor canvas"
-      onPointerDown={onCanvasPointerDown}
-      onPointerMove={onCanvasPointerMove}
-      onPointerUp={onCanvasPointerUp}
-      onPointerCancel={onCanvasPointerCancel}
-      onWheel={onCanvasWheel}
+      aria-label={ariaLabel}
+      onPointerDown={interactive ? onCanvasPointerDown : undefined}
+      onPointerMove={interactive ? onCanvasPointerMove : undefined}
+      onPointerUp={interactive ? onCanvasPointerUp : undefined}
+      onPointerCancel={interactive ? onCanvasPointerCancel : undefined}
+      onWheel={interactive ? onCanvasWheel : undefined}
     >
-      <defs>
-        <pattern id="molecule-grid" width="32" height="32" patternUnits="userSpaceOnUse">
-          <path d="M 32 0 L 0 0 0 32" fill="none" stroke="var(--grid-stroke)" strokeWidth="1" />
-        </pattern>
-      </defs>
+      {showGrid ? (
+        <>
+          <defs>
+            <pattern id="molecule-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+              <path d="M 32 0 L 0 0 0 32" fill="none" stroke="var(--grid-stroke)" strokeWidth="1" />
+            </pattern>
+          </defs>
 
-      <rect x={viewBox.x} y={viewBox.y} width={viewBox.width} height={viewBox.height} fill="url(#molecule-grid)" />
+          <rect x={viewBox.x} y={viewBox.y} width={viewBox.width} height={viewBox.height} fill="url(#molecule-grid)" />
+        </>
+      ) : null}
 
       {model.bonds.map((bond) => {
-        const source = findAtom(model, bond.sourceId);
-        const target = findAtom(model, bond.targetId);
+        const source = atomById.get(bond.sourceId) ?? null;
+        const target = atomById.get(bond.targetId) ?? null;
 
         if (source === null || target === null || (mode === 'stick' && shouldHideBondInStick(model, bond))) {
           return null;
@@ -948,21 +1159,82 @@ function EditorCanvas({
         const showStructuralBadge = mode === 'structural';
         const atomRadius = showEditorBadge ? 17 : 12;
         const strokeWidth = isSelected ? 4 : 2;
+        const maxBondSlots = showEditorBadge ? resolveMaxBondSlots(atom.element) : 0;
+        const usedBondSlots = showEditorBadge ? getUsedBondSlots(model, atom.id) : 0;
+        const hasOpenValence = showEditorBadge && maxBondSlots > usedBondSlots;
         const fill = showEditorBadge
           ? `rgba(${color}, 0.22)`
           : `color-mix(in oklab, rgba(${color}, 0.16) 60%, var(--surface-2))`;
         const textFill = 'var(--text-strong)';
+        const stickAttachedHydrogenCount = mode === 'stick' ? resolveStickAttachedHydrogenCount(model, atom) : 0;
+        const stickLabelPlacement =
+          mode === 'stick' ? resolveStickLabelPlacement(model, atom, stickAttachedHydrogenCount) : null;
 
         return (
           <g
             key={atom.id}
-            onPointerDown={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onAtomPointerDown(atom.id, event);
-            }}
+            onPointerDown={
+              interactive && onAtomPointerDown !== undefined
+                ? (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onAtomPointerDown(atom.id, event);
+                  }
+                : undefined
+            }
             className={mode === 'editor' ? 'cursor-pointer' : undefined}
           >
+            {mode === 'stick' ? (
+              <>
+                <circle
+                  cx={atom.x}
+                  cy={atom.y}
+                  r={18}
+                  fill="transparent"
+                  stroke="none"
+                  pointerEvents="all"
+                />
+                <text
+                  x={stickLabelPlacement?.x ?? atom.x}
+                  y={stickLabelPlacement?.y ?? atom.y + 5}
+                  textAnchor={stickLabelPlacement?.textAnchor ?? 'middle'}
+                  fontSize="14"
+                  fontWeight={isSelected ? '900' : '800'}
+                  fill={isSelected ? 'var(--accent-strong)' : textFill}
+                  stroke="var(--surface-1)"
+                  strokeWidth="4"
+                  paintOrder="stroke"
+                  letterSpacing={stickAttachedHydrogenCount > 0 ? '-0.01em' : undefined}
+                >
+                  {atom.element.symbol}
+                  {stickAttachedHydrogenCount > 0 ? (
+                    <>
+                      <tspan dx="0.5">H</tspan>
+                      {stickAttachedHydrogenCount > 1 ? (
+                        <tspan
+                          fontSize="10"
+                          baselineShift="sub"
+                        >
+                          {stickAttachedHydrogenCount}
+                        </tspan>
+                      ) : null}
+                    </>
+                  ) : null}
+                </text>
+              </>
+            ) : (
+              <>
+            {hasOpenValence ? (
+              <circle
+                cx={atom.x}
+                cy={atom.y}
+                r={atomRadius + 5}
+                fill="none"
+                stroke="rgba(245, 158, 11, 0.92)"
+                strokeWidth={2}
+                strokeDasharray="4 3"
+              />
+            ) : null}
             <circle
               cx={atom.x}
               cy={atom.y}
@@ -1005,6 +1277,8 @@ function EditorCanvas({
                 {atom.element.symbol}
               </text>
             )}
+              </>
+            )}
           </g>
         );
       })}
@@ -1013,7 +1287,157 @@ function EditorCanvas({
   );
 }
 
-function MolecularEditor({ elements }: MolecularEditorProps) {
+function normalizeOptionalText(value: string): string | null {
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function formatSavedAtLabel(value: string): string {
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return 'Unknown sync time';
+  }
+
+  return SAVED_AT_FORMATTER.format(parsed);
+}
+
+const MoleculeGalleryPreview = memo(function MoleculeGalleryPreview({
+  model,
+  label,
+}: {
+  model: MoleculeModel;
+  label: string;
+}) {
+  const previewSvgRef = useRef<SVGSVGElement | null>(null);
+  const previewViewBox = useMemo(() => {
+    const base = resolveViewBox(model);
+
+    return {
+      x: base.x - 20,
+      y: base.y - 20,
+      width: base.width + 40,
+      height: base.height + 40,
+    };
+  }, [model]);
+
+  return (
+    <div className="relative h-32 overflow-hidden rounded-[1.35rem] border border-(--border-subtle) bg-(--surface-overlay-soft)">
+      <EditorCanvas
+        model={model}
+        mode="stick"
+        viewBox={previewViewBox}
+        selectedAtomId={null}
+        svgRef={previewSvgRef}
+        interactive={false}
+        showGrid={false}
+        ariaLabel={label}
+      />
+    </div>
+  );
+});
+
+const MoleculeGalleryCard = memo(function MoleculeGalleryCard({
+  savedMolecule,
+  isActive,
+  onLoad,
+}: {
+  savedMolecule: SavedMolecule;
+  isActive: boolean;
+  onLoad: (savedMolecule: SavedMolecule) => void;
+}) {
+  const description = savedMolecule.educationalDescription;
+  const title = savedMolecule.name ?? savedMolecule.summary.formula;
+  const savedAtLabel = useMemo(() => formatSavedAtLabel(savedMolecule.updatedAt), [savedMolecule.updatedAt]);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onLoad(savedMolecule)}
+      className={`group relative overflow-hidden rounded-[1.6rem] border p-3 text-left transition-all ${
+        isActive
+          ? 'border-(--accent) bg-(--accent)/10 shadow-[0_18px_40px_-28px_color-mix(in_oklab,var(--accent)_55%,transparent)]'
+          : 'border-(--border-subtle) bg-(--surface-overlay-soft) hover:border-(--accent) hover:bg-(--surface-overlay-mid)'
+      }`}
+    >
+      <MoleculeGalleryPreview
+        model={savedMolecule.molecule}
+        label={`Stick view preview of ${title}`}
+      />
+
+      <div className="mt-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-base font-black text-foreground">{title}</p>
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
+            {savedMolecule.summary.formula}
+          </p>
+        </div>
+        {isActive ? (
+          <span className="shrink-0 rounded-full border border-(--accent) bg-(--accent)/16 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-foreground">
+            Active
+          </span>
+        ) : null}
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+        <div className="rounded-2xl bg-(--surface-overlay-faint) px-2 py-2">
+          <p className="text-[10px] uppercase tracking-[0.14em] text-(--text-muted)">Atoms</p>
+          <p className="mt-1 text-sm font-black text-foreground">{savedMolecule.summary.atomCount}</p>
+        </div>
+        <div className="rounded-2xl bg-(--surface-overlay-faint) px-2 py-2">
+          <p className="text-[10px] uppercase tracking-[0.14em] text-(--text-muted)">Bonds</p>
+          <p className="mt-1 text-sm font-black text-foreground">{savedMolecule.summary.bondCount}</p>
+        </div>
+        <div className="rounded-2xl bg-(--surface-overlay-faint) px-2 py-2">
+          <p className="text-[10px] uppercase tracking-[0.14em] text-(--text-muted)">Saved</p>
+          <p className="mt-1 text-[11px] font-semibold text-foreground">{savedAtLabel}</p>
+        </div>
+      </div>
+
+      <div className="mt-3 min-h-[2.75rem] text-sm leading-relaxed text-(--text-muted)">
+        {description !== null ? (
+          <p
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            {description}
+          </p>
+        ) : (
+          <p>No educational description yet.</p>
+        )}
+      </div>
+
+      {description !== null ? (
+        <div className="pointer-events-none absolute inset-0 flex items-end bg-black/78 p-4 opacity-0 backdrop-blur-[2px] transition-opacity duration-200 group-hover:opacity-100">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-(--text-muted)">
+              Educational Description
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-white/92">{description}</p>
+          </div>
+        </div>
+      ) : null}
+    </button>
+  );
+});
+
+function MolecularEditor({
+  pageMode,
+  elements,
+  savedMolecules,
+  savedMoleculesError,
+  isSavedMoleculesLoading,
+  isSavedMoleculesMutating,
+  onReloadSavedMolecules,
+  onCreateSavedMolecule,
+  onUpdateSavedMolecule,
+  onDeleteSavedMolecule,
+}: MolecularEditorProps) {
+  const router = useRouter();
   const [molecule, setMolecule] = useState<MoleculeModel>(EMPTY_MOLECULE);
   const [selectedAtomId, setSelectedAtomId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<EditorViewMode>('editor');
@@ -1029,6 +1453,12 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
   const [isPaletteMoving, setIsPaletteMoving] = useState(false);
   const [isPalettePointerActive, setIsPalettePointerActive] = useState(false);
   const [editorNotice, setEditorNotice] = useState('Select an element, then double-click or double-tap the canvas to place it.');
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isFloatingSaveShortcutExpanded, setIsFloatingSaveShortcutExpanded] = useState(false);
+  const [activeSavedMoleculeId, setActiveSavedMoleculeId] = useState<string | null>(null);
+  const [moleculeName, setMoleculeName] = useState('');
+  const [moleculeEducationalDescription, setMoleculeEducationalDescription] = useState('');
+  const [galleryFeedback, setGalleryFeedback] = useState<GalleryFeedback | null>(null);
   const [canvasViewport, setCanvasViewport] = useState<CanvasViewport>(DEFAULT_CANVAS_VIEWPORT);
   const [paletteEdgePadding, setPaletteEdgePadding] = useState(0);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -1042,12 +1472,14 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
   const canvasFrameRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const interactionRef = useRef<CanvasInteraction>({ type: 'idle' });
+  const selectedAtomIdRef = useRef<string | null>(null);
   const pendingCanvasPlacementRef = useRef<{
     timestamp: number;
     clientX: number;
     clientY: number;
     pointerType: string;
   } | null>(null);
+  const pendingCanvasSelectionClearTimeoutRef = useRef<number | null>(null);
   const paletteInteractionRef = useRef({
     pointerId: -1,
     startClientX: 0,
@@ -1062,14 +1494,15 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
   const paletteMomentumFrameRef = useRef<number | null>(null);
   const paletteSnapTimeoutRef = useRef<number | null>(null);
   const paletteSettleTimeoutRef = useRef<number | null>(null);
+  const galleryFeedbackTimeoutRef = useRef<number | null>(null);
   const suppressPaletteClickRef = useRef(false);
   const paletteSearchFocusTimeoutRef = useRef<number | null>(null);
+  const pendingSavedMoleculeIdRef = useRef<string | null>(null);
   const [topControlsHeight, setTopControlsHeight] = useState(0);
   const [topOverlayHeight, setTopOverlayHeight] = useState(0);
   const [paletteSearchRailHeight, setPaletteSearchRailHeight] = useState(0);
   const [bottomNoticeHeight, setBottomNoticeHeight] = useState(0);
   const [canvasFrameSize, setCanvasFrameSize] = useState({ width: 0, height: 0 });
-  const [windowWidth, setWindowWidth] = useState(0);
 
   const filteredElements = useMemo(() => {
     const normalizedQuery = paletteQuery.trim();
@@ -1131,6 +1564,81 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
   const hasActivePaletteFilter = paletteQuery.trim().length > 0;
   const isPaletteSearchOpen = isPaletteSearchExpanded;
   const zoomPercent = Math.round(canvasViewport.scale * 100);
+  const normalizedSavedMolecules = useMemo(
+    () => savedMolecules.map((entry) => normalizeSavedMoleculeRecord(entry)),
+    [savedMolecules],
+  );
+  const resolvedActiveSavedMoleculeId = useMemo(() => {
+    if (activeSavedMoleculeId === null) {
+      return null;
+    }
+
+    return normalizedSavedMolecules.some((entry) => entry.id === activeSavedMoleculeId)
+      ? activeSavedMoleculeId
+      : null;
+  }, [activeSavedMoleculeId, normalizedSavedMolecules]);
+  const activeSavedMolecule = useMemo(
+    () => normalizedSavedMolecules.find((entry) => entry.id === resolvedActiveSavedMoleculeId) ?? null,
+    [normalizedSavedMolecules, resolvedActiveSavedMoleculeId],
+  );
+
+  useEffect(() => {
+    selectedAtomIdRef.current = selectedAtomId;
+  }, [selectedAtomId]);
+
+  const clearGalleryFeedbackTimeout = useCallback(() => {
+    if (galleryFeedbackTimeoutRef.current !== null) {
+      window.clearTimeout(galleryFeedbackTimeoutRef.current);
+      galleryFeedbackTimeoutRef.current = null;
+    }
+  }, []);
+
+  const showGalleryFeedback = useCallback(
+    (
+      tone: GalleryFeedbackTone,
+      message: string,
+      options?: {
+        persist?: boolean;
+      },
+    ) => {
+      clearGalleryFeedbackTimeout();
+      setGalleryFeedback({ tone, message });
+
+      if (options?.persist === true) {
+        return;
+      }
+
+      galleryFeedbackTimeoutRef.current = window.setTimeout(() => {
+        setGalleryFeedback((current) => (current?.message === message ? null : current));
+        galleryFeedbackTimeoutRef.current = null;
+      }, GALLERY_FEEDBACK_AUTO_HIDE_MS);
+    },
+    [clearGalleryFeedbackTimeout],
+  );
+
+  const clearPendingCanvasSelectionClearTimeout = useCallback(() => {
+    if (pendingCanvasSelectionClearTimeoutRef.current !== null) {
+      window.clearTimeout(pendingCanvasSelectionClearTimeoutRef.current);
+      pendingCanvasSelectionClearTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearPendingCanvasPlacement = useCallback(() => {
+    pendingCanvasPlacementRef.current = null;
+    clearPendingCanvasSelectionClearTimeout();
+  }, [clearPendingCanvasSelectionClearTimeout]);
+
+  useEffect(() => {
+    return () => {
+      clearGalleryFeedbackTimeout();
+    };
+  }, [clearGalleryFeedbackTimeout]);
+
+  useEffect(() => {
+    return () => {
+      clearPendingCanvasSelectionClearTimeout();
+    };
+  }, [clearPendingCanvasSelectionClearTimeout]);
 
   const syncCenterPaletteIndex = useCallback((index: number) => {
     centerPaletteIndexRef.current = index;
@@ -1138,9 +1646,9 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
   }, []);
 
   const clearTransientEditorState = useCallback(() => {
-    pendingCanvasPlacementRef.current = null;
+    clearPendingCanvasPlacement();
     interactionRef.current = { type: 'idle' };
-  }, []);
+  }, [clearPendingCanvasPlacement]);
 
   const buildEditorSnapshot = useCallback(
     (
@@ -1185,6 +1693,111 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
     },
     [clearTransientEditorState],
   );
+
+  const buildSaveMoleculeInput = useCallback((): SaveMoleculeInput => {
+    const snapshot = buildEditorSnapshot();
+    const normalized = normalizeMoleculeModel(snapshot.molecule);
+    const normalizedModel = normalized.model;
+    const normalizedSelectedAtomId =
+      snapshot.selectedAtomId === null ? null : normalized.atomIdsByOriginalId.get(snapshot.selectedAtomId)?.[0] ?? null;
+
+    syncMoleculeIdCounter(normalizedModel);
+
+    return {
+      name: normalizeOptionalText(moleculeName),
+      educationalDescription: normalizeOptionalText(moleculeEducationalDescription),
+      molecule: normalizedModel,
+      editorState: {
+        selectedAtomId: normalizeSnapshotSelectedAtomId(normalizedModel, normalizedSelectedAtomId),
+        activeView: snapshot.activeView,
+        bondOrder: snapshot.bondOrder,
+        canvasViewport: {
+          offsetX: snapshot.canvasViewport.offsetX,
+          offsetY: snapshot.canvasViewport.offsetY,
+          scale: snapshot.canvasViewport.scale,
+        },
+      },
+    };
+  }, [buildEditorSnapshot, moleculeEducationalDescription, moleculeName]);
+
+  const applySavedMolecule = useCallback(
+    (savedMolecule: SavedMolecule, notice: string) => {
+      const normalizedSavedMolecule = normalizeSavedMoleculeRecord(savedMolecule);
+
+      syncMoleculeIdCounter(normalizedSavedMolecule.molecule);
+      applyEditorSnapshot(
+        {
+          molecule: cloneMoleculeModel(normalizedSavedMolecule.molecule),
+          selectedAtomId: normalizedSavedMolecule.editorState.selectedAtomId,
+          activeView: normalizedSavedMolecule.editorState.activeView,
+          bondOrder: normalizedSavedMolecule.editorState.bondOrder,
+          canvasViewport: {
+            offsetX: normalizedSavedMolecule.editorState.canvasViewport.offsetX,
+            offsetY: normalizedSavedMolecule.editorState.canvasViewport.offsetY,
+            scale: normalizedSavedMolecule.editorState.canvasViewport.scale,
+          },
+        },
+        notice,
+      );
+      setHistoryPast([]);
+      setHistoryFuture([]);
+      setActiveSavedMoleculeId(normalizedSavedMolecule.id);
+      setMoleculeName(normalizedSavedMolecule.name ?? '');
+      setMoleculeEducationalDescription(normalizedSavedMolecule.educationalDescription ?? '');
+      showGalleryFeedback(
+        'info',
+        `${normalizedSavedMolecule.name ?? normalizedSavedMolecule.summary.formula} loaded from your gallery.`,
+      );
+    },
+    [applyEditorSnapshot, showGalleryFeedback],
+  );
+
+  useEffect(() => {
+    if (pageMode !== 'editor') {
+      return;
+    }
+
+    if (pendingSavedMoleculeIdRef.current === null) {
+      pendingSavedMoleculeIdRef.current = readPendingSavedMoleculeId();
+    }
+
+    const pendingSavedMoleculeId = pendingSavedMoleculeIdRef.current;
+
+    if (pendingSavedMoleculeId === null) {
+      return;
+    }
+
+    if (isSavedMoleculesLoading) {
+      return;
+    }
+
+    const pendingSavedMolecule = normalizedSavedMolecules.find((entry) => entry.id === pendingSavedMoleculeId);
+
+    if (pendingSavedMolecule === undefined) {
+      const timeoutId = window.setTimeout(() => {
+        clearPendingSavedMoleculeId();
+        pendingSavedMoleculeIdRef.current = null;
+        showGalleryFeedback('error', 'Could not find the selected gallery molecule.');
+      }, 0);
+
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      clearPendingSavedMoleculeId();
+      pendingSavedMoleculeIdRef.current = null;
+      applySavedMolecule(
+        pendingSavedMolecule,
+        `${pendingSavedMolecule.name ?? pendingSavedMolecule.summary.formula} loaded from gallery.`,
+      );
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [applySavedMolecule, isSavedMoleculesLoading, normalizedSavedMolecules, pageMode, showGalleryFeedback]);
 
   const onUndo = useCallback(() => {
     if (historyPast.length === 0) {
@@ -1357,24 +1970,24 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
       return;
     }
 
-    const nextIndex =
-      resolvedExpandedPaletteIndex === 0 ? filteredElements.length - 1 : resolvedExpandedPaletteIndex - 1;
+    const currentIndex = clampPaletteIndex(centerPaletteIndexRef.current);
+    const nextIndex = currentIndex === 0 ? filteredElements.length - 1 : currentIndex - 1;
 
     setIsPaletteMoving(true);
     settlePaletteSelection(nextIndex);
-  }, [filteredElements.length, resolvedExpandedPaletteIndex, settlePaletteSelection]);
+  }, [clampPaletteIndex, filteredElements.length, settlePaletteSelection]);
 
   const goToNextPaletteElement = useCallback(() => {
     if (filteredElements.length === 0) {
       return;
     }
 
-    const nextIndex =
-      resolvedExpandedPaletteIndex === filteredElements.length - 1 ? 0 : resolvedExpandedPaletteIndex + 1;
+    const currentIndex = clampPaletteIndex(centerPaletteIndexRef.current);
+    const nextIndex = currentIndex === filteredElements.length - 1 ? 0 : currentIndex + 1;
 
     setIsPaletteMoving(true);
     settlePaletteSelection(nextIndex);
-  }, [filteredElements.length, resolvedExpandedPaletteIndex, settlePaletteSelection]);
+  }, [clampPaletteIndex, filteredElements.length, settlePaletteSelection]);
 
   const snapPaletteToNearest = useCallback(
     (behavior: ScrollBehavior = 'smooth') => {
@@ -1456,6 +2069,7 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
       successMessage: string,
       anchorPoint?: { x: number; y: number },
     ) => {
+      clearPendingCanvasPlacement();
       const nextSelectedAtomId = normalizeSnapshotSelectedAtomId(result.molecule, result.selectedAtomId);
       const shouldRecordHistory =
         result.molecule !== previousMolecule || nextSelectedAtomId !== normalizeSnapshotSelectedAtomId(molecule, selectedAtomId);
@@ -1479,7 +2093,7 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
       }
       setEditorNotice(result.error ?? successMessage);
     },
-    [buildEditorSnapshot, canvasFrameAspectRatio, canvasViewport, molecule, pushHistorySnapshot, selectedAtomId],
+    [buildEditorSnapshot, canvasFrameAspectRatio, canvasViewport, clearPendingCanvasPlacement, molecule, pushHistorySnapshot, selectedAtomId],
   );
 
   const onAddSelectedElement = useCallback(() => {
@@ -1524,6 +2138,7 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
 
   const onSetActiveView = useCallback(
     (nextView: EditorViewMode) => {
+      setIsFloatingSaveShortcutExpanded(false);
       setActiveView(nextView);
     },
     [],
@@ -1537,15 +2152,18 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
   );
 
   const onClearSelection = useCallback(() => {
+    clearPendingCanvasPlacement();
     setSelectedAtomId(null);
     setEditorNotice('Selection cleared.');
-  }, []);
+  }, [clearPendingCanvasPlacement]);
 
   const commitAtomSelection = useCallback(
     (atomId: string) => {
+      clearPendingCanvasPlacement();
+
       if (selectedAtomId === null) {
         setSelectedAtomId(atomId);
-        setEditorNotice('Atom selected. Double-click or double-tap the canvas to attach the active element, or tap another atom to create a bond.');
+        setEditorNotice('Atom selected. Tap another atom to create a bond, or use the tools to attach the active element.');
         return;
       }
 
@@ -1558,7 +2176,7 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
       const result = connectAtoms(molecule, selectedAtomId, atomId, bondOrder);
       commitMoleculeChange(molecule, result, `Bond updated to order ${bondOrder}.`);
     },
-    [bondOrder, commitMoleculeChange, molecule, selectedAtomId],
+    [bondOrder, clearPendingCanvasPlacement, commitMoleculeChange, molecule, selectedAtomId],
   );
 
   const queueCanvasPlacement = useCallback(
@@ -1573,24 +2191,49 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
           CANVAS_DOUBLE_PRESS_DISTANCE_PX;
 
       if (isRepeatedPlacement) {
-        pendingCanvasPlacementRef.current = null;
+        clearPendingCanvasPlacement();
         commitCanvasPlacement(point);
         return;
       }
 
+      clearPendingCanvasSelectionClearTimeout();
       pendingCanvasPlacementRef.current = {
         timestamp: now,
         clientX,
         clientY,
         pointerType,
       };
+
+      if (selectedAtomId !== null) {
+        const atomIdToClear = selectedAtomId;
+
+        pendingCanvasSelectionClearTimeoutRef.current = window.setTimeout(() => {
+          pendingCanvasSelectionClearTimeoutRef.current = null;
+          pendingCanvasPlacementRef.current = null;
+
+          if (selectedAtomIdRef.current !== atomIdToClear) {
+            return;
+          }
+
+          setSelectedAtomId(null);
+          setEditorNotice('Selection cleared.');
+        }, CANVAS_DOUBLE_PRESS_DELAY_MS);
+
+        setEditorNotice(
+          pointerType === 'touch'
+            ? 'Double-tap again to attach the active element, or wait to clear the selection.'
+            : 'Double-click again to attach the active element, or wait to clear the selection.',
+        );
+        return;
+      }
+
       setEditorNotice(
         pointerType === 'touch'
-          ? 'Double-tap the canvas to place or attach the active element.'
-          : 'Double-click the canvas to place or attach the active element.',
+          ? 'Double-tap the canvas to place the active element.'
+          : 'Double-click the canvas to place the active element.',
       );
     },
-    [commitCanvasPlacement],
+    [clearPendingCanvasPlacement, clearPendingCanvasSelectionClearTimeout, commitCanvasPlacement, selectedAtomId],
   );
 
   const onCanvasPointerDown = useCallback(
@@ -1601,6 +2244,10 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
 
       if (event.pointerType === 'mouse' && event.button !== 0) {
         return;
+      }
+
+      if (selectedAtomIdRef.current !== null && pendingCanvasPlacementRef.current !== null) {
+        clearPendingCanvasSelectionClearTimeout();
       }
 
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -1617,7 +2264,7 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
         moved: false,
       };
     },
-    [activeView, canvasViewport.offsetX, canvasViewport.offsetY],
+    [activeView, canvasViewport.offsetX, canvasViewport.offsetY, clearPendingCanvasSelectionClearTimeout],
   );
 
   const onCanvasPointerMove = useCallback((event: ReactPointerEvent<SVGSVGElement>) => {
@@ -1729,10 +2376,10 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
 
-      pendingCanvasPlacementRef.current = null;
+      clearPendingCanvasPlacement();
       interactionRef.current = { type: 'idle' };
     },
-    [],
+    [clearPendingCanvasPlacement],
   );
 
   const onCanvasWheel = useCallback(
@@ -1798,7 +2445,7 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
       }
 
       svg.setPointerCapture(event.pointerId);
-      pendingCanvasPlacementRef.current = null;
+      clearPendingCanvasPlacement();
 
       interactionRef.current = {
         type: 'atom-press',
@@ -1812,7 +2459,7 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
         moved: false,
       };
     },
-    [canvasViewport.offsetX, canvasViewport.offsetY, molecule],
+    [canvasViewport.offsetX, canvasViewport.offsetY, clearPendingCanvasPlacement, molecule],
   );
 
   const onRemoveSelectedAtom = useCallback(() => {
@@ -1853,6 +2500,35 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
     setEditorNotice('Selected atom removed.');
   }, [buildEditorSnapshot, canvasFrameAspectRatio, canvasViewport, molecule, pushHistorySnapshot, selectedAtomId]);
 
+  useEffect(() => {
+    if (pageMode !== 'editor') {
+      return;
+    }
+
+    const handleDeleteKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Delete' && event.key !== 'Backspace') {
+        return;
+      }
+
+      if (event.altKey || event.ctrlKey || event.metaKey || isSaveModalOpen) {
+        return;
+      }
+
+      if (isTextEditingElement(event.target) || selectedAtomId === null) {
+        return;
+      }
+
+      event.preventDefault();
+      onRemoveSelectedAtom();
+    };
+
+    window.addEventListener('keydown', handleDeleteKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleDeleteKeyDown);
+    };
+  }, [isSaveModalOpen, onRemoveSelectedAtom, pageMode, selectedAtomId]);
+
   const onResetMolecule = useCallback(() => {
     const isAlreadyPristine =
       molecule.atoms.length === 0 &&
@@ -1877,6 +2553,112 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
     setCanvasViewport(DEFAULT_CANVAS_VIEWPORT);
     setEditorNotice('Editor reset.');
   }, [activeView, bondOrder, buildEditorSnapshot, canvasViewport.offsetX, canvasViewport.offsetY, canvasViewport.scale, clearTransientEditorState, molecule.atoms.length, pushHistorySnapshot, selectedAtomId]);
+
+  const onDetachSavedMolecule = useCallback(() => {
+    setActiveSavedMoleculeId(null);
+    showGalleryFeedback('info', 'Current canvas detached. Saving now will create a new record.');
+  }, [showGalleryFeedback]);
+
+  const onOpenSaveModal = useCallback(() => {
+    setIsFloatingSaveShortcutExpanded(false);
+    setIsSaveModalOpen(true);
+  }, []);
+
+  const onCloseSaveModal = useCallback(() => {
+    setIsSaveModalOpen(false);
+  }, []);
+
+  const onLoadSavedMolecule = useCallback(
+    (savedMolecule: SavedMolecule) => {
+      applySavedMolecule(savedMolecule, `${savedMolecule.name ?? savedMolecule.summary.formula} loaded.`);
+    },
+    [applySavedMolecule],
+  );
+
+  const onOpenCurrentSavedMoleculeInEditor = useCallback(() => {
+    if (activeSavedMolecule === null) {
+      showGalleryFeedback('error', 'Select a saved molecule before opening it in the editor.');
+      return;
+    }
+
+    writePendingSavedMoleculeId(activeSavedMolecule.id);
+    router.push('/molecular-editor');
+  }, [activeSavedMolecule, router, showGalleryFeedback]);
+
+  const onSaveAsNewMolecule = useCallback(async () => {
+    if (summary.atomCount === 0) {
+      showGalleryFeedback('error', 'Add atoms before saving a molecule to the gallery.');
+      return;
+    }
+
+    try {
+      showGalleryFeedback('info', 'Save request sent.', { persist: true });
+      const created = await onCreateSavedMolecule(buildSaveMoleculeInput());
+      setActiveSavedMoleculeId(created.id);
+      setMoleculeName(created.name ?? '');
+      setMoleculeEducationalDescription(created.educationalDescription ?? '');
+      setIsSaveModalOpen(false);
+      showGalleryFeedback('success', 'Work saved.');
+    } catch (caughtError: unknown) {
+      showGalleryFeedback('error', mapSavedMoleculesErrorMessage(caughtError));
+    }
+  }, [buildSaveMoleculeInput, onCreateSavedMolecule, showGalleryFeedback, summary.atomCount]);
+
+  const onUpdateCurrentSavedMolecule = useCallback(async () => {
+    if (resolvedActiveSavedMoleculeId === null) {
+      showGalleryFeedback('error', 'Select a saved molecule before updating it.');
+      return;
+    }
+
+    if (summary.atomCount === 0) {
+      showGalleryFeedback('error', 'Add atoms before updating a saved molecule.');
+      return;
+    }
+
+    try {
+      showGalleryFeedback('info', 'Save request sent.', { persist: true });
+      const updated = await onUpdateSavedMolecule(resolvedActiveSavedMoleculeId, buildSaveMoleculeInput());
+      setMoleculeName(updated.name ?? '');
+      setMoleculeEducationalDescription(updated.educationalDescription ?? '');
+      setIsSaveModalOpen(false);
+      showGalleryFeedback('success', 'Work saved.');
+    } catch (caughtError: unknown) {
+      showGalleryFeedback('error', mapSavedMoleculesErrorMessage(caughtError));
+    }
+  }, [buildSaveMoleculeInput, onUpdateSavedMolecule, resolvedActiveSavedMoleculeId, showGalleryFeedback, summary.atomCount]);
+
+  const onDeleteCurrentSavedMolecule = useCallback(async () => {
+    if (resolvedActiveSavedMoleculeId === null) {
+      showGalleryFeedback('error', 'Select a saved molecule before deleting it.');
+      return;
+    }
+
+    try {
+      showGalleryFeedback('info', 'Delete request sent.', { persist: true });
+      await onDeleteSavedMolecule(resolvedActiveSavedMoleculeId);
+      setActiveSavedMoleculeId(null);
+      setIsSaveModalOpen(false);
+      showGalleryFeedback('success', 'Saved work deleted.');
+    } catch (caughtError: unknown) {
+      showGalleryFeedback('error', mapSavedMoleculesErrorMessage(caughtError));
+    }
+  }, [onDeleteSavedMolecule, resolvedActiveSavedMoleculeId, showGalleryFeedback]);
+
+  const onDeleteCurrentSavedMoleculeFromGallery = useCallback(async () => {
+    if (activeSavedMolecule === null) {
+      showGalleryFeedback('error', 'Select a saved molecule before deleting it.');
+      return;
+    }
+
+    const label = activeSavedMolecule.name ?? activeSavedMolecule.summary.formula;
+    const shouldDelete = window.confirm(`Delete "${label}" from your gallery?`);
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    await onDeleteCurrentSavedMolecule();
+  }, [activeSavedMolecule, onDeleteCurrentSavedMolecule, showGalleryFeedback]);
 
   const onZoomOut = useCallback(() => {
     const frameAspectRatio =
@@ -1917,19 +2699,6 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
   const onResetCanvasView = useCallback(() => {
     setCanvasViewport(DEFAULT_CANVAS_VIEWPORT);
     setEditorNotice('Canvas view reset.');
-  }, []);
-
-  useEffect(() => {
-    const updateWindowWidth = () => {
-      setWindowWidth(window.innerWidth);
-    };
-
-    updateWindowWidth();
-    window.addEventListener('resize', updateWindowWidth);
-
-    return () => {
-      window.removeEventListener('resize', updateWindowWidth);
-    };
   }, []);
 
   useEffect(() => {
@@ -2359,7 +3128,9 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
   const isCompactCanvas = canvasFrameSize.width > 0 && canvasFrameSize.width < 640;
   const isWideCanvas = canvasFrameSize.width >= 1024;
   const isSimplifiedView = activeView === 'simplified';
-  const editorVerticalGap = 8;
+  const editorSectionGap = 12;
+  const editorSectionTopPadding = 2;
+  const editorSectionBottomPadding = 16;
   const isLandscapeCompactCanvas =
     !isSimplifiedView &&
     canvasFrameSize.width > 0 &&
@@ -2368,17 +3139,15 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
     canvasFrameSize.height < 360;
   const viewportMainHeightCss = 'var(--app-viewport-main-height, 100svh)';
   const viewportMainGutterCss = 'var(--app-viewport-main-gutter, 0px)';
-  const viewportMainTopGutterCss = `calc(${viewportMainGutterCss} + 4px)`;
-  const canvasPanelHeightCss = `max(280px, calc(${viewportMainHeightCss} - ${topControlsHeight + editorVerticalGap}px - ${viewportMainTopGutterCss}))`;
+  const viewportMainTopGutterCss = `calc(${viewportMainGutterCss} + ${editorSectionTopPadding}px)`;
+  const canvasPanelHeightCss = `max(280px, calc(${viewportMainHeightCss} - ${topControlsHeight + editorSectionGap + editorSectionBottomPadding}px - ${viewportMainTopGutterCss}))`;
   const canvasPanelStyle: CSSProperties = {
     height: canvasPanelHeightCss,
     minHeight: canvasPanelHeightCss,
     maxHeight: canvasPanelHeightCss,
   };
   const editorSectionStyle: CSSProperties = {
-    height: viewportMainHeightCss,
     minHeight: viewportMainHeightCss,
-    maxHeight: viewportMainHeightCss,
     paddingTop: viewportMainTopGutterCss,
   };
   const canvasContentInsetTop = topOverlayHeight > 0 ? topOverlayHeight + 16 : 96;
@@ -2390,12 +3159,14 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
     maxHeight: `calc(100% - ${toolRailTop + 12}px)`,
   };
   const simplifiedHorizontalPadding = isWideCanvas ? 32 : isCompactCanvas ? 14 : 22;
+  const simplifiedFloatingSaveClearance =
+    isSimplifiedView && pageMode === 'editor' ? (isLandscapeCompactCanvas ? 54 : 62) : 0;
   const simplifiedTopPadding =
     canvasContentInsetTop + paletteSearchRailOffset + (isCompactCanvas ? 12 : 16);
   const simplifiedBottomPadding = isWideCanvas ? 36 : isCompactCanvas ? 24 : 30;
   const simplifiedViewStyle: CSSProperties = {
     paddingTop: simplifiedTopPadding,
-    paddingLeft: simplifiedHorizontalPadding,
+    paddingLeft: simplifiedHorizontalPadding + simplifiedFloatingSaveClearance,
     paddingRight: simplifiedHorizontalPadding,
     paddingBottom: simplifiedBottomPadding,
     WebkitOverflowScrolling: 'touch',
@@ -2430,11 +3201,12 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
   const toolRailCollapsedWidthPx = isLandscapeCompactCanvas ? 40 : 48;
   const paletteSearchTriggerWidthPx = isLandscapeCompactCanvas ? 40 : 48;
   const paletteSearchClosedWidthPx = toolRailCollapsedWidthPx;
+  const responsiveLayoutWidth = canvasFrameSize.width > 0 ? canvasFrameSize.width : 320;
   const toolRailExpandedWidthPx = isLandscapeCompactCanvas
-    ? Math.round(Math.min((windowWidth > 0 ? windowWidth : 240) * 0.56, 136))
-    : windowWidth >= 640
+    ? Math.round(Math.min(responsiveLayoutWidth * 0.56, 136))
+    : responsiveLayoutWidth >= 640
       ? 208
-      : Math.round(Math.min((windowWidth > 0 ? windowWidth : 320) * 0.72, 224));
+      : Math.round(Math.min(responsiveLayoutWidth * 0.72, 224));
   const paletteSearchExpandedWidthPx = Math.round(
     toolRailExpandedWidthPx,
   );
@@ -2450,6 +3222,17 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
   };
   const paletteSearchTriggerStyle: CSSProperties = {
     width: `${paletteSearchTriggerWidthPx}px`,
+  };
+  const floatingSaveShortcutClosedWidthPx = toolRailCollapsedWidthPx;
+  const floatingSaveShortcutExpandedWidthPx = isLandscapeCompactCanvas ? 132 : 156;
+  const floatingSaveShortcutPanelStyle: CSSProperties = {
+    width: `${isFloatingSaveShortcutExpanded ? floatingSaveShortcutExpandedWidthPx : floatingSaveShortcutClosedWidthPx}px`,
+  };
+  const floatingSaveShortcutInnerStyle: CSSProperties = {
+    width: `${floatingSaveShortcutExpandedWidthPx}px`,
+  };
+  const floatingSaveShortcutTriggerStyle: CSSProperties = {
+    width: `${floatingSaveShortcutClosedWidthPx}px`,
   };
   const paletteSearchButtonClassName = isLandscapeCompactCanvas ? 'h-5 w-5' : 'h-5.5 w-5.5';
   const paletteViewportWrapperClassName = isLandscapeCompactCanvas
@@ -2482,10 +3265,37 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
   const formulaPanelButtonClassName = isLandscapeCompactCanvas ? 'w-7 text-[6px]' : 'w-8 text-[7px] sm:w-9 sm:text-[8px]';
   const canvasPanelClassName = 'surface-panel relative overflow-hidden rounded-3xl border border-(--border-subtle) shadow-sm';
   const canvasFrameClassName = 'relative h-full w-full';
-  const toolRailVisibilityClassName = isSimplifiedView ? 'pointer-events-none opacity-0' : 'opacity-100';
+  const isEditorPage = pageMode === 'editor';
+  const isGalleryPage = pageMode === 'gallery';
+  const shouldShowToolRail = isEditorPage && activeView === 'editor';
+  const shouldShowFloatingSaveShortcut = isEditorPage && activeView !== 'editor';
+  const hasCurrentSavedSelection = resolvedActiveSavedMoleculeId !== null;
+  const currentSaveLabel =
+    normalizeOptionalText(moleculeName) ??
+    activeSavedMolecule?.name ??
+    activeSavedMolecule?.summary.formula ??
+    (summary.atomCount === 0 ? 'Unsaved molecule' : formula);
+  const galleryGridClassName =
+    savedMolecules.length <= 1
+      ? 'grid gap-3'
+      : savedMolecules.length === 2
+        ? 'grid gap-3 md:grid-cols-2'
+        : 'grid gap-3 md:grid-cols-2 xl:grid-cols-3';
+  const galleryFeedbackToastLabel =
+    galleryFeedback?.tone === 'error'
+      ? 'Sync issue'
+      : galleryFeedback?.tone === 'success'
+        ? isEditorPage
+          ? 'Work saved'
+          : 'Gallery ready'
+        : isEditorPage
+          ? 'Saving'
+          : 'Gallery';
 
   return (
-    <section className="flex min-h-0 flex-col gap-2 overflow-visible" style={editorSectionStyle}>
+    <section className="flex min-h-0 flex-col gap-3 overflow-visible pb-4" style={editorSectionStyle}>
+      {isEditorPage ? (
+        <>
       <div ref={topControlsRef} className={topControlsRowClassName}>
         <div className={viewModeTabsClassName}>
           {VIEW_OPTIONS.map((option, index) => (
@@ -2702,126 +3512,179 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
           </div>
         </div>
 
-        <aside
-          style={toolRailStyle}
-          aria-hidden={isSimplifiedView}
-          className={`absolute left-3 z-20 flex flex-col overflow-hidden rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-rail) shadow-xl backdrop-blur-xl transition-opacity duration-200 ${
-            effectiveToolRailCollapsed ? toolRailCollapsedWidthClassName : toolRailExpandedWidthClassName
-          } ${toolRailVisibilityClassName}`}
-        >
-          <div className={`flex min-h-12 items-center border-b border-(--border-subtle)/70 p-2 ${effectiveToolRailCollapsed ? 'justify-center' : 'justify-between gap-2'}`}>
-            {showExpandedToolRailContent ? (
-              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
-                Tools
-              </p>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => setIsToolRailCollapsed((current) => !current)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-(--border-subtle) bg-(--surface-2)/70 text-(--text-muted) transition-colors hover:border-(--accent) hover:text-foreground"
-              aria-label={effectiveToolRailCollapsed ? 'Expand tool rail' : 'Collapse tool rail'}
-              title={effectiveToolRailCollapsed ? 'Expand tool rail' : 'Collapse tool rail'}
-            >
-              <RailToggleIcon collapsed={effectiveToolRailCollapsed} />
-            </button>
-          </div>
-
-          <div className={toolRailBodyClassName}>
-            <div className={effectiveToolRailCollapsed ? collapsedToolRailSectionClassName : expandedToolRailSectionClassName}>
+        {shouldShowToolRail ? (
+          <aside
+            style={toolRailStyle}
+            className={`absolute left-3 z-20 flex flex-col overflow-hidden rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-rail) shadow-xl backdrop-blur-xl transition-opacity duration-200 ${
+              effectiveToolRailCollapsed ? toolRailCollapsedWidthClassName : toolRailExpandedWidthClassName
+            }`}
+          >
+            <div className={`flex min-h-12 items-center border-b border-(--border-subtle)/70 p-2 ${effectiveToolRailCollapsed ? 'justify-center' : 'justify-between gap-2'}`}>
               {showExpandedToolRailContent ? (
-                <div className="flex items-center gap-2 px-1">
-                  <BondOrderIcon />
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)">
-                    Bond Order
-                  </p>
-                </div>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
+                  Tools
+                </p>
               ) : null}
-              <div className={`grid ${effectiveToolRailCollapsed ? 'w-full grid-cols-1 place-items-center gap-2' : 'grid-cols-3 gap-1.5'}`}>
-                {BOND_ORDER_OPTIONS.map((option) => (
-                  (() => {
-                    const isDisabled =
-                      selectedAtomId === null &&
-                      activeElementMaxBondSlots !== null &&
-                      option.order > activeElementMaxBondSlots;
-                    const disabledTitle =
-                      activeElement !== null && activeElementMaxBondSlots !== null
-                        ? `${activeElement.symbol} commonly supports up to ${activeElementMaxBondSlots} bond slot${
-                            activeElementMaxBondSlots === 1 ? '' : 's'
-                          }.`
-                        : `${option.label} bond`;
+              <button
+                type="button"
+                onClick={() => setIsToolRailCollapsed((current) => !current)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-(--border-subtle) bg-(--surface-2)/70 text-(--text-muted) transition-colors hover:border-(--accent) hover:text-foreground"
+                aria-label={effectiveToolRailCollapsed ? 'Expand tool rail' : 'Collapse tool rail'}
+                title={effectiveToolRailCollapsed ? 'Expand tool rail' : 'Collapse tool rail'}
+              >
+                <RailToggleIcon collapsed={effectiveToolRailCollapsed} />
+              </button>
+            </div>
 
-                    return (
-                      <button
-                        key={option.order}
-                        type="button"
-                        onClick={() => onSetBondOrder(option.order)}
-                        disabled={isDisabled}
-                        title={isDisabled ? disabledTitle : `${option.label} bond`}
-                        aria-label={isDisabled ? disabledTitle : `${option.label} bond`}
-                        className={`border transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
-                          isDisabled
-                            ? 'border-(--border-subtle) bg-(--surface-2)/55 text-(--text-muted)'
-                            : bondOrder === option.order
-                              ? 'border-(--accent) bg-(--accent)/22 text-foreground'
-                              : 'border-(--border-subtle) bg-(--surface-2)/70 text-(--text-muted) hover:border-(--accent) hover:text-foreground'
-                        } ${effectiveToolRailCollapsed ? 'mx-auto h-9 w-9 rounded-xl text-sm font-black' : 'h-9 rounded-xl px-0 text-sm font-black'}`}
-                      >
-                        {option.order}
-                      </button>
-                    );
-                  })()
-                ))}
+            <div className={toolRailBodyClassName}>
+              <div className={effectiveToolRailCollapsed ? collapsedToolRailSectionClassName : expandedToolRailSectionClassName}>
+                {showExpandedToolRailContent ? (
+                  <div className="flex items-center gap-2 px-1">
+                    <BondOrderIcon />
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)">
+                      Bond Order
+                    </p>
+                  </div>
+                ) : null}
+                <div className={`grid ${effectiveToolRailCollapsed ? 'w-full grid-cols-1 place-items-center gap-2' : 'grid-cols-3 gap-1.5'}`}>
+                  {BOND_ORDER_OPTIONS.map((option) => (
+                    (() => {
+                      const isDisabled =
+                        selectedAtomId === null &&
+                        activeElementMaxBondSlots !== null &&
+                        option.order > activeElementMaxBondSlots;
+                      const disabledTitle =
+                        activeElement !== null && activeElementMaxBondSlots !== null
+                          ? `${activeElement.symbol} commonly supports up to ${activeElementMaxBondSlots} bond slot${
+                              activeElementMaxBondSlots === 1 ? '' : 's'
+                            }.`
+                          : `${option.label} bond`;
+
+                      return (
+                        <button
+                          key={option.order}
+                          type="button"
+                          onClick={() => onSetBondOrder(option.order)}
+                          disabled={isDisabled}
+                          title={isDisabled ? disabledTitle : `${option.label} bond`}
+                          aria-label={isDisabled ? disabledTitle : `${option.label} bond`}
+                          className={`border transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+                            isDisabled
+                              ? 'border-(--border-subtle) bg-(--surface-2)/55 text-(--text-muted)'
+                              : bondOrder === option.order
+                                ? 'border-(--accent) bg-(--accent)/22 text-foreground'
+                                : 'border-(--border-subtle) bg-(--surface-2)/70 text-(--text-muted) hover:border-(--accent) hover:text-foreground'
+                          } ${effectiveToolRailCollapsed ? 'mx-auto h-9 w-9 rounded-xl text-sm font-black' : 'h-9 rounded-xl px-0 text-sm font-black'}`}
+                        >
+                          {option.order}
+                        </button>
+                      );
+                    })()
+                  ))}
+                </div>
+              </div>
+
+              <div className={effectiveToolRailCollapsed ? collapsedToolRailSectionClassName : expandedToolRailSectionClassName}>
+                <ToolRailButton
+                  icon={<SaveGalleryIcon />}
+                  label="Save as New"
+                  title="Open gallery save dialog"
+                  collapsed={effectiveToolRailCollapsed}
+                  active={isSaveModalOpen}
+                  disabled={summary.atomCount === 0}
+                  onClick={onOpenSaveModal}
+                />
+                <ToolRailButton
+                  icon={<UndoIcon />}
+                  label="Undo"
+                  title="Undo change (Ctrl/Cmd+Z)"
+                  collapsed={effectiveToolRailCollapsed}
+                  disabled={!canUndo}
+                  onClick={onUndo}
+                />
+                <ToolRailButton
+                  icon={<RedoIcon />}
+                  label="Redo"
+                  title="Redo change (Ctrl/Cmd+Shift+Z)"
+                  collapsed={effectiveToolRailCollapsed}
+                  disabled={!canRedo}
+                  onClick={onRedo}
+                />
+                <ToolRailButton
+                  icon={<AddAtomIcon />}
+                  label="Add selected element"
+                  collapsed={effectiveToolRailCollapsed}
+                  disabled={activeElement === null}
+                  onClick={onAddSelectedElement}
+                />
+                <ToolRailButton
+                  icon={<RemoveAtomIcon />}
+                  label="Remove selected atom"
+                  collapsed={effectiveToolRailCollapsed}
+                  disabled={selectedAtomId === null}
+                  onClick={onRemoveSelectedAtom}
+                />
+                <ToolRailButton
+                  icon={<ClearSelectionIcon />}
+                  label="Clear selection"
+                  collapsed={effectiveToolRailCollapsed}
+                  disabled={selectedAtomId === null}
+                  onClick={onClearSelection}
+                />
+                <ToolRailButton
+                  icon={<ResetEditorIcon />}
+                  label="Reset editor"
+                  collapsed={effectiveToolRailCollapsed}
+                  danger
+                  onClick={onResetMolecule}
+                />
               </div>
             </div>
+          </aside>
+        ) : null}
 
-            <div className={effectiveToolRailCollapsed ? collapsedToolRailSectionClassName : expandedToolRailSectionClassName}>
-              <ToolRailButton
-                icon={<UndoIcon />}
-                label="Undo"
-                title="Undo change (Ctrl/Cmd+Z)"
-                collapsed={effectiveToolRailCollapsed}
-                disabled={!canUndo}
-                onClick={onUndo}
-              />
-              <ToolRailButton
-                icon={<RedoIcon />}
-                label="Redo"
-                title="Redo change (Ctrl/Cmd+Shift+Z)"
-                collapsed={effectiveToolRailCollapsed}
-                disabled={!canRedo}
-                onClick={onRedo}
-              />
-              <ToolRailButton
-                icon={<AddAtomIcon />}
-                label="Add selected element"
-                collapsed={effectiveToolRailCollapsed}
-                disabled={activeElement === null}
-                onClick={onAddSelectedElement}
-              />
-              <ToolRailButton
-                icon={<RemoveAtomIcon />}
-                label="Remove selected atom"
-                collapsed={effectiveToolRailCollapsed}
-                disabled={selectedAtomId === null}
-                onClick={onRemoveSelectedAtom}
-              />
-              <ToolRailButton
-                icon={<ClearSelectionIcon />}
-                label="Clear selection"
-                collapsed={effectiveToolRailCollapsed}
-                disabled={selectedAtomId === null}
-                onClick={onClearSelection}
-              />
-              <ToolRailButton
-                icon={<ResetEditorIcon />}
-                label="Reset editor"
-                collapsed={effectiveToolRailCollapsed}
-                danger
-                onClick={onResetMolecule}
-              />
-            </div>
+        {shouldShowFloatingSaveShortcut ? (
+          <div
+            style={toolRailStyle}
+            className="absolute left-3 z-20"
+            onMouseEnter={() => setIsFloatingSaveShortcutExpanded(true)}
+            onMouseLeave={() => setIsFloatingSaveShortcutExpanded(false)}
+          >
+            <button
+              type="button"
+              onClick={onOpenSaveModal}
+              onFocus={() => setIsFloatingSaveShortcutExpanded(true)}
+              onBlur={() => setIsFloatingSaveShortcutExpanded(false)}
+              disabled={summary.atomCount === 0}
+              title="Open gallery save dialog"
+              aria-label="Save as new"
+              style={floatingSaveShortcutPanelStyle}
+              className={`flex overflow-hidden border shadow-xl backdrop-blur-xl origin-left transition-[width,border-color,color,background-color] duration-200 disabled:cursor-not-allowed disabled:opacity-45 ${
+                isSaveModalOpen
+                  ? 'border-(--accent) bg-(--accent)/24 text-foreground'
+                  : 'border-(--border-subtle) bg-(--surface-overlay-rail) text-(--text-muted) hover:border-(--accent) hover:text-foreground'
+              } ${isLandscapeCompactCanvas ? 'h-10 rounded-2xl' : 'h-12 rounded-2xl'}`}
+            >
+              <div style={floatingSaveShortcutInnerStyle} className="flex h-full flex-nowrap items-stretch">
+                <div style={floatingSaveShortcutTriggerStyle} className="flex h-full shrink-0 items-center justify-center">
+                  <span className="shrink-0">
+                    <SaveGalleryIcon />
+                  </span>
+                </div>
+                <div
+                  className={`flex min-w-0 flex-1 items-center overflow-hidden pr-3 transition-opacity duration-150 ${
+                    isFloatingSaveShortcutExpanded ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  aria-hidden={!isFloatingSaveShortcutExpanded}
+                >
+                  <span className={`truncate font-semibold text-foreground ${isLandscapeCompactCanvas ? 'text-[10px]' : 'text-[11px]'}`}>
+                    Save as New
+                  </span>
+                </div>
+              </div>
+            </button>
           </div>
-        </aside>
+        ) : null}
 
         <div
           ref={canvasFrameRef}
@@ -2943,6 +3806,173 @@ function MolecularEditor({ elements }: MolecularEditorProps) {
           </div>
         )}
       </div>
+
+        </>
+      ) : null}
+
+      {isGalleryPage ? (
+        <div className="grid gap-3">
+        <section className="surface-panel rounded-[1.75rem] border border-(--border-subtle) p-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-(--text-muted)">
+                Molecule Gallery
+              </p>
+              <h2 className="mt-1 text-lg font-black text-foreground">Stick View Library</h2>
+              <p className="mt-1 text-sm text-(--text-muted)">
+                {hasCurrentSavedSelection
+                  ? `${currentSaveLabel} is ready to reopen in the editor.`
+                  : 'Select a saved molecule, then open it in the editor when you want to keep working.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border border-(--border-subtle) bg-(--surface-overlay-soft) px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
+                {normalizedSavedMolecules.length} saved
+              </span>
+              <Button
+                variant={hasCurrentSavedSelection ? 'primary' : 'secondary'}
+                size="sm"
+                disabled={!hasCurrentSavedSelection}
+                onClick={onOpenCurrentSavedMoleculeInEditor}
+              >
+                Open in Editor
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={!hasCurrentSavedSelection || isSavedMoleculesMutating}
+                onClick={onDeleteCurrentSavedMoleculeFromGallery}
+                className="border-rose-500/45 bg-rose-500/8 text-rose-200 hover:border-rose-400 hover:bg-rose-500/14 hover:text-rose-100"
+              >
+                Delete
+              </Button>
+              <Button variant="ghost" size="sm" onClick={onReloadSavedMolecules}>
+                Refresh
+              </Button>
+            </div>
+          </div>
+
+          <div
+            className={`mt-4 rounded-[1.35rem] border px-4 py-3 ${
+              galleryFeedback?.tone === 'error'
+                ? 'border-rose-400/35 bg-rose-500/10'
+                : galleryFeedback?.tone === 'success'
+                  ? 'border-emerald-400/35 bg-emerald-500/10'
+                  : 'border-(--border-subtle) bg-(--surface-overlay-subtle)'
+            }`}
+          >
+            <p
+              className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${
+                galleryFeedback?.tone === 'error'
+                  ? 'text-rose-200'
+                  : galleryFeedback?.tone === 'success'
+                    ? 'text-emerald-200'
+                    : 'text-(--text-muted)'
+              }`}
+            >
+              {galleryFeedback?.tone === 'error'
+                ? 'Sync Status'
+                : galleryFeedback?.tone === 'success'
+                  ? 'Saved'
+                  : 'Gallery'}
+            </p>
+            <p
+              className={`mt-1 text-sm leading-relaxed ${
+                galleryFeedback?.tone === 'error'
+                  ? 'text-rose-100'
+                  : galleryFeedback?.tone === 'success'
+                    ? 'text-emerald-100'
+                    : 'text-(--text-muted)'
+              }`}
+            >
+              {galleryFeedback?.message ?? 'Select a molecule card to stage it, then reopen it in the editor.'}
+            </p>
+            {savedMoleculesError !== null ? (
+              <button
+                type="button"
+                onClick={onReloadSavedMolecules}
+                className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-(--accent) transition-colors hover:text-foreground"
+              >
+                Retry gallery sync
+              </button>
+            ) : null}
+          </div>
+
+          {isSavedMoleculesLoading ? (
+            <div className="mt-4 rounded-[1.5rem] border border-dashed border-(--border-subtle) bg-(--surface-overlay-subtle) px-4 py-8 text-center text-sm text-(--text-muted)">
+              Loading your saved molecules...
+            </div>
+          ) : savedMoleculesError !== null ? (
+            <div className="mt-4 rounded-[1.5rem] border border-rose-400/30 bg-rose-500/10 px-4 py-5 text-sm text-rose-100">
+              <p>{savedMoleculesError}</p>
+              <Button variant="ghost" size="sm" className="mt-3" onClick={onReloadSavedMolecules}>
+                Try Again
+              </Button>
+            </div>
+          ) : normalizedSavedMolecules.length === 0 ? (
+            <div className="mt-4 rounded-[1.5rem] border border-dashed border-(--border-subtle) bg-(--surface-overlay-subtle) px-4 py-8 text-center">
+              <p className="text-sm font-semibold text-foreground">Your gallery is empty.</p>
+              <p className="mt-2 text-sm text-(--text-muted)">
+                Save molecules from the editor to build this stick-view library.
+              </p>
+            </div>
+          ) : (
+            <div className={`mt-4 ${galleryGridClassName}`}>
+              {normalizedSavedMolecules.map((savedMolecule) => {
+                return (
+                  <MoleculeGalleryCard
+                    key={savedMolecule.id}
+                    savedMolecule={savedMolecule}
+                    isActive={savedMolecule.id === resolvedActiveSavedMoleculeId}
+                    onLoad={onLoadSavedMolecule}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </section>
+        </div>
+      ) : null}
+
+      {isEditorPage ? (
+        <MoleculeSaveModal
+          isOpen={isSaveModalOpen}
+          hasLinkedSelection={hasCurrentSavedSelection}
+          currentSaveLabel={currentSaveLabel}
+          moleculeName={moleculeName}
+          educationalDescription={moleculeEducationalDescription}
+          formula={formulaDisplayValue}
+          atomCount={summary.atomCount}
+          bondCount={summary.bondCount}
+          isMutating={isSavedMoleculesMutating}
+          onClose={onCloseSaveModal}
+          onMoleculeNameChange={setMoleculeName}
+          onEducationalDescriptionChange={setMoleculeEducationalDescription}
+          onSaveAsNew={onSaveAsNewMolecule}
+          onUpdateSelected={onUpdateCurrentSavedMolecule}
+          onDetachSelection={onDetachSavedMolecule}
+          onDeleteSelected={onDeleteCurrentSavedMolecule}
+        />
+      ) : null}
+
+      {galleryFeedback !== null ? (
+        <div className="pointer-events-none fixed bottom-4 right-4 z-[100] w-[min(22rem,calc(100vw-2rem))]">
+          <div
+            role={galleryFeedback.tone === 'error' ? 'alert' : 'status'}
+            aria-live={galleryFeedback.tone === 'error' ? 'assertive' : 'polite'}
+            className={`rounded-[1.4rem] border px-4 py-3 shadow-xl backdrop-blur-xl ${
+              galleryFeedback.tone === 'error'
+                ? 'border-rose-400/40 bg-[#3a0f19]/92 text-rose-50'
+                : galleryFeedback.tone === 'success'
+                  ? 'border-emerald-400/35 bg-[#08281d]/92 text-emerald-50'
+                  : 'border-(--border-subtle) bg-[#0f1726]/90 text-white'
+            }`}
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] opacity-80">{galleryFeedbackToastLabel}</p>
+            <p className="mt-1 text-sm leading-relaxed">{galleryFeedback.message}</p>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

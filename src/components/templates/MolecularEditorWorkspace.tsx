@@ -9,6 +9,7 @@ import AppShell from '@/components/templates/AppShell';
 import type { TokenStatusType } from '@/components/molecules/TokenStatus';
 import { logoutSession } from '@/shared/api/authApi';
 import useAuthSession from '@/shared/hooks/useAuthSession';
+import useSavedMolecules from '@/shared/hooks/useSavedMolecules';
 import useAuthToken from '@/shared/hooks/useAuthToken';
 import useElements from '@/shared/hooks/useElements';
 
@@ -18,7 +19,13 @@ const MolecularEditor = dynamic(() => import('@/components/organisms/molecular-e
 
 const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'));
 
-function MolecularEditorWorkspace() {
+type MolecularEditorWorkspaceMode = 'editor' | 'gallery';
+
+type MolecularEditorWorkspaceProps = {
+  pageMode?: MolecularEditorWorkspaceMode;
+};
+
+function MolecularEditorWorkspace({ pageMode = 'editor' }: MolecularEditorWorkspaceProps) {
   const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
   const authSession = useAuthSession({
     token,
@@ -29,7 +36,13 @@ function MolecularEditorWorkspace() {
   });
   const hasValidSession = authSession.status === 'authenticated';
   const tokenStatus: TokenStatusType = authSession.status;
+  const shouldLoadElements = pageMode === 'editor' && hasValidSession;
   const { data, isLoading, error } = useElements({
+    token: shouldLoadElements ? token : null,
+    onTokenRefresh: persistToken,
+    onUnauthorized: removeToken,
+  });
+  const savedMolecules = useSavedMolecules({
     token: hasValidSession ? token : null,
     onTokenRefresh: persistToken,
     onUnauthorized: removeToken,
@@ -92,16 +105,27 @@ function MolecularEditorWorkspace() {
         ) : !hasValidSession ? (
           <ElementsState
             tone="info"
-            message="Authenticate to use the molecular editor."
+            message={pageMode === 'editor' ? 'Authenticate to use the molecular editor.' : 'Authenticate to access the molecule gallery.'}
             actionLabel="Open login"
             onAction={() => openAuthModal('login')}
           />
-        ) : isLoading ? (
+        ) : pageMode === 'editor' && isLoading ? (
           <ElementsState tone="info" message="Preparing the chemical element library..." showProgress />
-        ) : error !== null ? (
+        ) : pageMode === 'editor' && error !== null ? (
           <ElementsState tone="error" message={error} />
         ) : (
-          <MolecularEditor elements={data} />
+          <MolecularEditor
+            pageMode={pageMode}
+            elements={pageMode === 'editor' ? data : []}
+            savedMolecules={savedMolecules.data}
+            savedMoleculesError={savedMolecules.error}
+            isSavedMoleculesLoading={savedMolecules.isLoading}
+            isSavedMoleculesMutating={savedMolecules.isMutating}
+            onReloadSavedMolecules={savedMolecules.reload}
+            onCreateSavedMolecule={savedMolecules.createMolecule}
+            onUpdateSavedMolecule={savedMolecules.updateMolecule}
+            onDeleteSavedMolecule={savedMolecules.deleteMolecule}
+          />
         )}
       </section>
 
@@ -116,3 +140,4 @@ function MolecularEditorWorkspace() {
 }
 
 export default MolecularEditorWorkspace;
+export type { MolecularEditorWorkspaceMode };

@@ -2,9 +2,14 @@ import type { ChemicalElement } from '@/shared/types/element';
 
 export type BondOrder = 1 | 2 | 3;
 
+export type MoleculeElementSnapshot = Pick<
+  ChemicalElement,
+  'number' | 'symbol' | 'name' | 'category' | 'group' | 'shells'
+>;
+
 export type MoleculeAtom = {
   id: string;
-  element: ChemicalElement;
+  element: MoleculeElementSnapshot;
   x: number;
   y: number;
 };
@@ -25,6 +30,11 @@ export type MoleculeCounts = {
   atomCount: number;
   bondCount: number;
   totalBondOrder: number;
+};
+
+export type NormalizedMoleculeModel = {
+  model: MoleculeModel;
+  atomIdsByOriginalId: Map<string, string[]>;
 };
 
 type NeighborLink = {
@@ -59,9 +69,133 @@ const CANONICAL_ANGLE_STEP = 30;
 
 let moleculeIdCounter = 0;
 
+const IDENTIFIER_PATTERN = /^(atom|bond)-(\d+)$/;
+
 function nextId(prefix: 'atom' | 'bond'): string {
   moleculeIdCounter += 1;
   return `${prefix}-${moleculeIdCounter}`;
+}
+
+function resolveMaxMoleculeIdentifier(model: MoleculeModel): number {
+  return [...model.atoms.map((atom) => atom.id), ...model.bonds.map((bond) => bond.id)].reduce((maxValue, id) => {
+    const match = IDENTIFIER_PATTERN.exec(id);
+
+    if (match === null) {
+      return maxValue;
+    }
+
+    const parsed = Number(match[2]);
+    return Number.isFinite(parsed) ? Math.max(maxValue, parsed) : maxValue;
+  }, 0);
+}
+
+function syncMoleculeIdCounter(model: MoleculeModel): void {
+  moleculeIdCounter = Math.max(moleculeIdCounter, resolveMaxMoleculeIdentifier(model));
+}
+
+function normalizeMoleculeModel(model: MoleculeModel): NormalizedMoleculeModel {
+  const localNextId = (() => {
+    let counter = resolveMaxMoleculeIdentifier(model);
+
+    return (prefix: 'atom' | 'bond') => {
+      counter += 1;
+      return `${prefix}-${counter}`;
+    };
+  })();
+  const seenAtomIds = new Set<string>();
+  const seenBondIds = new Set<string>();
+  const atomIdsByOriginalId = new Map<string, string[]>();
+  const normalizedAtoms = model.atoms.map((atom) => {
+    const originalId = atom.id;
+    const normalizedId =
+      originalId.trim().length > 0 && !seenAtomIds.has(originalId) ? originalId : localNextId('atom');
+
+    seenAtomIds.add(normalizedId);
+
+    const mappedIds = atomIdsByOriginalId.get(originalId) ?? [];
+    mappedIds.push(normalizedId);
+    atomIdsByOriginalId.set(originalId, mappedIds);
+
+    return {
+      ...atom,
+      id: normalizedId,
+    };
+  });
+  const atomCandidatesByNormalizedId = new Map(normalizedAtoms.map((atom) => [atom.id, atom]));
+  const seenBondConnections = new Set<string>();
+  const normalizedBonds = model.bonds.flatMap((bond) => {
+    const sourceCandidates = atomIdsByOriginalId.get(bond.sourceId) ?? [];
+    const targetCandidates = atomIdsByOriginalId.get(bond.targetId) ?? [];
+
+    if (sourceCandidates.length === 0 || targetCandidates.length === 0) {
+      return [];
+    }
+
+    let selectedConnection: { sourceId: string; targetId: string } | null = null;
+    let selectedDistanceDelta = Number.POSITIVE_INFINITY;
+    const idealLength = resolveIdealBondLength(bond.order);
+
+    for (const sourceId of sourceCandidates) {
+      for (const targetId of targetCandidates) {
+        if (sourceId === targetId) {
+          continue;
+        }
+
+        const sourceAtom = atomCandidatesByNormalizedId.get(sourceId);
+        const targetAtom = atomCandidatesByNormalizedId.get(targetId);
+
+        if (sourceAtom === undefined || targetAtom === undefined) {
+          continue;
+        }
+
+        const distanceDelta = Math.abs(distanceBetween(sourceAtom, targetAtom) - idealLength);
+
+        if (distanceDelta < selectedDistanceDelta) {
+          selectedDistanceDelta = distanceDelta;
+          selectedConnection = {
+            sourceId,
+            targetId,
+          };
+        }
+      }
+    }
+
+    if (selectedConnection === null) {
+      return [];
+    }
+
+    const normalizedPairKey =
+      selectedConnection.sourceId < selectedConnection.targetId
+        ? `${selectedConnection.sourceId}:${selectedConnection.targetId}`
+        : `${selectedConnection.targetId}:${selectedConnection.sourceId}`;
+
+    if (seenBondConnections.has(normalizedPairKey)) {
+      return [];
+    }
+
+    seenBondConnections.add(normalizedPairKey);
+    const normalizedId =
+      bond.id.trim().length > 0 && !seenBondIds.has(bond.id) ? bond.id : localNextId('bond');
+
+    seenBondIds.add(normalizedId);
+
+    return [
+      {
+        ...bond,
+        id: normalizedId,
+        sourceId: selectedConnection.sourceId,
+        targetId: selectedConnection.targetId,
+      },
+    ];
+  });
+
+  return {
+    model: {
+      atoms: normalizedAtoms,
+      bonds: normalizedBonds,
+    },
+    atomIdsByOriginalId,
+  };
 }
 
 function findBond(model: MoleculeModel, firstAtomId: string, secondAtomId: string): MoleculeBond | null {
@@ -79,7 +213,7 @@ function findAtom(model: MoleculeModel, atomId: string): MoleculeAtom | null {
   return model.atoms.find((atom) => atom.id === atomId) ?? null;
 }
 
-function resolveFallbackValence(element: ChemicalElement): number {
+function resolveFallbackValence(element: MoleculeElementSnapshot): number {
   const outerShellElectrons = element.shells.at(-1);
 
   if (outerShellElectrons !== undefined) {
@@ -109,7 +243,7 @@ function resolveFallbackValence(element: ChemicalElement): number {
   return 4;
 }
 
-function resolveMaxBondSlots(element: ChemicalElement): number {
+function resolveMaxBondSlots(element: MoleculeElementSnapshot): number {
   const override = COMMON_VALENCE_OVERRIDES[element.symbol];
 
   if (override !== undefined) {
@@ -800,6 +934,8 @@ function chooseAttachmentPoint(model: MoleculeModel, parentId: string): { x: num
 }
 
 function addStandaloneAtom(model: MoleculeModel, element: ChemicalElement, point: { x: number; y: number }) {
+  syncMoleculeIdCounter(model);
+
   const nextAtom: MoleculeAtom = {
     id: nextId('atom'),
     element,
@@ -864,6 +1000,8 @@ function canApplyBondOrder(
 }
 
 function connectAtoms(model: MoleculeModel, firstAtomId: string, secondAtomId: string, order: BondOrder) {
+  syncMoleculeIdCounter(model);
+
   const validation = canApplyBondOrder(model, firstAtomId, secondAtomId, order);
 
   if (!validation.ok) {
@@ -920,6 +1058,8 @@ function connectAtoms(model: MoleculeModel, firstAtomId: string, secondAtomId: s
 }
 
 function addAttachedAtom(model: MoleculeModel, sourceAtomId: string, element: ChemicalElement, order: BondOrder) {
+  syncMoleculeIdCounter(model);
+
   const sourceAtom = findAtom(model, sourceAtomId);
 
   if (sourceAtom === null) {
@@ -1080,8 +1220,10 @@ export {
   findAtom,
   findBond,
   getUsedBondSlots,
+  normalizeMoleculeModel,
   removeAtom,
   rebalanceMoleculeLayout,
   resolveMaxBondSlots,
+  syncMoleculeIdCounter,
   summarizeMolecule,
 };
