@@ -5,7 +5,10 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 
 import Button from '@/components/atoms/Button';
+import MarkdownContent from '@/components/atoms/MarkdownContent';
+import MoleculeImportModal from '@/components/organisms/molecular-editor/MoleculeImportModal';
 import MoleculeSaveModal from '@/components/organisms/molecular-editor/MoleculeSaveModal';
+import type { ResolvedImportedPubChemCompound } from '@/shared/api/pubchemApi';
 import { mapSavedMoleculesErrorMessage } from '@/shared/hooks/useSavedMolecules';
 import {
   clearPendingSavedMoleculeId,
@@ -27,16 +30,21 @@ import {
   addAttachedAtom,
   addStandaloneAtom,
   buildCompositionRows,
+  dedupeBondConnections,
   buildMolecularFormula,
+  buildSystematicMoleculeName,
   connectAtoms,
   findAtom,
   getUsedBondSlots,
   normalizeMoleculeModel,
   rebalanceMoleculeLayout,
   removeAtom,
+  resolveMoleculeComponents,
   resolveMaxBondSlots,
+  resolvePrimaryMoleculeComponentIndex,
   summarizeMolecule,
   syncMoleculeIdCounter,
+  type MoleculeComponent,
   type BondOrder,
   type MoleculeAtom,
   type MoleculeBond,
@@ -104,6 +112,7 @@ type CanvasInteraction =
 type SavedEditorDraft = {
   molecule: MoleculeModel;
   selectedAtomId: string | null;
+  nomenclatureFallback: string | null;
   activeView: EditorViewMode;
   bondOrder: BondOrder;
   canvasViewport: CanvasViewport;
@@ -128,6 +137,8 @@ const BOND_ORDER_OPTIONS: Array<{ order: BondOrder; label: string }> = [
   { order: 2, label: 'Double' },
   { order: 3, label: 'Triple' },
 ];
+
+const DEFAULT_EDITOR_NOTICE = 'Select an element, then double-click or double-tap the canvas to place it.';
 
 const EMPTY_MOLECULE: MoleculeModel = {
   atoms: [],
@@ -170,10 +181,10 @@ const SAVED_AT_FORMATTER = new Intl.DateTimeFormat('en-US', {
 });
 
 function cloneMoleculeModel(model: MoleculeModel): MoleculeModel {
-  return {
+  return dedupeBondConnections({
     atoms: model.atoms.map((atom) => ({ ...atom })),
     bonds: model.bonds.map((bond) => ({ ...bond })),
-  };
+  });
 }
 
 function normalizeSnapshotSelectedAtomId(model: MoleculeModel, selectedAtomId: string | null): string | null {
@@ -184,6 +195,7 @@ function cloneEditorSnapshot(snapshot: SavedEditorDraft): SavedEditorDraft {
   return {
     molecule: cloneMoleculeModel(snapshot.molecule),
     selectedAtomId: normalizeSnapshotSelectedAtomId(snapshot.molecule, snapshot.selectedAtomId),
+    nomenclatureFallback: snapshot.nomenclatureFallback,
     activeView: snapshot.activeView,
     bondOrder: snapshot.bondOrder,
     canvasViewport: {
@@ -197,11 +209,14 @@ function cloneEditorSnapshot(snapshot: SavedEditorDraft): SavedEditorDraft {
 function normalizeSavedMoleculeRecord(savedMolecule: SavedMolecule): SavedMolecule {
   const normalized = normalizeMoleculeModel(savedMolecule.molecule);
   const normalizedModel = normalized.model;
+  const components = resolveMoleculeComponents(normalizedModel);
+  const primaryComponent = components[resolvePrimaryMoleculeComponentIndex(components)]?.model ?? normalizedModel;
   const selectedAtomId =
     savedMolecule.editorState.selectedAtomId === null
       ? null
       : normalized.atomIdsByOriginalId.get(savedMolecule.editorState.selectedAtomId)?.[0] ?? null;
   const normalizedSummary = summarizeMolecule(normalizedModel);
+  const systematicName = buildSystematicMoleculeName(primaryComponent);
 
   return {
     ...savedMolecule,
@@ -211,6 +226,8 @@ function normalizeSavedMoleculeRecord(savedMolecule: SavedMolecule): SavedMolecu
       selectedAtomId,
     },
     summary: {
+      systematicName,
+      componentCount: components.length,
       formula: buildMolecularFormula(normalizedModel),
       atomCount: normalizedSummary.atomCount,
       bondCount: normalizedSummary.bondCount,
@@ -218,6 +235,32 @@ function normalizeSavedMoleculeRecord(savedMolecule: SavedMolecule): SavedMolecu
       composition: buildCompositionRows(normalizedModel),
     },
   };
+}
+
+function resolveMoleculeComponentIndexByAtomId(
+  components: MoleculeComponent[],
+  atomId: string | null,
+): number | null {
+  if (atomId === null) {
+    return null;
+  }
+
+  const componentIndex = components.findIndex((component) => component.atomIds.includes(atomId));
+  return componentIndex === -1 ? null : componentIndex;
+}
+
+function resolveDefaultFocusedComponentIndex(
+  model: MoleculeModel,
+  selectedAtomId: string | null,
+): number {
+  const components = resolveMoleculeComponents(model);
+  const selectedComponentIndex = resolveMoleculeComponentIndexByAtomId(components, selectedAtomId);
+
+  if (selectedComponentIndex !== null) {
+    return selectedComponentIndex;
+  }
+
+  return resolvePrimaryMoleculeComponentIndex(components);
 }
 
 function isTextEditingElement(target: EventTarget | null): boolean {
@@ -502,6 +545,30 @@ function resolveBondLineInset(order: BondOrder, offset: number): number {
   return 14;
 }
 
+function resolveAtomVisualRadius(mode: EditorViewMode): number {
+  if (mode === 'editor') {
+    return 17;
+  }
+
+  if (mode === 'stick') {
+    return 0;
+  }
+
+  return 12;
+}
+
+function resolveBondEndpointInset(mode: EditorViewMode, order: BondOrder, offset: number): number {
+  if (mode === 'stick') {
+    return resolveBondLineInset(order, offset);
+  }
+
+  const atomRadius = resolveAtomVisualRadius(mode);
+  const radialOffset = Math.min(Math.abs(offset), atomRadius - 1);
+  const circleIntersectionInset = Math.sqrt(Math.max(0, atomRadius * atomRadius - radialOffset * radialOffset));
+
+  return Math.max(resolveBondLineInset(order, offset), circleIntersectionInset + 1.5);
+}
+
 function resolveSecondaryBondOffsetDirection(
   source: MoleculeAtom,
   target: MoleculeAtom,
@@ -612,16 +679,22 @@ function resolveStickVisibleNeighborAtoms(model: MoleculeModel, atom: MoleculeAt
   });
 }
 
-function resolveStickTextAnchor(offsetX: number): 'start' | 'middle' | 'end' {
-  if (offsetX >= 6) {
-    return 'start';
-  }
+function resolveEstimatedStickLabelSize(atom: MoleculeAtom, hydrogenCount: number): {
+  width: number;
+  height: number;
+} {
+  const symbolWidth = atom.element.symbol.length === 1 ? 10 : 16;
+  const hydrogenWidth =
+    hydrogenCount === 0
+      ? 0
+      : hydrogenCount === 1
+        ? 10
+        : 14 + Math.max(0, String(hydrogenCount).length - 1) * 4;
 
-  if (offsetX <= -6) {
-    return 'end';
-  }
-
-  return 'middle';
+  return {
+    width: symbolWidth + hydrogenWidth,
+    height: hydrogenCount > 1 ? 16 : 14,
+  };
 }
 
 function resolveStickLabelPlacement(
@@ -631,15 +704,13 @@ function resolveStickLabelPlacement(
 ): {
   x: number;
   y: number;
-  textAnchor: 'start' | 'middle' | 'end';
 } {
   const visibleNeighbors = resolveStickVisibleNeighborAtoms(model, atom);
 
   if (visibleNeighbors.length === 0) {
     return {
       x: atom.x,
-      y: atom.y + 5,
-      textAnchor: 'middle',
+      y: atom.y,
     };
   }
 
@@ -655,19 +726,20 @@ function resolveStickLabelPlacement(
   if (vectorLength === 0) {
     return {
       x: atom.x,
-      y: atom.y + 5,
-      textAnchor: 'middle',
+      y: atom.y,
     };
   }
 
-  const offsetDistance = hydrogenCount > 0 ? 10 : 8;
-  const offsetX = (-(averageVector.x / vectorLength)) * offsetDistance;
-  const offsetY = (-(averageVector.y / vectorLength)) * offsetDistance;
+  const outwardUnitX = -(averageVector.x / vectorLength);
+  const outwardUnitY = -(averageVector.y / vectorLength);
+  const labelSize = resolveEstimatedStickLabelSize(atom, hydrogenCount);
+  const labelProjectionRadius =
+    Math.abs(outwardUnitX) * (labelSize.width / 2) + Math.abs(outwardUnitY) * (labelSize.height / 2);
+  const offsetDistance = labelProjectionRadius + (hydrogenCount > 0 ? 6 : 5);
 
   return {
-    x: atom.x + offsetX,
-    y: atom.y + offsetY + 5,
-    textAnchor: resolveStickTextAnchor(offsetX),
+    x: atom.x + outwardUnitX * offsetDistance,
+    y: atom.y + outwardUnitY * offsetDistance,
   };
 }
 
@@ -688,6 +760,16 @@ function shouldHideBondInStick(model: MoleculeModel, bond: MoleculeBond): boolea
   }
 
   return shouldHideHydrogenInStick(model, sourceAtom) || shouldHideHydrogenInStick(model, targetAtom);
+}
+
+function isCarbonHydrogenBond(source: MoleculeAtom, target: MoleculeAtom): boolean {
+  const firstSymbol = source.element.symbol;
+  const secondSymbol = target.element.symbol;
+
+  return (
+    (firstSymbol === 'C' && secondSymbol === 'H') ||
+    (firstSymbol === 'H' && secondSymbol === 'C')
+  );
 }
 
 function PaletteArrowIcon({ direction }: { direction: 'left' | 'right' }) {
@@ -844,6 +926,17 @@ function SaveGalleryIcon() {
   );
 }
 
+function ImportMoleculeIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+      <path d="M9.8 2.9h3.1V6" />
+      <path d="M6.2 13.1H3.1V10" />
+      <path d="M12.9 2.9 7.7 8.1" />
+      <path d="M8.3 7.9 3.1 13.1" />
+    </svg>
+  );
+}
+
 function ToolRailButton({
   icon,
   label,
@@ -908,7 +1001,7 @@ function PaletteTile({
   const atomicNumberBadgeClassName = element.number >= 100 ? 'min-w-[18px] text-[6px]' : 'min-w-[16px] text-[7px]';
   const isEmphasized = isSelected || isCentered;
   const selectedTileClassName = isCompact
-    ? 'z-20 h-7 w-24 scale-[1.01] shadow-[0_8px_16px_rgba(0,0,0,0.16)]'
+    ? 'z-20 h-7 w-[4.5rem] scale-[1.01] shadow-[0_8px_16px_rgba(0,0,0,0.16)]'
     : 'z-20 h-10 w-32 scale-[1.01] shadow-[0_10px_20px_rgba(0,0,0,0.18)] sm:h-10 sm:w-33.5 lg:h-11 lg:w-37';
   const centeredTileClassName = isCompact
     ? 'z-10 h-7 w-7 scale-[1.08] opacity-100 shadow-[0_10px_16px_rgba(0,0,0,0.18)]'
@@ -916,27 +1009,27 @@ function PaletteTile({
   const idleTileClassName = isCompact
     ? 'h-7 w-7 opacity-88'
     : 'h-10 w-10 opacity-88 sm:h-10 sm:w-10 lg:h-11 lg:w-11';
-  const selectedLeftRailClassName = isCompact ? 'absolute inset-y-0 left-0 w-7' : 'absolute inset-y-0 left-0 w-10 sm:w-10 lg:w-11';
+  const selectedLeftRailClassName = isCompact ? 'absolute inset-y-0 left-0 w-6' : 'absolute inset-y-0 left-0 w-10 sm:w-10 lg:w-11';
   const selectedLeftContentClassName = isCompact
-    ? 'flex h-full flex-col items-center justify-end px-0.5 pb-0.5 pt-2 text-center'
+    ? 'flex h-full items-center justify-center px-0.5 text-center'
     : 'flex h-full flex-col items-center justify-end px-1 pb-1 pt-2.5 text-center';
   const selectedNameClassName = isCompact
-    ? 'mt-0.5 max-w-full truncate text-[5px] font-semibold leading-tight text-(--text-muted)'
+    ? 'hidden'
     : 'mt-0.5 max-w-full truncate text-[7px] font-semibold leading-tight text-(--text-muted) sm:text-[7px]';
   const selectedDataPanelClassName = isCompact
-    ? 'absolute inset-y-0 left-7 right-0 border-l border-(--border-subtle)/85 bg-(--surface-overlay-subtle) shadow-[-1px_0_0_var(--surface-hairline)]'
+    ? 'absolute inset-y-0 left-6 right-0 border-l border-(--border-subtle)/85 bg-(--surface-overlay-subtle) shadow-[-1px_0_0_var(--surface-hairline)]'
     : 'absolute inset-y-0 left-10 right-0 border-l border-(--border-subtle)/85 bg-(--surface-overlay-subtle) shadow-[-1px_0_0_var(--surface-hairline)] sm:left-10 lg:left-11';
   const selectedTableClassName = isCompact
-    ? 'h-full w-full table-fixed border-collapse text-[6px] leading-none text-(--text-muted)'
+    ? 'h-full w-full table-fixed border-collapse text-[5px] leading-none text-(--text-muted)'
     : 'h-full w-full table-fixed border-collapse text-[7px] leading-none text-(--text-muted) sm:text-[8px] lg:text-[9px]';
   const selectedKeyClassName = isCompact
-    ? 'w-5 px-1 py-0.5 text-left font-semibold uppercase tracking-[0.04em] text-(--text-muted)'
+    ? 'w-[1rem] px-[3px] py-[2px] text-left font-semibold uppercase tracking-[0.02em] text-(--text-muted)'
     : 'w-6 px-1.5 py-0.75 text-left font-semibold uppercase tracking-[0.06em] text-(--text-muted) sm:w-6.5';
   const selectedValueClassName = isCompact
-    ? 'truncate px-1 py-0.5 text-right font-semibold text-foreground'
+    ? 'truncate px-[3px] py-[2px] text-right font-semibold text-foreground'
     : 'truncate px-1.5 py-0.75 text-right font-semibold text-foreground';
   const idleContentClassName = isCompact
-    ? 'flex h-full flex-col items-center justify-end px-0.5 pb-0.5 pt-2 text-center'
+    ? 'flex h-full flex-col items-center justify-end px-0.5 pb-0.5 pt-1.5 text-center'
     : 'flex h-full flex-col items-center justify-end px-1 pb-1 pt-2.5 text-center';
   const idleNameClassName = isCompact
     ? 'mt-0.5 max-w-full truncate text-[5px] font-semibold leading-tight text-(--text-muted)'
@@ -979,7 +1072,9 @@ function PaletteTile({
         <>
           <div className={selectedLeftRailClassName}>
             <div className={selectedLeftContentClassName}>
-              <p className="text-xs font-black leading-none tracking-tight sm:text-sm lg:text-base">{element.symbol}</p>
+              <p className={isCompact ? 'text-[11px] font-black leading-none tracking-tight' : 'text-xs font-black leading-none tracking-tight sm:text-sm lg:text-base'}>
+                {element.symbol}
+              </p>
               <p className={selectedNameClassName}>
                 {element.name}
               </p>
@@ -1012,7 +1107,9 @@ function PaletteTile({
       ) : (
         <>
           <div className={idleContentClassName}>
-            <p className="text-xs font-black leading-none tracking-tight sm:text-sm lg:text-base">{element.symbol}</p>
+            <p className={isCompact ? 'text-[11px] font-black leading-none tracking-tight' : 'text-xs font-black leading-none tracking-tight sm:text-sm lg:text-base'}>
+              {element.symbol}
+            </p>
             <p className={idleNameClassName}>
               {element.name}
             </p>
@@ -1045,13 +1142,24 @@ function BondLines({
     bond.order === 2 ? resolveSecondaryBondOffsetDirection(source, target, modelCenter) : 1;
   const offsets =
     bond.order === 2 ? [0, 6 * doubleBondOffsetDirection] : resolveBondOffsets(bond.order);
-  const stroke = mode === 'stick' ? 'color-mix(in oklab, var(--text-strong) 92%, white)' : 'var(--text-strong)';
-  const strokeWidth = mode === 'stick' ? 3.5 : 2.75;
+  const isCarbonHydrogen = isCarbonHydrogenBond(source, target);
+  const stroke =
+    mode === 'stick'
+      ? 'color-mix(in oklab, var(--text-strong) 92%, white)'
+      : isCarbonHydrogen
+        ? 'color-mix(in oklab, var(--text-strong) 48%, var(--grid-stroke))'
+        : 'var(--text-strong)';
+  const strokeWidth =
+    mode === 'stick'
+      ? 3.5
+      : isCarbonHydrogen
+        ? 2.15
+        : 2.75;
 
   return (
     <g aria-hidden="true">
       {offsets.map((offset) => {
-        const inset = resolveBondLineInset(bond.order, offset);
+        const inset = resolveBondEndpointInset(mode, bond.order, offset);
         const insetX = (dx / distance) * inset;
         const insetY = (dy / distance) * inset;
 
@@ -1065,7 +1173,23 @@ function BondLines({
             stroke={stroke}
             strokeWidth={strokeWidth}
             strokeLinecap="round"
-            opacity={offset === 0 ? (mode === 'editor' ? 0.92 : 1) : mode === 'editor' ? 0.76 : 0.84}
+            opacity={
+              isCarbonHydrogen
+                ? offset === 0
+                  ? mode === 'editor'
+                    ? 0.66
+                    : 0.74
+                  : mode === 'editor'
+                    ? 0.54
+                    : 0.62
+                : offset === 0
+                  ? mode === 'editor'
+                    ? 0.92
+                    : 1
+                  : mode === 'editor'
+                    ? 0.76
+                    : 0.84
+            }
           />
         );
       })}
@@ -1196,8 +1320,9 @@ function EditorCanvas({
                 />
                 <text
                   x={stickLabelPlacement?.x ?? atom.x}
-                  y={stickLabelPlacement?.y ?? atom.y + 5}
-                  textAnchor={stickLabelPlacement?.textAnchor ?? 'middle'}
+                  y={stickLabelPlacement?.y ?? atom.y}
+                  textAnchor="middle"
+                  dominantBaseline="central"
                   fontSize="14"
                   fontWeight={isSelected ? '900' : '800'}
                   fill={isSelected ? 'var(--accent-strong)' : textFill}
@@ -1302,6 +1427,22 @@ function formatSavedAtLabel(value: string): string {
   return SAVED_AT_FORMATTER.format(parsed);
 }
 
+function stripMarkdownForPreview(value: string): string {
+  return value
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '$1')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^>\s?/gm, '')
+    .replace(/^[-*+]\s+/gm, '')
+    .replace(/^\d+\.\s+/gm, '')
+    .replace(/[*_~]/g, '')
+    .replace(/\n+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 const MoleculeGalleryPreview = memo(function MoleculeGalleryPreview({
   model,
   label,
@@ -1347,18 +1488,36 @@ const MoleculeGalleryCard = memo(function MoleculeGalleryCard({
   onLoad: (savedMolecule: SavedMolecule) => void;
 }) {
   const description = savedMolecule.educationalDescription;
+  const compactDescription = useMemo(
+    () => (description === null ? null : stripMarkdownForPreview(description)),
+    [description],
+  );
   const title = savedMolecule.name ?? savedMolecule.summary.formula;
+  const nomenclature = savedMolecule.summary.systematicName;
   const savedAtLabel = useMemo(() => formatSavedAtLabel(savedMolecule.updatedAt), [savedMolecule.updatedAt]);
+  const onActivateCard = useCallback(() => {
+    onLoad(savedMolecule);
+  }, [onLoad, savedMolecule]);
 
   return (
-    <button
-      type="button"
-      onClick={() => onLoad(savedMolecule)}
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onActivateCard}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') {
+          return;
+        }
+
+        event.preventDefault();
+        onActivateCard();
+      }}
       className={`group relative overflow-hidden rounded-[1.6rem] border p-3 text-left transition-all ${
         isActive
           ? 'border-(--accent) bg-(--accent)/10 shadow-[0_18px_40px_-28px_color-mix(in_oklab,var(--accent)_55%,transparent)]'
           : 'border-(--border-subtle) bg-(--surface-overlay-soft) hover:border-(--accent) hover:bg-(--surface-overlay-mid)'
       }`}
+      aria-pressed={isActive}
     >
       <MoleculeGalleryPreview
         model={savedMolecule.molecule}
@@ -1368,9 +1527,32 @@ const MoleculeGalleryCard = memo(function MoleculeGalleryCard({
       <div className="mt-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-base font-black text-foreground">{title}</p>
-          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
-            {savedMolecule.summary.formula}
-          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
+              {savedMolecule.summary.formula}
+            </p>
+            {(savedMolecule.summary.componentCount ?? 1) > 1 ? (
+              <span className="rounded-full border border-(--border-subtle) bg-(--surface-overlay-faint) px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)">
+                {savedMolecule.summary.componentCount} comps
+              </span>
+            ) : null}
+          </div>
+          {nomenclature !== null && nomenclature !== undefined ? (
+            <p
+              className="mt-1 text-xs font-medium leading-relaxed text-(--text-muted)"
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
+                Nomenclature
+              </span>
+              {nomenclature}
+            </p>
+          ) : null}
         </div>
         {isActive ? (
           <span className="shrink-0 rounded-full border border-(--accent) bg-(--accent)/16 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-foreground">
@@ -1395,7 +1577,7 @@ const MoleculeGalleryCard = memo(function MoleculeGalleryCard({
       </div>
 
       <div className="mt-3 min-h-[2.75rem] text-sm leading-relaxed text-(--text-muted)">
-        {description !== null ? (
+        {compactDescription !== null ? (
           <p
             style={{
               display: '-webkit-box',
@@ -1404,7 +1586,7 @@ const MoleculeGalleryCard = memo(function MoleculeGalleryCard({
               overflow: 'hidden',
             }}
           >
-            {description}
+            {compactDescription}
           </p>
         ) : (
           <p>No educational description yet.</p>
@@ -1412,16 +1594,21 @@ const MoleculeGalleryCard = memo(function MoleculeGalleryCard({
       </div>
 
       {description !== null ? (
-        <div className="pointer-events-none absolute inset-0 flex items-end bg-black/78 p-4 opacity-0 backdrop-blur-[2px] transition-opacity duration-200 group-hover:opacity-100">
+        <div className="absolute inset-0 flex items-end bg-black/78 p-4 opacity-0 backdrop-blur-[2px] transition-opacity duration-200 group-hover:opacity-100">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-(--text-muted)">
               Educational Description
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-white/92">{description}</p>
+            <MarkdownContent
+              content={description}
+              tone="inverted"
+              compact
+              className="mt-2 text-sm text-white/92"
+            />
           </div>
         </div>
       ) : null}
-    </button>
+    </div>
   );
 });
 
@@ -1452,15 +1639,20 @@ function MolecularEditor({
   const [expandedPaletteIndex, setExpandedPaletteIndex] = useState(0);
   const [isPaletteMoving, setIsPaletteMoving] = useState(false);
   const [isPalettePointerActive, setIsPalettePointerActive] = useState(false);
-  const [editorNotice, setEditorNotice] = useState('Select an element, then double-click or double-tap the canvas to place it.');
+  const [editorNotice, setEditorNotice] = useState<string | null>(null);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isFloatingSaveShortcutExpanded, setIsFloatingSaveShortcutExpanded] = useState(false);
   const [activeSavedMoleculeId, setActiveSavedMoleculeId] = useState<string | null>(null);
+  const [focusedComponentIndex, setFocusedComponentIndex] = useState(0);
+  const [nomenclatureFallback, setNomenclatureFallback] = useState<string | null>(null);
   const [moleculeName, setMoleculeName] = useState('');
   const [moleculeEducationalDescription, setMoleculeEducationalDescription] = useState('');
   const [galleryFeedback, setGalleryFeedback] = useState<GalleryFeedback | null>(null);
   const [canvasViewport, setCanvasViewport] = useState<CanvasViewport>(DEFAULT_CANVAS_VIEWPORT);
   const [paletteEdgePadding, setPaletteEdgePadding] = useState(0);
+  const [hasCheckedPendingSavedMolecule, setHasCheckedPendingSavedMolecule] = useState(pageMode !== 'editor');
+  const [hasPendingSavedMolecule, setHasPendingSavedMolecule] = useState(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const paletteViewportRef = useRef<HTMLDivElement | null>(null);
   const paletteItemRefs = useRef<Record<number, HTMLButtonElement | null>>({});
@@ -1533,19 +1725,101 @@ function MolecularEditor({
   const activeElementMaxBondSlots = activeElement === null ? null : resolveMaxBondSlots(activeElement);
   const summary = useMemo(() => summarizeMolecule(molecule), [molecule]);
   const formula = useMemo(() => buildMolecularFormula(molecule), [molecule]);
-  const formulaDisplayValue = summary.atomCount === 0 ? 'N/A' : formula;
+  const moleculeComponents = useMemo(() => resolveMoleculeComponents(molecule), [molecule]);
+  const selectedComponentIndex = useMemo(
+    () => resolveMoleculeComponentIndexByAtomId(moleculeComponents, selectedAtomId),
+    [moleculeComponents, selectedAtomId],
+  );
+  const resolvedFocusedComponentIndex =
+    moleculeComponents.length === 0
+      ? 0
+      : selectedComponentIndex ?? Math.min(Math.max(focusedComponentIndex, 0), moleculeComponents.length - 1);
+  const focusedComponent = moleculeComponents[resolvedFocusedComponentIndex] ?? null;
+  const focusedComponentModel = focusedComponent?.model ?? molecule;
+  const focusedSummary = useMemo(() => summarizeMolecule(focusedComponentModel), [focusedComponentModel]);
+  const focusedFormula = useMemo(() => buildMolecularFormula(focusedComponentModel), [focusedComponentModel]);
+  const focusedSystematicName = useMemo(
+    () => buildSystematicMoleculeName(focusedComponentModel),
+    [focusedComponentModel],
+  );
+  const resolvedNomenclatureValue =
+    focusedSystematicName ??
+    (moleculeComponents.length === 1 && nomenclatureFallback !== null
+      ? normalizeOptionalText(nomenclatureFallback)
+      : null);
+  const resolvedEditorNotice =
+    editorNotice ??
+    (hasCheckedPendingSavedMolecule &&
+    !hasPendingSavedMolecule &&
+    summary.atomCount === 0 &&
+    selectedAtomId === null
+      ? DEFAULT_EDITOR_NOTICE
+      : null);
+  const formulaDisplayValue = focusedSummary.atomCount === 0 ? 'N/A' : focusedFormula;
+  const systematicNameDisplayValue =
+    focusedSummary.atomCount === 0 ? 'N/A' : (resolvedNomenclatureValue ?? 'Unavailable');
+  const compactSystematicNameDisplayValue = systematicNameDisplayValue === 'Unavailable' ? 'Unavail.' : systematicNameDisplayValue;
   const formulaStatsRows = useMemo(
-    () => [
-      { label: 'Formula', value: formulaDisplayValue },
-      { label: 'Atoms', value: String(summary.atomCount) },
-      { label: 'Bonds', value: String(summary.bondCount) },
-      { label: 'Slots', value: String(summary.totalBondOrder) },
+    () => {
+      const baseRows = [
+        {
+          label: 'Nomen.',
+          compactLabel: 'Nomen.',
+          title: 'Nomenclature',
+          value: systematicNameDisplayValue,
+          compactValue: compactSystematicNameDisplayValue,
+        },
+        {
+          label: 'Formula',
+          compactLabel: 'Formula',
+          value: formulaDisplayValue,
+        },
+        {
+          label: 'Atoms',
+          compactLabel: 'Atoms',
+          value: String(focusedSummary.atomCount),
+        },
+        {
+          label: 'Bonds',
+          compactLabel: 'Bonds',
+          value: String(focusedSummary.bondCount),
+        },
+        {
+          label: 'Slots',
+          compactLabel: 'Slots',
+          value: String(focusedSummary.totalBondOrder),
+        },
+      ];
+
+      if (moleculeComponents.length <= 1) {
+        return baseRows;
+      }
+
+      return [
+        {
+          label: 'Comp.',
+          compactLabel: 'Comp.',
+          title: 'Component',
+          value: `Mol ${resolvedFocusedComponentIndex + 1} / ${moleculeComponents.length}`,
+          compactValue: `${resolvedFocusedComponentIndex + 1}/${moleculeComponents.length}`,
+        },
+        ...baseRows,
+      ];
+    },
+    [
+      compactSystematicNameDisplayValue,
+      formulaDisplayValue,
+      focusedSummary.atomCount,
+      focusedSummary.bondCount,
+      focusedSummary.totalBondOrder,
+      moleculeComponents.length,
+      resolvedFocusedComponentIndex,
+      systematicNameDisplayValue,
     ],
-    [formulaDisplayValue, summary.atomCount, summary.bondCount, summary.totalBondOrder],
   );
   const canUndo = historyPast.length > 0;
   const canRedo = historyFuture.length > 0;
-  const compositionRows = useMemo(() => buildCompositionRows(molecule), [molecule]);
+  const compositionRows = useMemo(() => buildCompositionRows(focusedComponentModel), [focusedComponentModel]);
   const interactiveViewBox = useMemo(
     () =>
       resolveInteractiveViewBox(
@@ -1568,6 +1842,7 @@ function MolecularEditor({
     () => savedMolecules.map((entry) => normalizeSavedMoleculeRecord(entry)),
     [savedMolecules],
   );
+
   const resolvedActiveSavedMoleculeId = useMemo(() => {
     if (activeSavedMoleculeId === null) {
       return null;
@@ -1660,6 +1935,7 @@ function MolecularEditor({
           overrides?.molecule ?? molecule,
           overrides?.selectedAtomId ?? selectedAtomId,
         ),
+        nomenclatureFallback: overrides?.nomenclatureFallback ?? nomenclatureFallback,
         activeView: overrides?.activeView ?? activeView,
         bondOrder: overrides?.bondOrder ?? bondOrder,
         canvasViewport: {
@@ -1671,7 +1947,16 @@ function MolecularEditor({
 
       return snapshot;
     },
-    [activeView, bondOrder, canvasViewport.offsetX, canvasViewport.offsetY, canvasViewport.scale, molecule, selectedAtomId],
+    [
+      activeView,
+      bondOrder,
+      canvasViewport.offsetX,
+      canvasViewport.offsetY,
+      canvasViewport.scale,
+      molecule,
+      nomenclatureFallback,
+      selectedAtomId,
+    ],
   );
 
   const pushHistorySnapshot = useCallback((snapshot: SavedEditorDraft) => {
@@ -1680,12 +1965,22 @@ function MolecularEditor({
     setHistoryFuture([]);
   }, []);
 
+  const buildHistorySnapshot = useCallback((): SavedEditorDraft => {
+    return buildEditorSnapshot({
+      selectedAtomId: null,
+    });
+  }, [buildEditorSnapshot]);
+
   const applyEditorSnapshot = useCallback(
     (snapshot: SavedEditorDraft, notice: string) => {
       const nextSnapshot = cloneEditorSnapshot(snapshot);
+      const nextMolecule = dedupeBondConnections(nextSnapshot.molecule);
+      const nextSelectedAtomId = normalizeSnapshotSelectedAtomId(nextMolecule, nextSnapshot.selectedAtomId);
       clearTransientEditorState();
-      setMolecule(nextSnapshot.molecule);
-      setSelectedAtomId(nextSnapshot.selectedAtomId);
+      setMolecule(nextMolecule);
+      setSelectedAtomId(nextSelectedAtomId);
+      setNomenclatureFallback(nextSnapshot.nomenclatureFallback);
+      setFocusedComponentIndex(resolveDefaultFocusedComponentIndex(nextMolecule, nextSelectedAtomId));
       setActiveView(nextSnapshot.activeView);
       setBondOrder(nextSnapshot.bondOrder);
       setCanvasViewport(nextSnapshot.canvasViewport);
@@ -1729,6 +2024,7 @@ function MolecularEditor({
         {
           molecule: cloneMoleculeModel(normalizedSavedMolecule.molecule),
           selectedAtomId: normalizedSavedMolecule.editorState.selectedAtomId,
+          nomenclatureFallback: null,
           activeView: normalizedSavedMolecule.editorState.activeView,
           bondOrder: normalizedSavedMolecule.editorState.bondOrder,
           canvasViewport: {
@@ -1742,14 +2038,11 @@ function MolecularEditor({
       setHistoryPast([]);
       setHistoryFuture([]);
       setActiveSavedMoleculeId(normalizedSavedMolecule.id);
+      setNomenclatureFallback(null);
       setMoleculeName(normalizedSavedMolecule.name ?? '');
       setMoleculeEducationalDescription(normalizedSavedMolecule.educationalDescription ?? '');
-      showGalleryFeedback(
-        'info',
-        `${normalizedSavedMolecule.name ?? normalizedSavedMolecule.summary.formula} loaded from your gallery.`,
-      );
     },
-    [applyEditorSnapshot, showGalleryFeedback],
+    [applyEditorSnapshot],
   );
 
   useEffect(() => {
@@ -1760,6 +2053,9 @@ function MolecularEditor({
     if (pendingSavedMoleculeIdRef.current === null) {
       pendingSavedMoleculeIdRef.current = readPendingSavedMoleculeId();
     }
+
+    setHasPendingSavedMolecule(pendingSavedMoleculeIdRef.current !== null);
+    setHasCheckedPendingSavedMolecule(true);
 
     const pendingSavedMoleculeId = pendingSavedMoleculeIdRef.current;
 
@@ -1777,6 +2073,7 @@ function MolecularEditor({
       const timeoutId = window.setTimeout(() => {
         clearPendingSavedMoleculeId();
         pendingSavedMoleculeIdRef.current = null;
+        setHasPendingSavedMolecule(false);
         showGalleryFeedback('error', 'Could not find the selected gallery molecule.');
       }, 0);
 
@@ -1788,6 +2085,7 @@ function MolecularEditor({
     const timeoutId = window.setTimeout(() => {
       clearPendingSavedMoleculeId();
       pendingSavedMoleculeIdRef.current = null;
+      setHasPendingSavedMolecule(false);
       applySavedMolecule(
         pendingSavedMolecule,
         `${pendingSavedMolecule.name ?? pendingSavedMolecule.summary.formula} loaded from gallery.`,
@@ -1805,12 +2103,12 @@ function MolecularEditor({
     }
 
     const previousSnapshot = historyPast[historyPast.length - 1];
-    const currentSnapshot = buildEditorSnapshot();
+    const currentSnapshot = buildHistorySnapshot();
 
     setHistoryPast((currentPast) => currentPast.slice(0, -1));
     setHistoryFuture((currentFuture) => [...currentFuture.slice(-(EDITOR_HISTORY_LIMIT - 1)), currentSnapshot]);
     applyEditorSnapshot(previousSnapshot, 'Undo applied.');
-  }, [applyEditorSnapshot, buildEditorSnapshot, historyPast]);
+  }, [applyEditorSnapshot, buildHistorySnapshot, historyPast]);
 
   const onRedo = useCallback(() => {
     if (historyFuture.length === 0) {
@@ -1818,12 +2116,12 @@ function MolecularEditor({
     }
 
     const nextSnapshot = historyFuture[historyFuture.length - 1];
-    const currentSnapshot = buildEditorSnapshot();
+    const currentSnapshot = buildHistorySnapshot();
 
     setHistoryFuture((currentFuture) => currentFuture.slice(0, -1));
     setHistoryPast((currentPast) => [...currentPast.slice(-(EDITOR_HISTORY_LIMIT - 1)), currentSnapshot]);
     applyEditorSnapshot(nextSnapshot, 'Redo applied.');
-  }, [applyEditorSnapshot, buildEditorSnapshot, historyFuture]);
+  }, [applyEditorSnapshot, buildHistorySnapshot, historyFuture]);
 
   const resetPaletteSearchViewport = useCallback(() => {
     setExpandedPaletteIndex(0);
@@ -2070,30 +2368,36 @@ function MolecularEditor({
       anchorPoint?: { x: number; y: number },
     ) => {
       clearPendingCanvasPlacement();
-      const nextSelectedAtomId = normalizeSnapshotSelectedAtomId(result.molecule, result.selectedAtomId);
-      const shouldRecordHistory =
-        result.molecule !== previousMolecule || nextSelectedAtomId !== normalizeSnapshotSelectedAtomId(molecule, selectedAtomId);
+      const nextMolecule = dedupeBondConnections(result.molecule);
+      const nextSelectedAtomId = normalizeSnapshotSelectedAtomId(nextMolecule, result.selectedAtomId);
+      const previousSelectedAtomId = normalizeSnapshotSelectedAtomId(molecule, selectedAtomId);
+      const didMoleculeChange = nextMolecule !== previousMolecule;
+      const didSelectionChange = nextSelectedAtomId !== previousSelectedAtomId;
 
-      if (shouldRecordHistory) {
-        pushHistorySnapshot(buildEditorSnapshot());
+      if (didMoleculeChange) {
+        pushHistorySnapshot(buildHistorySnapshot());
       }
 
-      if (shouldRecordHistory) {
+      if (didMoleculeChange) {
         const nextViewport = preserveViewportAcrossModelChange(
           previousMolecule,
-          result.molecule,
+          nextMolecule,
           canvasViewport,
           canvasFrameAspectRatio,
           anchorPoint,
         );
 
         setCanvasViewport(nextViewport);
-        setMolecule(result.molecule);
+        setMolecule(nextMolecule);
+        setNomenclatureFallback(null);
+      }
+
+      if (didMoleculeChange || didSelectionChange) {
         setSelectedAtomId(nextSelectedAtomId);
       }
       setEditorNotice(result.error ?? successMessage);
     },
-    [buildEditorSnapshot, canvasFrameAspectRatio, canvasViewport, clearPendingCanvasPlacement, molecule, pushHistorySnapshot, selectedAtomId],
+    [buildHistorySnapshot, canvasFrameAspectRatio, canvasViewport, clearPendingCanvasPlacement, molecule, pushHistorySnapshot, selectedAtomId],
   );
 
   const onAddSelectedElement = useCallback(() => {
@@ -2142,6 +2446,33 @@ function MolecularEditor({
       setActiveView(nextView);
     },
     [],
+  );
+
+  const onFocusComponent = useCallback(
+    (componentIndex: number) => {
+      const component = moleculeComponents[componentIndex];
+
+      if (component === undefined) {
+        return;
+      }
+
+      setFocusedComponentIndex(componentIndex);
+      setSelectedAtomId(null);
+      setEditorNotice(`Mol ${componentIndex + 1} focused.`);
+
+      const nextViewportMetrics = resolveScaledViewBoxMetrics(
+        molecule,
+        canvasViewport.scale,
+        canvasFrameAspectRatio,
+      );
+
+      setCanvasViewport((currentViewport) => ({
+        ...currentViewport,
+        offsetX: component.center.x - nextViewportMetrics.centerX,
+        offsetY: component.center.y - nextViewportMetrics.centerY,
+      }));
+    },
+    [canvasFrameAspectRatio, canvasViewport.scale, molecule, moleculeComponents],
   );
 
   const onSetBondOrder = useCallback(
@@ -2492,13 +2823,14 @@ function MolecularEditor({
       canvasViewport,
       canvasFrameAspectRatio,
     );
+    const sanitizedMolecule = dedupeBondConnections(rebalancedMolecule);
 
     setCanvasViewport(nextViewport);
-    pushHistorySnapshot(buildEditorSnapshot());
-    setMolecule(rebalancedMolecule);
-    setSelectedAtomId(null);
+    pushHistorySnapshot(buildHistorySnapshot());
+    setMolecule(sanitizedMolecule);
+    setSelectedAtomId(normalizeSnapshotSelectedAtomId(sanitizedMolecule, null));
     setEditorNotice('Selected atom removed.');
-  }, [buildEditorSnapshot, canvasFrameAspectRatio, canvasViewport, molecule, pushHistorySnapshot, selectedAtomId]);
+  }, [buildHistorySnapshot, canvasFrameAspectRatio, canvasViewport, molecule, pushHistorySnapshot, selectedAtomId]);
 
   useEffect(() => {
     if (pageMode !== 'editor') {
@@ -2510,7 +2842,7 @@ function MolecularEditor({
         return;
       }
 
-      if (event.altKey || event.ctrlKey || event.metaKey || isSaveModalOpen) {
+      if (event.altKey || event.ctrlKey || event.metaKey || isSaveModalOpen || isImportModalOpen) {
         return;
       }
 
@@ -2527,7 +2859,7 @@ function MolecularEditor({
     return () => {
       window.removeEventListener('keydown', handleDeleteKeyDown);
     };
-  }, [isSaveModalOpen, onRemoveSelectedAtom, pageMode, selectedAtomId]);
+  }, [isImportModalOpen, isSaveModalOpen, onRemoveSelectedAtom, pageMode, selectedAtomId]);
 
   const onResetMolecule = useCallback(() => {
     const isAlreadyPristine =
@@ -2544,15 +2876,17 @@ function MolecularEditor({
       return;
     }
 
-    pushHistorySnapshot(buildEditorSnapshot());
+    pushHistorySnapshot(buildHistorySnapshot());
     clearTransientEditorState();
     setMolecule(EMPTY_MOLECULE);
     setSelectedAtomId(null);
+    setFocusedComponentIndex(0);
+    setNomenclatureFallback(null);
     setActiveView('editor');
     setBondOrder(1);
     setCanvasViewport(DEFAULT_CANVAS_VIEWPORT);
     setEditorNotice('Editor reset.');
-  }, [activeView, bondOrder, buildEditorSnapshot, canvasViewport.offsetX, canvasViewport.offsetY, canvasViewport.scale, clearTransientEditorState, molecule.atoms.length, pushHistorySnapshot, selectedAtomId]);
+  }, [activeView, bondOrder, buildHistorySnapshot, canvasViewport.offsetX, canvasViewport.offsetY, canvasViewport.scale, clearTransientEditorState, molecule.atoms.length, pushHistorySnapshot, selectedAtomId]);
 
   const onDetachSavedMolecule = useCallback(() => {
     setActiveSavedMoleculeId(null);
@@ -2561,12 +2895,70 @@ function MolecularEditor({
 
   const onOpenSaveModal = useCallback(() => {
     setIsFloatingSaveShortcutExpanded(false);
+    setIsImportModalOpen(false);
     setIsSaveModalOpen(true);
   }, []);
+
+  const onOpenGalleryEditModal = useCallback(() => {
+    if (resolvedActiveSavedMoleculeId === null) {
+      showGalleryFeedback('error', 'Select a saved molecule before editing its gallery data.');
+      return;
+    }
+
+    setIsImportModalOpen(false);
+    setIsFloatingSaveShortcutExpanded(false);
+    setIsSaveModalOpen(true);
+  }, [resolvedActiveSavedMoleculeId, showGalleryFeedback]);
 
   const onCloseSaveModal = useCallback(() => {
     setIsSaveModalOpen(false);
   }, []);
+
+  const onOpenImportModal = useCallback(() => {
+    setIsFloatingSaveShortcutExpanded(false);
+    setIsSaveModalOpen(false);
+    setIsImportModalOpen(true);
+  }, []);
+
+  const onCloseImportModal = useCallback(() => {
+    setIsImportModalOpen(false);
+  }, []);
+
+  const onImportExternalMolecule = useCallback(
+    async (compound: ResolvedImportedPubChemCompound) => {
+      const importedMolecule = cloneMoleculeModel(compound.molecule);
+
+      syncMoleculeIdCounter(importedMolecule);
+      pushHistorySnapshot(buildHistorySnapshot());
+      applyEditorSnapshot(
+        {
+          molecule: importedMolecule,
+          selectedAtomId: null,
+          nomenclatureFallback: compound.iupacName ?? null,
+          activeView: 'editor',
+          bondOrder: 1,
+          canvasViewport: DEFAULT_CANVAS_VIEWPORT,
+        },
+        `${compound.title} imported from PubChem.`,
+      );
+      setActiveSavedMoleculeId(null);
+      setNomenclatureFallback(compound.iupacName ?? null);
+      setMoleculeName(compound.title);
+      setMoleculeEducationalDescription('');
+      setIsImportModalOpen(false);
+      showGalleryFeedback(
+        'info',
+        compound.importMode === 'main' && compound.omittedFragmentCount > 0
+          ? `${compound.title} imported from PubChem. ${compound.omittedFragmentCount} detached fragment${
+              compound.omittedFragmentCount === 1 ? '' : 's'
+            } omitted so the main molecule stays editable.`
+          : compound.importMode === 'all' && compound.componentCount > 1
+            ? `${compound.title} imported from PubChem as a ${compound.componentCount}-component work.`
+          : `${compound.title} imported from PubChem. Save it to keep this draft.`,
+      );
+    },
+    [applyEditorSnapshot, buildHistorySnapshot, pushHistorySnapshot, showGalleryFeedback],
+  );
 
   const onLoadSavedMolecule = useCallback(
     (savedMolecule: SavedMolecule) => {
@@ -2703,6 +3095,10 @@ function MolecularEditor({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (isSaveModalOpen || isImportModalOpen) {
+        return;
+      }
+
       if (event.altKey || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z') {
         return;
       }
@@ -2726,7 +3122,7 @@ function MolecularEditor({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [onRedo, onUndo]);
+  }, [isImportModalOpen, isSaveModalOpen, onRedo, onUndo]);
 
   useEffect(() => {
     if (paletteSearchFocusTimeoutRef.current !== null) {
@@ -3079,6 +3475,8 @@ function MolecularEditor({
         setBottomNoticeHeight((currentHeight) =>
           currentHeight === nextBottomNoticeHeight ? currentHeight : nextBottomNoticeHeight,
         );
+      } else {
+        setBottomNoticeHeight((currentHeight) => (currentHeight === 0 ? currentHeight : 0));
       }
 
       if (canvasElement !== null) {
@@ -3173,19 +3571,40 @@ function MolecularEditor({
   };
   const effectiveToolRailCollapsed = isLandscapeCompactCanvas || isToolRailCollapsed;
   const showExpandedToolRailContent = !effectiveToolRailCollapsed;
+  const responsiveLayoutWidth = canvasFrameSize.width > 0 ? canvasFrameSize.width : 320;
 
   const topControlsRowClassName = isLandscapeCompactCanvas
-    ? 'flex flex-wrap items-center justify-between gap-1.5'
-    : 'flex flex-wrap items-center justify-between gap-2';
+    ? 'flex min-w-0 flex-nowrap items-center justify-between gap-1.5'
+    : responsiveLayoutWidth < 430
+      ? 'flex min-w-0 flex-nowrap items-center justify-between gap-1.5'
+      : 'flex flex-wrap items-center justify-between gap-2';
+  const topControlsBlockClassName = moleculeComponents.length > 1 ? 'space-y-2' : '';
+  const topControlsLeadingGroupClassName = isLandscapeCompactCanvas
+    ? 'flex min-w-0 flex-nowrap items-center gap-1.5'
+    : responsiveLayoutWidth < 430
+      ? 'flex min-w-0 flex-nowrap items-center gap-1.5'
+      : 'flex flex-wrap items-center gap-2';
+  const componentFocusRailClassName = isLandscapeCompactCanvas
+    ? 'flex flex-wrap items-center gap-1.5'
+    : 'flex flex-wrap items-center gap-2';
   const viewModeTabsClassName = isLandscapeCompactCanvas
     ? 'flex items-center gap-0.5 rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) p-0.5 shadow-lg backdrop-blur-xl'
     : 'flex items-center gap-1 rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) p-1 shadow-lg backdrop-blur-xl';
   const viewModeButtonClassName = isLandscapeCompactCanvas
     ? 'inline-flex h-7 min-w-7 items-center justify-center rounded-lg px-1.5 text-[10px] font-semibold transition-colors'
-    : 'inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-[11px] font-semibold transition-colors';
+    : responsiveLayoutWidth < 430
+      ? 'inline-flex h-7 min-w-7 items-center justify-center rounded-lg px-1.5 text-[10px] font-semibold transition-colors'
+      : 'inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-[11px] font-semibold transition-colors';
+  const importButtonClassName = isLandscapeCompactCanvas
+    ? 'inline-flex h-7 items-center gap-1 rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) px-2 text-[10px] font-semibold text-(--text-muted) shadow-lg backdrop-blur-xl transition-colors hover:border-(--accent) hover:text-foreground'
+    : responsiveLayoutWidth < 430
+      ? 'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) px-0 text-[10px] font-semibold text-(--text-muted) shadow-lg backdrop-blur-xl transition-colors hover:border-(--accent) hover:text-foreground'
+      : 'inline-flex h-8 items-center gap-1.5 rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) px-2.5 text-[11px] font-semibold text-(--text-muted) shadow-lg backdrop-blur-xl transition-colors hover:border-(--accent) hover:text-foreground';
   const zoomControlsClassName = isLandscapeCompactCanvas
     ? 'ml-auto flex items-center gap-0.5 rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) p-0.5 shadow-lg backdrop-blur-xl'
-    : 'ml-auto flex items-center gap-0.5 rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) p-0.5 shadow-lg backdrop-blur-xl';
+    : responsiveLayoutWidth < 430
+      ? 'ml-auto flex shrink-0 items-center gap-px rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) p-0.5 shadow-lg backdrop-blur-xl'
+      : 'ml-auto flex items-center gap-0.5 rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) p-0.5 shadow-lg backdrop-blur-xl';
   const zoomControlsVisibilityClassName = isSimplifiedView ? 'pointer-events-none invisible' : '';
   const topOverlayClassName = isLandscapeCompactCanvas
     ? 'absolute inset-x-2 top-2 z-30'
@@ -3201,7 +3620,6 @@ function MolecularEditor({
   const toolRailCollapsedWidthPx = isLandscapeCompactCanvas ? 40 : 48;
   const paletteSearchTriggerWidthPx = isLandscapeCompactCanvas ? 40 : 48;
   const paletteSearchClosedWidthPx = toolRailCollapsedWidthPx;
-  const responsiveLayoutWidth = canvasFrameSize.width > 0 ? canvasFrameSize.width : 320;
   const toolRailExpandedWidthPx = isLandscapeCompactCanvas
     ? Math.round(Math.min(responsiveLayoutWidth * 0.56, 136))
     : responsiveLayoutWidth >= 640
@@ -3236,17 +3654,21 @@ function MolecularEditor({
   };
   const paletteSearchButtonClassName = isLandscapeCompactCanvas ? 'h-5 w-5' : 'h-5.5 w-5.5';
   const paletteViewportWrapperClassName = isLandscapeCompactCanvas
-    ? 'relative overflow-hidden px-0.5'
-    : 'relative overflow-hidden px-1';
+    ? 'relative overflow-hidden px-8 py-1'
+    : 'relative overflow-hidden px-9 py-1 sm:px-10 sm:py-1.5';
   const paletteRowClassName = isLandscapeCompactCanvas
-    ? 'flex h-7 items-center gap-0.5'
-    : 'flex h-9 items-center gap-1 sm:h-10 sm:gap-1.5 lg:h-11 lg:gap-2';
+    ? 'flex h-8 items-center gap-0.5'
+    : 'flex h-11 items-center gap-1 sm:h-12 sm:gap-1.5 lg:h-[3.25rem] lg:gap-2';
   const compactBottomOverlayClassName = isLandscapeCompactCanvas
     ? 'pointer-events-none absolute bottom-2 left-1/2 z-20 flex w-full -translate-x-1/2 justify-center px-2'
     : 'pointer-events-none absolute bottom-3 left-1/2 z-20 flex w-full -translate-x-1/2 justify-center px-3';
   const compactBottomNoticeClassName = isLandscapeCompactCanvas
-    ? 'pointer-events-auto max-w-[min(88vw,460px)] rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-panel) px-2.5 py-1.5 text-[11px] text-(--text-muted) shadow-lg backdrop-blur-xl'
+    ? 'pointer-events-auto max-w-[min(84vw,320px)] rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-panel) px-2 py-1.5 text-[10px] leading-[1.2] text-(--text-muted) shadow-lg backdrop-blur-xl'
     : 'pointer-events-auto max-w-[min(92vw,620px)] rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-panel) px-3 py-2 text-xs text-(--text-muted) shadow-lg backdrop-blur-xl sm:text-[13px]';
+  const compactDisplayedEditorNotice =
+    isLandscapeCompactCanvas && resolvedEditorNotice === DEFAULT_EDITOR_NOTICE
+      ? 'Select an element, then double-tap to place it.'
+      : resolvedEditorNotice;
   const toolRailBodyClassName = effectiveToolRailCollapsed
     ? 'flex flex-1 flex-col items-center gap-2 overflow-y-auto px-1.5 py-2'
     : 'flex-1 space-y-2.5 overflow-y-auto p-2';
@@ -3256,11 +3678,18 @@ function MolecularEditor({
   const formulaPanelStyle: CSSProperties = {
     bottom: `${formulaPanelBottom}px`,
   };
-  const formulaPanelHeightClassName = isLandscapeCompactCanvas ? 'h-[64px]' : 'h-[76px] sm:h-[84px]';
+  const formulaPanelHeightClassName =
+    formulaStatsRows.length > 5
+      ? isLandscapeCompactCanvas
+        ? 'h-[84px]'
+        : 'h-[108px] sm:h-[124px]'
+      : isLandscapeCompactCanvas
+        ? 'h-[72px]'
+        : 'h-[92px] sm:h-[108px]';
   const formulaPanelCollapsedWidthClassName = isLandscapeCompactCanvas ? 'w-7' : 'w-8 sm:w-9';
   const formulaPanelExpandedWidthClassName = isLandscapeCompactCanvas
-    ? 'w-[min(52vw,8.5rem)]'
-    : 'w-[min(58vw,10rem)] sm:w-40 lg:w-44';
+    ? 'w-[min(60vw,10.5rem)]'
+    : 'w-[min(72vw,12rem)] sm:w-48 lg:w-56';
   const formulaPanelWidthClassName = isFormulaPanelOpen ? formulaPanelExpandedWidthClassName : formulaPanelCollapsedWidthClassName;
   const formulaPanelButtonClassName = isLandscapeCompactCanvas ? 'w-7 text-[6px]' : 'w-8 text-[7px] sm:w-9 sm:text-[8px]';
   const canvasPanelClassName = 'surface-panel relative overflow-hidden rounded-3xl border border-(--border-subtle) shadow-sm';
@@ -3269,6 +3698,7 @@ function MolecularEditor({
   const isGalleryPage = pageMode === 'gallery';
   const shouldShowToolRail = isEditorPage && activeView === 'editor';
   const shouldShowFloatingSaveShortcut = isEditorPage && activeView !== 'editor';
+  const shouldShowComponentFocusRail = moleculeComponents.length > 1;
   const hasCurrentSavedSelection = resolvedActiveSavedMoleculeId !== null;
   const currentSaveLabel =
     normalizeOptionalText(moleculeName) ??
@@ -3296,36 +3726,54 @@ function MolecularEditor({
     <section className="flex min-h-0 flex-col gap-3 overflow-visible pb-4" style={editorSectionStyle}>
       {isEditorPage ? (
         <>
-      <div ref={topControlsRef} className={topControlsRowClassName}>
-        <div className={viewModeTabsClassName}>
-          {VIEW_OPTIONS.map((option, index) => (
-            <button
-              key={option.mode}
-              type="button"
-              onClick={() => onSetActiveView(option.mode)}
-              className={`${viewModeButtonClassName} ${
-                activeView === option.mode
-                  ? 'border border-(--accent) bg-(--accent)/22 text-foreground'
-                  : 'border border-transparent text-(--text-muted) hover:border-(--accent) hover:text-foreground'
-              }`}
-              aria-label={option.label}
-              title={option.label}
-            >
-              <span className="sm:hidden">{index + 1}</span>
-              <span className="hidden sm:inline">{option.label}</span>
-            </button>
-          ))}
-        </div>
+      <div ref={topControlsRef} className={topControlsBlockClassName}>
+        <div className={topControlsRowClassName}>
+          <div className={topControlsLeadingGroupClassName}>
+            <div className={viewModeTabsClassName}>
+              {VIEW_OPTIONS.map((option, index) => (
+                <button
+                  key={option.mode}
+                  type="button"
+                  onClick={() => onSetActiveView(option.mode)}
+                  className={`${viewModeButtonClassName} ${
+                    activeView === option.mode
+                      ? 'border border-(--accent) bg-(--accent)/22 text-foreground'
+                      : 'border border-transparent text-(--text-muted) hover:border-(--accent) hover:text-foreground'
+                  }`}
+                  aria-label={option.label}
+                  title={option.label}
+                >
+                  <span className="sm:hidden">{index + 1}</span>
+                  <span className="hidden sm:inline">{option.label}</span>
+                </button>
+              ))}
+            </div>
 
-        <div
-          className={`${zoomControlsClassName} ${zoomControlsVisibilityClassName}`}
-          aria-hidden={isSimplifiedView}
-        >
+            <button
+              type="button"
+              onClick={onOpenImportModal}
+              className={importButtonClassName}
+              aria-label="Import another molecule"
+              title="Import another molecule from PubChem"
+            >
+              <ImportMoleculeIcon />
+              <span className="hidden sm:inline">Import Other</span>
+            </button>
+          </div>
+
+          <div
+            className={`${zoomControlsClassName} ${zoomControlsVisibilityClassName}`}
+            aria-hidden={isSimplifiedView}
+          >
             <button
               type="button"
               onClick={onZoomOut}
               className={`inline-flex items-center justify-center rounded-lg px-1 font-black text-foreground transition-colors hover:border-(--accent) hover:text-foreground ${
-                isLandscapeCompactCanvas ? 'h-6 min-w-6 text-[13px]' : 'h-7 min-w-7 text-sm'
+                isLandscapeCompactCanvas
+                  ? 'h-6 min-w-6 text-[13px]'
+                  : responsiveLayoutWidth < 430
+                    ? 'h-6 min-w-5.5 text-[12px]'
+                    : 'h-7 min-w-7 text-sm'
               }`}
               aria-label="Zoom out"
               title="Zoom out"
@@ -3336,7 +3784,11 @@ function MolecularEditor({
               type="button"
               onClick={onResetCanvasView}
               className={`inline-flex items-center justify-center rounded-lg px-1 font-semibold text-(--text-muted) transition-colors hover:border-(--accent) hover:text-foreground ${
-                isLandscapeCompactCanvas ? 'h-6 min-w-8 text-[9px]' : 'h-7 min-w-10 text-[10px]'
+                isLandscapeCompactCanvas
+                  ? 'h-6 min-w-8 text-[9px]'
+                  : responsiveLayoutWidth < 430
+                    ? 'h-6 min-w-8 text-[8px]'
+                    : 'h-7 min-w-10 text-[10px]'
               }`}
               aria-label="Reset zoom"
               title="Reset zoom"
@@ -3347,7 +3799,11 @@ function MolecularEditor({
               type="button"
               onClick={onZoomIn}
               className={`inline-flex items-center justify-center rounded-lg px-1 font-black text-foreground transition-colors hover:border-(--accent) hover:text-foreground ${
-                isLandscapeCompactCanvas ? 'h-6 min-w-6 text-[13px]' : 'h-7 min-w-7 text-sm'
+                isLandscapeCompactCanvas
+                  ? 'h-6 min-w-6 text-[13px]'
+                  : responsiveLayoutWidth < 430
+                    ? 'h-6 min-w-5.5 text-[12px]'
+                    : 'h-7 min-w-7 text-sm'
               }`}
               aria-label="Zoom in"
               title="Zoom in"
@@ -3358,12 +3814,43 @@ function MolecularEditor({
               <button
                 type="button"
                 onClick={onResetCanvasView}
-                className="inline-flex h-7 items-center justify-center rounded-lg px-1 text-[10px] font-semibold uppercase text-(--text-muted) transition-colors hover:border-(--accent) hover:text-foreground"
+                className={`inline-flex items-center justify-center rounded-lg px-1 font-semibold uppercase text-(--text-muted) transition-colors hover:border-(--accent) hover:text-foreground ${
+                  responsiveLayoutWidth < 430 ? 'h-6 text-[8px]' : 'h-7 text-[10px]'
+                }`}
               >
                 FIT
               </button>
             )}
+          </div>
         </div>
+
+        {shouldShowComponentFocusRail ? (
+          <div className={componentFocusRailClassName}>
+            <span className="rounded-full border border-(--border-subtle) bg-(--surface-overlay-soft) px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)">
+              {moleculeComponents.length} components
+            </span>
+            {moleculeComponents.map((component, index) => {
+              const isFocused = index === resolvedFocusedComponentIndex;
+              const componentFormula = buildMolecularFormula(component.model);
+
+              return (
+                <button
+                  key={component.atomIds.join(':')}
+                  type="button"
+                  onClick={() => onFocusComponent(index)}
+                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                    isFocused
+                      ? 'border-(--accent) bg-(--accent)/18 text-foreground'
+                      : 'border-(--border-subtle) bg-(--surface-overlay-mid) text-(--text-muted) hover:border-(--accent) hover:text-foreground'
+                  }`}
+                  title={`Focus Mol ${index + 1}${componentFormula.length > 0 ? ` (${componentFormula})` : ''}`}
+                >
+                  Mol {index + 1}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
 
       <div
@@ -3420,7 +3907,7 @@ function MolecularEditor({
             <Button
               variant="ghost"
               size="sm"
-              className={`absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-(--surface-overlay-strong) px-0 backdrop-blur-xl ${
+              className={`absolute left-1 top-1/2 z-10 -translate-y-1/2 rounded-full bg-(--surface-overlay-strong) px-0 backdrop-blur-xl ${
                 isLandscapeCompactCanvas ? 'h-7 w-7' : 'h-8 w-8 sm:h-9 sm:w-9'
               }`}
               onClick={goToPreviousPaletteElement}
@@ -3433,7 +3920,7 @@ function MolecularEditor({
             <Button
               variant="ghost"
               size="sm"
-              className={`absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-(--surface-overlay-strong) px-0 backdrop-blur-xl ${
+              className={`absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded-full bg-(--surface-overlay-strong) px-0 backdrop-blur-xl ${
                 isLandscapeCompactCanvas ? 'h-7 w-7' : 'h-8 w-8 sm:h-9 sm:w-9'
               }`}
               onClick={goToNextPaletteElement}
@@ -3701,10 +4188,12 @@ function MolecularEditor({
                     Simplified
                   </p>
                   <p className="mt-2.5 wrap-break-word text-[clamp(1.5rem,8vw,4.5rem)] font-black leading-[0.96] tracking-[0.03em] text-foreground">
-                    {formula}
+                    {formulaDisplayValue}
                   </p>
                   <p className="mx-auto mt-2.5 max-w-2xl text-[11px] leading-relaxed text-(--text-muted) sm:mt-4 sm:text-sm">
-                    Compact composition view for the current molecule.
+                    {moleculeComponents.length > 1
+                      ? `Compact composition view for Mol ${resolvedFocusedComponentIndex + 1}.`
+                      : 'Compact composition view for the current molecule.'}
                   </p>
                 </div>
 
@@ -3749,10 +4238,10 @@ function MolecularEditor({
           )}
         </div>
 
-        {isSimplifiedView ? null : (
+        {isSimplifiedView || resolvedEditorNotice === null ? null : (
           <div className={compactBottomOverlayClassName}>
-            <div ref={bottomNoticeRef} className={compactBottomNoticeClassName}>
-              {editorNotice}
+            <div ref={bottomNoticeRef} className={compactBottomNoticeClassName} title={resolvedEditorNotice}>
+              {compactDisplayedEditorNotice}
             </div>
           </div>
         )}
@@ -3773,20 +4262,28 @@ function MolecularEditor({
                 >
                   <table className={`h-full w-full table-fixed border-collapse text-left text-(--text-muted) ${isLandscapeCompactCanvas ? 'text-[7px]' : 'text-[8px] sm:text-[9px]'}`}>
                     <tbody className="h-full">
-                        {formulaStatsRows.map((row, index) => (
-                          <tr key={row.label} className={index % 2 === 0 ? 'bg-(--surface-zebra-odd)' : 'bg-(--surface-zebra-even)'}>
-                            <th className={`border-r border-(--border-subtle)/35 font-semibold uppercase tracking-[0.08em] text-(--text-muted) ${isLandscapeCompactCanvas ? 'w-[39%] px-1 py-[2px]' : 'w-[42%] px-1.5 py-[3px]'}`}>
-                              {row.label}
+                        {formulaStatsRows.map((row, index) => {
+                          const resolvedLabel = isLandscapeCompactCanvas ? row.compactLabel : row.label;
+                          const resolvedValue =
+                            isLandscapeCompactCanvas && row.compactValue !== undefined ? row.compactValue : row.value;
+
+                          return (
+                          <tr key={row.title ?? row.label} className={index % 2 === 0 ? 'bg-(--surface-zebra-odd)' : 'bg-(--surface-zebra-even)'}>
+                            <th
+                              className={`border-r border-(--border-subtle)/35 font-semibold uppercase tracking-[0.08em] text-(--text-muted) ${isLandscapeCompactCanvas ? 'w-[34%] px-1 py-[2px]' : 'w-[36%] px-1.5 py-[3px]'}`}
+                              title={row.title ?? row.label}
+                            >
+                              {resolvedLabel}
                             </th>
                             <td
-                              className={`font-semibold text-foreground ${
-                                row.label === 'Formula' ? 'break-words text-right leading-tight' : 'text-right'
-                              } ${isLandscapeCompactCanvas ? 'px-1 py-[2px]' : 'px-1.5 py-[3px]'}`}
+                              className={`min-w-0 overflow-hidden text-right font-semibold text-foreground tabular-nums ${isLandscapeCompactCanvas ? 'px-1 py-[2px]' : 'px-1.5 py-[3px]'}`}
+                              title={row.value}
                             >
-                              {row.value}
+                              <span className="block truncate leading-tight">{resolvedValue}</span>
                             </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                     </tbody>
                   </table>
                 </div>
@@ -3819,16 +4316,19 @@ function MolecularEditor({
                 Molecule Gallery
               </p>
               <h2 className="mt-1 text-lg font-black text-foreground">Stick View Library</h2>
-              <p className="mt-1 text-sm text-(--text-muted)">
-                {hasCurrentSavedSelection
-                  ? `${currentSaveLabel} is ready to reopen in the editor.`
-                  : 'Select a saved molecule, then open it in the editor when you want to keep working.'}
-              </p>
             </div>
             <div className="flex items-center gap-2">
               <span className="rounded-full border border-(--border-subtle) bg-(--surface-overlay-soft) px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
                 {normalizedSavedMolecules.length} saved
               </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={!hasCurrentSavedSelection}
+                onClick={onOpenGalleryEditModal}
+              >
+                Edit Details
+              </Button>
               <Button
                 variant={hasCurrentSavedSelection ? 'primary' : 'secondary'}
                 size="sm"
@@ -3852,51 +4352,49 @@ function MolecularEditor({
             </div>
           </div>
 
-          <div
-            className={`mt-4 rounded-[1.35rem] border px-4 py-3 ${
-              galleryFeedback?.tone === 'error'
-                ? 'border-rose-400/35 bg-rose-500/10'
-                : galleryFeedback?.tone === 'success'
-                  ? 'border-emerald-400/35 bg-emerald-500/10'
-                  : 'border-(--border-subtle) bg-(--surface-overlay-subtle)'
-            }`}
-          >
-            <p
-              className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${
-                galleryFeedback?.tone === 'error'
-                  ? 'text-rose-200'
+          {galleryFeedback !== null || savedMoleculesError !== null ? (
+            <div
+              className={`mt-4 rounded-[1.35rem] border px-4 py-3 ${
+                galleryFeedback?.tone === 'error' || savedMoleculesError !== null
+                  ? 'border-rose-400/35 bg-rose-500/10'
                   : galleryFeedback?.tone === 'success'
-                    ? 'text-emerald-200'
-                    : 'text-(--text-muted)'
+                    ? 'border-emerald-400/35 bg-emerald-500/10'
+                    : 'border-(--border-subtle) bg-(--surface-overlay-subtle)'
               }`}
             >
-              {galleryFeedback?.tone === 'error'
-                ? 'Sync Status'
-                : galleryFeedback?.tone === 'success'
-                  ? 'Saved'
-                  : 'Gallery'}
-            </p>
-            <p
-              className={`mt-1 text-sm leading-relaxed ${
-                galleryFeedback?.tone === 'error'
-                  ? 'text-rose-100'
-                  : galleryFeedback?.tone === 'success'
-                    ? 'text-emerald-100'
-                    : 'text-(--text-muted)'
-              }`}
-            >
-              {galleryFeedback?.message ?? 'Select a molecule card to stage it, then reopen it in the editor.'}
-            </p>
-            {savedMoleculesError !== null ? (
-              <button
-                type="button"
-                onClick={onReloadSavedMolecules}
-                className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-(--accent) transition-colors hover:text-foreground"
+              <p
+                className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${
+                  galleryFeedback?.tone === 'error' || savedMoleculesError !== null
+                    ? 'text-rose-200'
+                    : galleryFeedback?.tone === 'success'
+                      ? 'text-emerald-200'
+                      : 'text-(--text-muted)'
+                }`}
               >
-                Retry gallery sync
-              </button>
-            ) : null}
-          </div>
+                {galleryFeedback?.tone === 'success' ? 'Saved' : 'Sync Status'}
+              </p>
+              <p
+                className={`mt-1 text-sm leading-relaxed ${
+                  galleryFeedback?.tone === 'error' || savedMoleculesError !== null
+                    ? 'text-rose-100'
+                    : galleryFeedback?.tone === 'success'
+                      ? 'text-emerald-100'
+                      : 'text-(--text-muted)'
+                }`}
+              >
+                {savedMoleculesError ?? galleryFeedback?.message}
+              </p>
+              {savedMoleculesError !== null ? (
+                <button
+                  type="button"
+                  onClick={onReloadSavedMolecules}
+                  className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-(--accent) transition-colors hover:text-foreground"
+                >
+                  Retry gallery sync
+                </button>
+              ) : null}
+            </div>
+          ) : null}
 
           {isSavedMoleculesLoading ? (
             <div className="mt-4 rounded-[1.5rem] border border-dashed border-(--border-subtle) bg-(--surface-overlay-subtle) px-4 py-8 text-center text-sm text-(--text-muted)">
@@ -3935,25 +4433,42 @@ function MolecularEditor({
       ) : null}
 
       {isEditorPage ? (
-        <MoleculeSaveModal
-          isOpen={isSaveModalOpen}
-          hasLinkedSelection={hasCurrentSavedSelection}
-          currentSaveLabel={currentSaveLabel}
-          moleculeName={moleculeName}
-          educationalDescription={moleculeEducationalDescription}
-          formula={formulaDisplayValue}
-          atomCount={summary.atomCount}
-          bondCount={summary.bondCount}
-          isMutating={isSavedMoleculesMutating}
-          onClose={onCloseSaveModal}
-          onMoleculeNameChange={setMoleculeName}
-          onEducationalDescriptionChange={setMoleculeEducationalDescription}
-          onSaveAsNew={onSaveAsNewMolecule}
-          onUpdateSelected={onUpdateCurrentSavedMolecule}
-          onDetachSelection={onDetachSavedMolecule}
-          onDeleteSelected={onDeleteCurrentSavedMolecule}
-        />
+        <>
+          <MoleculeImportModal
+            isOpen={isImportModalOpen}
+            elements={elements}
+            onClose={onCloseImportModal}
+            onImport={onImportExternalMolecule}
+          />
+        </>
       ) : null}
+
+      <MoleculeSaveModal
+        context={isGalleryPage ? 'gallery' : 'editor'}
+        isOpen={isSaveModalOpen}
+        hasLinkedSelection={hasCurrentSavedSelection}
+        currentSaveLabel={currentSaveLabel}
+        moleculeTitle={moleculeName}
+        educationalDescription={moleculeEducationalDescription}
+        formula={formulaDisplayValue}
+        nomenclature={systematicNameDisplayValue}
+        atomCount={focusedSummary.atomCount}
+        bondCount={focusedSummary.bondCount}
+        componentCount={moleculeComponents.length}
+        focusedComponentLabel={
+          moleculeComponents.length > 1
+            ? `Mol ${resolvedFocusedComponentIndex + 1} / ${moleculeComponents.length}`
+            : null
+        }
+        isMutating={isSavedMoleculesMutating}
+        onClose={onCloseSaveModal}
+        onMoleculeTitleChange={setMoleculeName}
+        onEducationalDescriptionChange={setMoleculeEducationalDescription}
+        onSaveAsNew={onSaveAsNewMolecule}
+        onUpdateSelected={onUpdateCurrentSavedMolecule}
+        onDetachSelection={onDetachSavedMolecule}
+        onDeleteSelected={onDeleteCurrentSavedMolecule}
+      />
 
       {galleryFeedback !== null ? (
         <div className="pointer-events-none fixed bottom-4 right-4 z-[100] w-[min(22rem,calc(100vw-2rem))]">

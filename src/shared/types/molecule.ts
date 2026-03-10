@@ -20,6 +20,8 @@ export type SavedMoleculeCompositionEntry = {
 };
 
 export type SavedMoleculeSummary = {
+  systematicName?: string | null;
+  componentCount?: number;
   formula: string;
   atomCount: number;
   bondCount: number;

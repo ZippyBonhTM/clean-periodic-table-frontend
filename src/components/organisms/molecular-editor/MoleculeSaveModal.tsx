@@ -6,17 +6,21 @@ import Button from '@/components/atoms/Button';
 import FloatingModal from '@/components/molecules/FloatingModal';
 
 type MoleculeSaveModalProps = {
+  context: 'editor' | 'gallery';
   isOpen: boolean;
   hasLinkedSelection: boolean;
   currentSaveLabel: string;
-  moleculeName: string;
+  moleculeTitle: string;
   educationalDescription: string;
   formula: string;
+  nomenclature: string;
   atomCount: number;
   bondCount: number;
+  componentCount: number;
+  focusedComponentLabel: string | null;
   isMutating: boolean;
   onClose: () => void;
-  onMoleculeNameChange: (value: string) => void;
+  onMoleculeTitleChange: (value: string) => void;
   onEducationalDescriptionChange: (value: string) => void;
   onSaveAsNew: () => void;
   onUpdateSelected: () => void;
@@ -25,24 +29,33 @@ type MoleculeSaveModalProps = {
 };
 
 function MoleculeSaveModal({
+  context,
   isOpen,
   hasLinkedSelection,
   currentSaveLabel,
-  moleculeName,
+  moleculeTitle,
   educationalDescription,
   formula,
+  nomenclature,
   atomCount,
   bondCount,
+  componentCount,
+  focusedComponentLabel,
   isMutating,
   onClose,
-  onMoleculeNameChange,
+  onMoleculeTitleChange,
   onEducationalDescriptionChange,
   onSaveAsNew,
   onUpdateSelected,
   onDetachSelection,
   onDeleteSelected,
 }: MoleculeSaveModalProps) {
-  const modalTitle = hasLinkedSelection ? currentSaveLabel : 'Save Molecule to Gallery';
+  const isGalleryContext = context === 'gallery';
+  const modalTitle = hasLinkedSelection
+    ? currentSaveLabel
+    : isGalleryContext
+      ? 'Edit Gallery Record'
+      : 'Save Molecule to Gallery';
 
   return (
     <FloatingModal
@@ -57,10 +70,12 @@ function MoleculeSaveModal({
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.4rem] border border-(--border-subtle) bg-(--surface-overlay-subtle) px-4 py-3">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-(--text-muted)">
-                Gallery Save
+                {isGalleryContext ? 'Gallery Record' : 'Gallery Save'}
               </p>
               <p className="mt-1 text-sm leading-relaxed text-(--text-muted)">
-                Save the current canvas as a new card, or update the linked gallery item when needed.
+                {isGalleryContext
+                  ? 'Edit the title and educational description of the selected gallery item.'
+                  : 'Save the current canvas as a new card, or update the linked gallery item when needed.'}
               </p>
             </div>
             <span
@@ -80,14 +95,14 @@ function MoleculeSaveModal({
                 htmlFor="molecule-save-modal-name"
                 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)"
               >
-                Molecule Name
+                Title
               </label>
               <input
                 id="molecule-save-modal-name"
                 name="molecule-save-modal-name"
                 type="text"
-                value={moleculeName}
-                onChange={(event) => onMoleculeNameChange(event.target.value)}
+                value={moleculeTitle}
+                onChange={(event) => onMoleculeTitleChange(event.target.value)}
                 placeholder="Benzeno"
                 className="w-full rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-soft) px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-(--accent)"
               />
@@ -100,6 +115,9 @@ function MoleculeSaveModal({
               >
                 Educational Description
               </label>
+              <p className="text-xs leading-relaxed text-(--text-muted)">
+                Markdown supported. Example: `**bold**`, lists, links, and inline code.
+              </p>
               <textarea
                 id="molecule-save-modal-description"
                 name="molecule-save-modal-description"
@@ -116,27 +134,31 @@ function MoleculeSaveModal({
             <Button
               variant="primary"
               size="sm"
-              disabled={atomCount === 0 || isMutating}
-              onClick={onSaveAsNew}
-            >
-              Save As New
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
               disabled={!hasLinkedSelection || atomCount === 0 || isMutating}
               onClick={onUpdateSelected}
             >
               Update Selected
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={!hasLinkedSelection}
-              onClick={onDetachSelection}
-            >
-              New Draft
-            </Button>
+            {!isGalleryContext ? (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={atomCount === 0 || isMutating}
+                  onClick={onSaveAsNew}
+                >
+                  Save As New
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={!hasLinkedSelection}
+                  onClick={onDetachSelection}
+                >
+                  New Draft
+                </Button>
+              </>
+            ) : null}
             <Button
               variant="ghost"
               size="sm"
@@ -151,11 +173,23 @@ function MoleculeSaveModal({
 
         <aside className="rounded-[1.5rem] border border-(--border-subtle) bg-(--surface-overlay-soft) p-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-(--text-muted)">
-            Current Canvas
+            {isGalleryContext ? 'Saved Record' : 'Current Canvas'}
           </p>
           <h3 className="mt-1 text-lg font-black text-foreground">{currentSaveLabel}</h3>
 
-          <dl className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3 lg:grid-cols-1">
+          <dl className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
+            {componentCount > 1 ? (
+              <div className="rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-faint) px-3 py-2.5 sm:col-span-2 lg:col-span-1">
+                <dt className="text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">Component Focus</dt>
+                <dd className="mt-1 break-words text-sm font-black text-foreground">
+                  {focusedComponentLabel ?? `Mol 1 / ${componentCount}`}
+                </dd>
+              </div>
+            ) : null}
+            <div className="rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-faint) px-3 py-2.5 sm:col-span-2 lg:col-span-1">
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">Nomenclature</dt>
+              <dd className="mt-1 break-words text-sm font-black text-foreground">{nomenclature}</dd>
+            </div>
             <div className="rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-faint) px-3 py-2.5">
               <dt className="text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">Formula</dt>
               <dd className="mt-1 break-words text-sm font-black text-foreground">{formula}</dd>
@@ -168,12 +202,20 @@ function MoleculeSaveModal({
               <dt className="text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">Bonds</dt>
               <dd className="mt-1 text-sm font-black text-foreground">{bondCount}</dd>
             </div>
+            {componentCount > 1 ? (
+              <div className="rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-faint) px-3 py-2.5">
+                <dt className="text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">Components</dt>
+                <dd className="mt-1 text-sm font-black text-foreground">{componentCount}</dd>
+              </div>
+            ) : null}
           </dl>
 
           <div className="mt-4 rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-subtle) px-3 py-3 text-sm leading-relaxed text-(--text-muted)">
             {atomCount === 0
               ? 'Add atoms before sending a save request to the gallery.'
-              : 'Use Save As New to create a fresh gallery item, or Update Selected to overwrite the linked one.'}
+              : isGalleryContext
+                ? 'Update Selected writes the edited metadata back to the chosen gallery item.'
+                : 'Use Save As New to create a fresh gallery item, or Update Selected to overwrite the linked one.'}
           </div>
         </aside>
       </div>
