@@ -5,7 +5,6 @@ import {
   memo,
   useCallback,
   useDeferredValue,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -20,11 +19,12 @@ import PeriodicTableOptionMenu from './PeriodicTableOptionMenu';
 import {
   SORT_OPTIONS,
   VIEW_OPTIONS,
-  type FloatingMenuPosition,
   type PeriodicTableMode,
   type PeriodicViewMode,
   type SortMode,
 } from './periodicTable.types';
+import useFloatingMenuPosition from './useFloatingMenuPosition';
+import usePeriodicTableFullscreen from './usePeriodicTableFullscreen';
 
 type PeriodicTableProps = {
   elements: ChemicalElement[];
@@ -49,20 +49,12 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
   const [viewMode, setViewMode] = useState<PeriodicViewMode>('classic');
   const [classicZoomPercent, setClassicZoomPercent] = useState(100);
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
-  const [viewMenuPosition, setViewMenuPosition] = useState<FloatingMenuPosition | null>(null);
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
-  const [sortMenuPosition, setSortMenuPosition] = useState<FloatingMenuPosition | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('number');
   const [query, setQuery] = useState('');
   const [selectedElement, setSelectedElement] = useState<ChemicalElement | null>(null);
-  const [isTableFullscreen, setIsTableFullscreen] = useState(false);
-  const [isSimulatedFullscreen, setIsSimulatedFullscreen] = useState(false);
   const viewToggleRef = useRef<HTMLButtonElement | null>(null);
   const sortToggleRef = useRef<HTMLButtonElement | null>(null);
-  const fullscreenContainerRef = useRef<HTMLDivElement | null>(null);
-  const previousZoomRef = useRef<number | null>(null);
-  const viewMenuFrameRef = useRef<number | null>(null);
-  const sortMenuFrameRef = useRef<number | null>(null);
   const [isPendingTransition, startTransition] = useTransition();
   const isExploreMode = mode === 'explore';
   const deferredQuery = useDeferredValue(query);
@@ -92,20 +84,6 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
   }, [elements, filteredElements, isExploreMode, sortMode]);
 
   const activeViewMode: PeriodicViewMode = isExploreMode ? viewMode : 'classic';
-  const isFullscreenActive = isTableFullscreen || isSimulatedFullscreen;
-
-  const getClassicFitZoomPercent = useCallback(() => {
-    const viewportWidth = Math.max(window.innerWidth - 48, 320);
-    const viewportHeight = Math.max(window.innerHeight - 180, 280);
-
-    const classicBaseWidth = 1804;
-    const classicBaseHeight = 998;
-    const fitScale = Math.min(viewportWidth / classicBaseWidth, viewportHeight / classicBaseHeight);
-    const clampedScale = Math.max(0.25, Math.min(1.75, fitScale));
-    const snappedPercent = Math.round((clampedScale * 100) / 5) * 5;
-
-    return Math.max(25, Math.min(175, snappedPercent));
-  }, []);
 
   const visibleElements = useMemo(() => {
     if (activeViewMode === 'classic') {
@@ -167,221 +145,26 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
     }
   }, [hasNextElement, selectedElementIndex, visibleElements]);
 
-  const onToggleTableFullscreen = useCallback(async () => {
-    if (isSimulatedFullscreen) {
-      setIsSimulatedFullscreen(false);
+  const sortMenuPosition = useFloatingMenuPosition({
+    anchorRef: sortToggleRef,
+    isOpen: isSortMenuOpen,
+    minWidth: 208,
+    onRequestClose: () => setIsSortMenuOpen(false),
+  });
 
-      if (previousZoomRef.current !== null) {
-        setClassicZoomPercent(previousZoomRef.current);
-        previousZoomRef.current = null;
-      }
+  const viewMenuPosition = useFloatingMenuPosition({
+    anchorRef: viewToggleRef,
+    isOpen: isViewMenuOpen,
+    minWidth: 176,
+    onRequestClose: () => setIsViewMenuOpen(false),
+  });
 
-      return;
-    }
-
-    if (typeof document === 'undefined') {
-      return;
-    }
-
-    const containerElement = fullscreenContainerRef.current;
-    if (containerElement === null) {
-      return;
-    }
-
-    const hasNativeFullscreenSupport =
-      document.fullscreenEnabled !== false &&
-      typeof containerElement.requestFullscreen === 'function' &&
-      typeof document.exitFullscreen === 'function';
-    const isLikelyMobile =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(hover: none) and (pointer: coarse)').matches;
-
-    if (document.fullscreenElement === containerElement) {
-      try {
-        await document.exitFullscreen();
-      } catch {
-        // Ignore exit failures and keep current state.
-      }
-      return;
-    }
-
-    if (!hasNativeFullscreenSupport || isLikelyMobile) {
-      previousZoomRef.current = classicZoomPercent;
-      setIsSimulatedFullscreen(true);
-
-      if (activeViewMode === 'classic') {
-        setClassicZoomPercent(getClassicFitZoomPercent());
-      }
-
-      return;
-    }
-
-    previousZoomRef.current = classicZoomPercent;
-    try {
-      await containerElement.requestFullscreen();
-    } catch {
-      setIsSimulatedFullscreen(true);
-
-      if (activeViewMode === 'classic') {
-        setClassicZoomPercent(getClassicFitZoomPercent());
-      }
-    }
-  }, [
-    activeViewMode,
-    classicZoomPercent,
-    getClassicFitZoomPercent,
-    isSimulatedFullscreen,
-  ]);
-
-  const getFloatingMenuPosition = useCallback((anchor: HTMLButtonElement, minWidth: number) => {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-
-    const rect = anchor.getBoundingClientRect();
-    const width = Math.max(minWidth, Math.round(rect.width));
-    const maxLeft = Math.max(8, window.innerWidth - width - 8);
-    const left = Math.max(8, Math.min(Math.round(rect.left), maxLeft));
-
-    return {
-      left,
-      top: Math.round(rect.bottom + 8),
-      width,
-    } satisfies FloatingMenuPosition;
-  }, []);
-
-  const syncViewMenuPosition = useCallback(() => {
-    if (viewToggleRef.current === null) {
-      return;
-    }
-
-    setViewMenuPosition(getFloatingMenuPosition(viewToggleRef.current, 176));
-  }, [getFloatingMenuPosition]);
-
-  const scheduleViewMenuPositionSync = useCallback(() => {
-    if (viewMenuFrameRef.current !== null) {
-      return;
-    }
-
-    viewMenuFrameRef.current = window.requestAnimationFrame(() => {
-      viewMenuFrameRef.current = null;
-      syncViewMenuPosition();
+  const { fullscreenContainerRef, isFullscreenActive, onToggleTableFullscreen } =
+    usePeriodicTableFullscreen({
+      activeViewMode,
+      classicZoomPercent,
+      onClassicZoomChange: setClassicZoomPercent,
     });
-  }, [syncViewMenuPosition]);
-
-  const syncSortMenuPosition = useCallback(() => {
-    if (sortToggleRef.current === null) {
-      return;
-    }
-
-    setSortMenuPosition(getFloatingMenuPosition(sortToggleRef.current, 208));
-  }, [getFloatingMenuPosition]);
-
-  const scheduleSortMenuPositionSync = useCallback(() => {
-    if (sortMenuFrameRef.current !== null) {
-      return;
-    }
-
-    sortMenuFrameRef.current = window.requestAnimationFrame(() => {
-      sortMenuFrameRef.current = null;
-      syncSortMenuPosition();
-    });
-  }, [syncSortMenuPosition]);
-
-  useEffect(() => {
-    if (!isViewMenuOpen) {
-      return;
-    }
-
-    scheduleViewMenuPositionSync();
-
-    const onWindowChange = () => {
-      scheduleViewMenuPositionSync();
-    };
-
-    const onEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsViewMenuOpen(false);
-      }
-    };
-
-    window.addEventListener('resize', onWindowChange);
-    window.addEventListener('scroll', onWindowChange, true);
-    window.addEventListener('keydown', onEscape);
-
-    return () => {
-      if (viewMenuFrameRef.current !== null) {
-        window.cancelAnimationFrame(viewMenuFrameRef.current);
-        viewMenuFrameRef.current = null;
-      }
-      window.removeEventListener('resize', onWindowChange);
-      window.removeEventListener('scroll', onWindowChange, true);
-      window.removeEventListener('keydown', onEscape);
-    };
-  }, [isViewMenuOpen, scheduleViewMenuPositionSync]);
-
-  useEffect(() => {
-    if (!isSortMenuOpen) {
-      return;
-    }
-
-    scheduleSortMenuPositionSync();
-
-    const onWindowChange = () => {
-      scheduleSortMenuPositionSync();
-    };
-
-    const onEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsSortMenuOpen(false);
-      }
-    };
-
-    window.addEventListener('resize', onWindowChange);
-    window.addEventListener('scroll', onWindowChange, true);
-    window.addEventListener('keydown', onEscape);
-
-    return () => {
-      if (sortMenuFrameRef.current !== null) {
-        window.cancelAnimationFrame(sortMenuFrameRef.current);
-        sortMenuFrameRef.current = null;
-      }
-      window.removeEventListener('resize', onWindowChange);
-      window.removeEventListener('scroll', onWindowChange, true);
-      window.removeEventListener('keydown', onEscape);
-    };
-  }, [isSortMenuOpen, scheduleSortMenuPositionSync]);
-
-  useEffect(() => {
-    if (typeof document === 'undefined') {
-      return;
-    }
-
-    const onFullscreenChange = () => {
-      const containerElement = fullscreenContainerRef.current;
-      const isActive = document.fullscreenElement === containerElement;
-
-      setIsTableFullscreen(isActive);
-      if (isActive) {
-        setIsSimulatedFullscreen(false);
-      }
-
-      if (isActive && activeViewMode === 'classic') {
-        setClassicZoomPercent(getClassicFitZoomPercent());
-      }
-
-      if (!isActive && !isSimulatedFullscreen && previousZoomRef.current !== null) {
-        setClassicZoomPercent(previousZoomRef.current);
-        previousZoomRef.current = null;
-      }
-    };
-
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-
-    return () => {
-      document.removeEventListener('fullscreenchange', onFullscreenChange);
-    };
-  }, [activeViewMode, getClassicFitZoomPercent, isSimulatedFullscreen]);
 
   const currentSortOption = useMemo(() => {
     return SORT_OPTIONS.find((option) => option.mode === sortMode) ?? SORT_OPTIONS[0];
