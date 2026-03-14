@@ -2,10 +2,8 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import MoleculeEditorFeedbackToast from '@/components/organisms/molecular-editor/MoleculeEditorFeedbackToast';
 import MoleculeGallerySection from '@/components/organisms/molecular-editor/MoleculeGallerySection';
-import MoleculeImportModal from '@/components/organisms/molecular-editor/MoleculeImportModal';
-import MoleculeSaveModal from '@/components/organisms/molecular-editor/MoleculeSaveModal';
+import MoleculeEditorOverlays from '@/components/organisms/molecular-editor/MoleculeEditorOverlays';
 import MoleculeEditorSection from '@/components/organisms/molecular-editor/MoleculeEditorSection';
 import useMoleculeEditorActions from '@/components/organisms/molecular-editor/useMoleculeEditorActions';
 import useMoleculeEditorLayout from '@/components/organisms/molecular-editor/useMoleculeEditorLayout';
@@ -617,45 +615,41 @@ function MolecularEditor({
         />
       ) : null}
 
-      {isEditorPage ? (
-        <>
-          <MoleculeImportModal
-            isOpen={isImportModalOpen}
-            elements={elements}
-            onClose={onCloseImportModal}
-            onImport={onImportExternalMolecule}
-          />
-        </>
-      ) : null}
-
-      <MoleculeSaveModal
-        context={isGalleryPage ? 'gallery' : 'editor'}
-        isOpen={isSaveModalOpen}
-        hasLinkedSelection={hasCurrentSavedSelection}
-        currentSaveLabel={currentSaveLabel}
-        moleculeTitle={moleculeName}
-        educationalDescription={moleculeEducationalDescription}
-        formula={formulaDisplayValue}
-        nomenclature={systematicNameDisplayValue}
-        atomCount={focusedSummary.atomCount}
-        bondCount={focusedSummary.bondCount}
-        componentCount={moleculeComponents.length}
-        focusedComponentLabel={
-          moleculeComponents.length > 1
-            ? `Mol ${resolvedFocusedComponentIndex + 1} / ${moleculeComponents.length}`
-            : null
-        }
-        isMutating={isSavedMoleculesMutating}
-        onClose={onCloseSaveModal}
-        onMoleculeTitleChange={setMoleculeName}
-        onEducationalDescriptionChange={setMoleculeEducationalDescription}
-        onSaveAsNew={onSaveAsNewMolecule}
-        onUpdateSelected={onUpdateCurrentSavedMolecule}
-        onDetachSelection={onDetachSavedMolecule}
-        onDeleteSelected={onDeleteCurrentSavedMolecule}
+      <MoleculeEditorOverlays
+        feedback={galleryFeedback}
+        importModalProps={{
+          isOpen: isImportModalOpen,
+          elements,
+          onClose: onCloseImportModal,
+          onImport: onImportExternalMolecule,
+        }}
+        pageMode={pageMode}
+        saveModalProps={{
+          context: isGalleryPage ? 'gallery' : 'editor',
+          isOpen: isSaveModalOpen,
+          hasLinkedSelection: hasCurrentSavedSelection,
+          currentSaveLabel,
+          moleculeTitle: moleculeName,
+          educationalDescription: moleculeEducationalDescription,
+          formula: formulaDisplayValue,
+          nomenclature: systematicNameDisplayValue,
+          atomCount: focusedSummary.atomCount,
+          bondCount: focusedSummary.bondCount,
+          componentCount: moleculeComponents.length,
+          focusedComponentLabel:
+            moleculeComponents.length > 1
+              ? `Mol ${resolvedFocusedComponentIndex + 1} / ${moleculeComponents.length}`
+              : null,
+          isMutating: isSavedMoleculesMutating,
+          onClose: onCloseSaveModal,
+          onMoleculeTitleChange: setMoleculeName,
+          onEducationalDescriptionChange: setMoleculeEducationalDescription,
+          onSaveAsNew: onSaveAsNewMolecule,
+          onUpdateSelected: onUpdateCurrentSavedMolecule,
+          onDetachSelection: onDetachSavedMolecule,
+          onDeleteSelected: onDeleteCurrentSavedMolecule,
+        }}
       />
-
-      <MoleculeEditorFeedbackToast feedback={galleryFeedback} pageMode={pageMode} />
     </section>
   );
 }
