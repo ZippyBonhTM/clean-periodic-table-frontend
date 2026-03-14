@@ -4,15 +4,21 @@ import { useRouter } from 'next/navigation';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 
-import Button from '@/components/atoms/Button';
-import MarkdownContent from '@/components/atoms/MarkdownContent';
 import MoleculeComponentFocusRail from '@/components/organisms/molecular-editor/MoleculeComponentFocusRail';
 import EditorCanvas from '@/components/organisms/molecular-editor/MoleculeEditorCanvas';
+import MoleculeGallerySection from '@/components/organisms/molecular-editor/MoleculeGallerySection';
 import MoleculeImportModal from '@/components/organisms/molecular-editor/MoleculeImportModal';
 import MoleculePaletteRail from '@/components/organisms/molecular-editor/MoleculePaletteRail';
 import MoleculeSaveModal from '@/components/organisms/molecular-editor/MoleculeSaveModal';
 import MoleculeSummaryPanel from '@/components/organisms/molecular-editor/MoleculeSummaryPanel';
 import MoleculeEditorTopBar from '@/components/organisms/molecular-editor/MoleculeEditorTopBar';
+import {
+  preserveViewportAcrossModelChange,
+  resolveInteractiveViewBox,
+  resolveNextStandalonePoint,
+  resolveScaledViewBoxMetrics,
+  resolveViewBox,
+} from '@/components/organisms/molecular-editor/moleculeCanvasViewport';
 import useCanvasInteractions from '@/components/organisms/molecular-editor/useCanvasInteractions';
 import useEditorHistory from '@/components/organisms/molecular-editor/useEditorHistory';
 import type { ResolvedImportedPubChemCompound } from '@/shared/api/pubchemApi';
@@ -68,13 +74,6 @@ type MolecularEditorProps = {
 
 type EditorViewMode = SavedMoleculeEditorState['activeView'];
 
-type Bounds = {
-  minX: number;
-  maxX: number;
-  minY: number;
-  maxY: number;
-};
-
 type CanvasViewport = {
   offsetX: number;
   offsetY: number;
@@ -123,13 +122,6 @@ const DEFAULT_CANVAS_VIEWPORT: CanvasViewport = {
   scale: 1,
 };
 
-const DEFAULT_VIEWBOX = {
-  x: -240,
-  y: -180,
-  width: 480,
-  height: 360,
-};
-
 const DRAG_THRESHOLD_PX = 6;
 const CANVAS_ZOOM_MIN = 0.5;
 const CANVAS_ZOOM_MAX = 3;
@@ -143,12 +135,6 @@ const PALETTE_MOMENTUM_IDLE_RELEASE_MS = 90;
 const PALETTE_TILE_LONG_PRESS_MS = 260;
 const EDITOR_HISTORY_LIMIT = 80;
 const GALLERY_FEEDBACK_AUTO_HIDE_MS = 4200;
-const SAVED_AT_FORMATTER = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-});
 
 function cloneMoleculeModel(model: MoleculeModel): MoleculeModel {
   return dedupeBondConnections({
@@ -244,163 +230,6 @@ function isTextEditingElement(target: EventTarget | null): boolean {
     target.isContentEditable ||
     target.closest('[contenteditable="true"]') !== null
   );
-}
-
-function resolveBounds(model: MoleculeModel): Bounds | null {
-  if (model.atoms.length === 0) {
-    return null;
-  }
-
-  return model.atoms.reduce<Bounds>(
-    (current, atom) => ({
-      minX: Math.min(current.minX, atom.x),
-      maxX: Math.max(current.maxX, atom.x),
-      minY: Math.min(current.minY, atom.y),
-      maxY: Math.max(current.maxY, atom.y),
-    }),
-    {
-      minX: model.atoms[0].x,
-      maxX: model.atoms[0].x,
-      minY: model.atoms[0].y,
-      maxY: model.atoms[0].y,
-    },
-  );
-}
-
-function resolveViewBox(model: MoleculeModel) {
-  const bounds = resolveBounds(model);
-
-  if (bounds === null) {
-    return DEFAULT_VIEWBOX;
-  }
-
-  const margin = 120;
-  const width = Math.max(bounds.maxX - bounds.minX + margin * 2, 420);
-  const height = Math.max(bounds.maxY - bounds.minY + margin * 2, 320);
-
-  return {
-    x: bounds.minX - margin,
-    y: bounds.minY - margin,
-    width,
-    height,
-  };
-}
-
-function resolveModelVisualCenter(model: MoleculeModel): { x: number; y: number } | null {
-  const bounds = resolveBounds(model);
-
-  if (bounds === null) {
-    return null;
-  }
-
-  return {
-    x: (bounds.minX + bounds.maxX) / 2,
-    y: (bounds.minY + bounds.maxY) / 2,
-  };
-}
-
-function resolveInteractiveViewBox(
-  model: MoleculeModel,
-  viewport: CanvasViewport,
-  frameAspectRatio?: number,
-) {
-  const baseViewBox = resolveViewBox(model);
-  let width = baseViewBox.width / viewport.scale;
-  let height = baseViewBox.height / viewport.scale;
-
-  if (frameAspectRatio !== undefined && Number.isFinite(frameAspectRatio) && frameAspectRatio > 0) {
-    const currentAspectRatio = width / height;
-
-    if (currentAspectRatio < frameAspectRatio) {
-      width = height * frameAspectRatio;
-    } else if (currentAspectRatio > frameAspectRatio) {
-      height = width / frameAspectRatio;
-    }
-  }
-
-  const centerX = baseViewBox.x + baseViewBox.width / 2 + viewport.offsetX;
-  const centerY = baseViewBox.y + baseViewBox.height / 2 + viewport.offsetY;
-
-  return {
-    x: centerX - width / 2,
-    y: centerY - height / 2,
-    width,
-    height,
-  };
-}
-
-function resolveScaledViewBoxMetrics(
-  model: MoleculeModel,
-  scale: number,
-  frameAspectRatio?: number,
-) {
-  const baseViewBox = resolveViewBox(model);
-  let width = baseViewBox.width / scale;
-  let height = baseViewBox.height / scale;
-
-  if (frameAspectRatio !== undefined && Number.isFinite(frameAspectRatio) && frameAspectRatio > 0) {
-    const currentAspectRatio = width / height;
-
-    if (currentAspectRatio < frameAspectRatio) {
-      width = height * frameAspectRatio;
-    } else if (currentAspectRatio > frameAspectRatio) {
-      height = width / frameAspectRatio;
-    }
-  }
-
-  return {
-    baseViewBox,
-    width,
-    height,
-    centerX: baseViewBox.x + baseViewBox.width / 2,
-    centerY: baseViewBox.y + baseViewBox.height / 2,
-  };
-}
-
-function preserveViewportAcrossModelChange(
-  previousModel: MoleculeModel,
-  nextModel: MoleculeModel,
-  viewport: CanvasViewport,
-  frameAspectRatio?: number,
-  anchorPoint?: { x: number; y: number },
-): CanvasViewport {
-  const previousViewBox = resolveInteractiveViewBox(previousModel, viewport, frameAspectRatio);
-  const previousVisualCenter = resolveModelVisualCenter(previousModel);
-  const nextVisualCenter = resolveModelVisualCenter(nextModel);
-  const previousAnchor = anchorPoint ?? previousVisualCenter ?? {
-    x: previousViewBox.x + previousViewBox.width / 2,
-    y: previousViewBox.y + previousViewBox.height / 2,
-  };
-  const nextAnchor = anchorPoint ?? nextVisualCenter ?? previousAnchor;
-  const ratioX =
-    previousViewBox.width === 0 ? 0.5 : (previousAnchor.x - previousViewBox.x) / previousViewBox.width;
-  const ratioY =
-    previousViewBox.height === 0 ? 0.5 : (previousAnchor.y - previousViewBox.y) / previousViewBox.height;
-  const nextMetrics = resolveScaledViewBoxMetrics(nextModel, viewport.scale, frameAspectRatio);
-  const nextX = nextAnchor.x - ratioX * nextMetrics.width;
-  const nextY = nextAnchor.y - ratioY * nextMetrics.height;
-
-  return {
-    ...viewport,
-    offsetX: nextX + nextMetrics.width / 2 - nextMetrics.centerX,
-    offsetY: nextY + nextMetrics.height / 2 - nextMetrics.centerY,
-  };
-}
-
-function resolveNextStandalonePoint(model: MoleculeModel): { x: number; y: number } {
-  const bounds = resolveBounds(model);
-
-  if (bounds === null) {
-    return { x: 0, y: 0 };
-  }
-
-  const atomCount = model.atoms.length;
-  const rowOffset = atomCount % 3;
-
-  return {
-    x: bounds.maxX + 92,
-    y: bounds.minY + rowOffset * 56,
-  };
 }
 
 function toSvgPoint(svg: SVGSVGElement, clientX: number, clientY: number) {
@@ -669,201 +498,6 @@ function normalizeOptionalText(value: string): string | null {
   const normalized = value.trim();
   return normalized.length > 0 ? normalized : null;
 }
-
-function formatSavedAtLabel(value: string): string {
-  const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return 'Unknown sync time';
-  }
-
-  return SAVED_AT_FORMATTER.format(parsed);
-}
-
-function stripMarkdownForPreview(value: string): string {
-  return value
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`([^`]+)`/g, '$1')
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '$1')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1')
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/^>\s?/gm, '')
-    .replace(/^[-*+]\s+/gm, '')
-    .replace(/^\d+\.\s+/gm, '')
-    .replace(/[*_~]/g, '')
-    .replace(/\n+/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-}
-
-const MoleculeGalleryPreview = memo(function MoleculeGalleryPreview({
-  model,
-  label,
-}: {
-  model: MoleculeModel;
-  label: string;
-}) {
-  const previewSvgRef = useRef<SVGSVGElement | null>(null);
-  const previewViewBox = useMemo(() => {
-    const base = resolveViewBox(model);
-
-    return {
-      x: base.x - 20,
-      y: base.y - 20,
-      width: base.width + 40,
-      height: base.height + 40,
-    };
-  }, [model]);
-
-  return (
-    <div className="relative h-32 overflow-hidden rounded-[1.35rem] border border-(--border-subtle) bg-(--surface-overlay-soft)">
-      <EditorCanvas
-        model={model}
-        mode="stick"
-        viewBox={previewViewBox}
-        selectedAtomId={null}
-        svgRef={previewSvgRef}
-        interactive={false}
-        showGrid={false}
-        ariaLabel={label}
-      />
-    </div>
-  );
-});
-
-const MoleculeGalleryCard = memo(function MoleculeGalleryCard({
-  savedMolecule,
-  isActive,
-  onLoad,
-}: {
-  savedMolecule: SavedMolecule;
-  isActive: boolean;
-  onLoad: (savedMolecule: SavedMolecule) => void;
-}) {
-  const description = savedMolecule.educationalDescription;
-  const compactDescription = useMemo(
-    () => (description === null ? null : stripMarkdownForPreview(description)),
-    [description],
-  );
-  const title = savedMolecule.name ?? savedMolecule.summary.formula;
-  const nomenclature = savedMolecule.summary.systematicName;
-  const savedAtLabel = useMemo(() => formatSavedAtLabel(savedMolecule.updatedAt), [savedMolecule.updatedAt]);
-  const onActivateCard = useCallback(() => {
-    onLoad(savedMolecule);
-  }, [onLoad, savedMolecule]);
-
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onActivateCard}
-      onKeyDown={(event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') {
-          return;
-        }
-
-        event.preventDefault();
-        onActivateCard();
-      }}
-      className={`group relative overflow-hidden rounded-[1.6rem] border p-3 text-left transition-all ${
-        isActive
-          ? 'border-(--accent) bg-(--accent)/10 shadow-[0_18px_40px_-28px_color-mix(in_oklab,var(--accent)_55%,transparent)]'
-          : 'border-(--border-subtle) bg-(--surface-overlay-soft) hover:border-(--accent) hover:bg-(--surface-overlay-mid)'
-      }`}
-      aria-pressed={isActive}
-    >
-      <MoleculeGalleryPreview
-        model={savedMolecule.molecule}
-        label={`Stick view preview of ${title}`}
-      />
-
-      <div className="mt-3 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-base font-black text-foreground">{title}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
-              {savedMolecule.summary.formula}
-            </p>
-            {(savedMolecule.summary.componentCount ?? 1) > 1 ? (
-              <span className="rounded-full border border-(--border-subtle) bg-(--surface-overlay-faint) px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)">
-                {savedMolecule.summary.componentCount} comps
-              </span>
-            ) : null}
-          </div>
-          {nomenclature !== null && nomenclature !== undefined ? (
-            <p
-              className="mt-1 text-xs font-medium leading-relaxed text-(--text-muted)"
-              style={{
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
-                Nomenclature
-              </span>
-              {nomenclature}
-            </p>
-          ) : null}
-        </div>
-        {isActive ? (
-          <span className="shrink-0 rounded-full border border-(--accent) bg-(--accent)/16 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-foreground">
-            Active
-          </span>
-        ) : null}
-      </div>
-
-      <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-2xl bg-(--surface-overlay-faint) px-2 py-2">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-(--text-muted)">Atoms</p>
-          <p className="mt-1 text-sm font-black text-foreground">{savedMolecule.summary.atomCount}</p>
-        </div>
-        <div className="rounded-2xl bg-(--surface-overlay-faint) px-2 py-2">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-(--text-muted)">Bonds</p>
-          <p className="mt-1 text-sm font-black text-foreground">{savedMolecule.summary.bondCount}</p>
-        </div>
-        <div className="rounded-2xl bg-(--surface-overlay-faint) px-2 py-2">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-(--text-muted)">Saved</p>
-          <p className="mt-1 text-[11px] font-semibold text-foreground">{savedAtLabel}</p>
-        </div>
-      </div>
-
-      <div className="mt-3 min-h-[2.75rem] text-sm leading-relaxed text-(--text-muted)">
-        {compactDescription !== null ? (
-          <p
-            style={{
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}
-          >
-            {compactDescription}
-          </p>
-        ) : (
-          <p>No educational description yet.</p>
-        )}
-      </div>
-
-      {description !== null ? (
-        <div className="absolute inset-0 flex items-end bg-black/78 p-4 opacity-0 backdrop-blur-[2px] transition-opacity duration-200 group-hover:opacity-100">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-(--text-muted)">
-              Educational Description
-            </p>
-            <MarkdownContent
-              content={description}
-              tone="inverted"
-              compact
-              className="mt-2 text-sm text-white/92"
-            />
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-});
 
 function MolecularEditor({
   pageMode,
@@ -2655,12 +2289,6 @@ function MolecularEditor({
     activeSavedMolecule?.name ??
     activeSavedMolecule?.summary.formula ??
     (summary.atomCount === 0 ? 'Unsaved molecule' : formula);
-  const galleryGridClassName =
-    savedMolecules.length <= 1
-      ? 'grid gap-3'
-      : savedMolecules.length === 2
-        ? 'grid gap-3 md:grid-cols-2'
-        : 'grid gap-3 md:grid-cols-2 xl:grid-cols-3';
   const galleryFeedbackToastLabel =
     galleryFeedback?.tone === 'error'
       ? 'Sync issue'
@@ -3067,128 +2695,19 @@ function MolecularEditor({
       ) : null}
 
       {isGalleryPage ? (
-        <div className="grid gap-3">
-        <section className="surface-panel rounded-[1.75rem] border border-(--border-subtle) p-4 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-(--text-muted)">
-                Molecule Gallery
-              </p>
-              <h2 className="mt-1 text-lg font-black text-foreground">Stick View Library</h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="rounded-full border border-(--border-subtle) bg-(--surface-overlay-soft) px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
-                {normalizedSavedMolecules.length} saved
-              </span>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={!hasCurrentSavedSelection}
-                onClick={onOpenGalleryEditModal}
-              >
-                Edit Details
-              </Button>
-              <Button
-                variant={hasCurrentSavedSelection ? 'primary' : 'secondary'}
-                size="sm"
-                disabled={!hasCurrentSavedSelection}
-                onClick={onOpenCurrentSavedMoleculeInEditor}
-              >
-                Open in Editor
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={!hasCurrentSavedSelection || isSavedMoleculesMutating}
-                onClick={onDeleteCurrentSavedMoleculeFromGallery}
-                className="border-rose-500/45 bg-rose-500/8 text-rose-200 hover:border-rose-400 hover:bg-rose-500/14 hover:text-rose-100"
-              >
-                Delete
-              </Button>
-              <Button variant="ghost" size="sm" onClick={onReloadSavedMolecules}>
-                Refresh
-              </Button>
-            </div>
-          </div>
-
-          {galleryFeedback !== null || savedMoleculesError !== null ? (
-            <div
-              className={`mt-4 rounded-[1.35rem] border px-4 py-3 ${
-                galleryFeedback?.tone === 'error' || savedMoleculesError !== null
-                  ? 'border-rose-400/35 bg-rose-500/10'
-                  : galleryFeedback?.tone === 'success'
-                    ? 'border-emerald-400/35 bg-emerald-500/10'
-                    : 'border-(--border-subtle) bg-(--surface-overlay-subtle)'
-              }`}
-            >
-              <p
-                className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${
-                  galleryFeedback?.tone === 'error' || savedMoleculesError !== null
-                    ? 'text-rose-200'
-                    : galleryFeedback?.tone === 'success'
-                      ? 'text-emerald-200'
-                      : 'text-(--text-muted)'
-                }`}
-              >
-                {galleryFeedback?.tone === 'success' ? 'Saved' : 'Sync Status'}
-              </p>
-              <p
-                className={`mt-1 text-sm leading-relaxed ${
-                  galleryFeedback?.tone === 'error' || savedMoleculesError !== null
-                    ? 'text-rose-100'
-                    : galleryFeedback?.tone === 'success'
-                      ? 'text-emerald-100'
-                      : 'text-(--text-muted)'
-                }`}
-              >
-                {savedMoleculesError ?? galleryFeedback?.message}
-              </p>
-              {savedMoleculesError !== null ? (
-                <button
-                  type="button"
-                  onClick={onReloadSavedMolecules}
-                  className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-(--accent) transition-colors hover:text-foreground"
-                >
-                  Retry gallery sync
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-
-          {isSavedMoleculesLoading ? (
-            <div className="mt-4 rounded-[1.5rem] border border-dashed border-(--border-subtle) bg-(--surface-overlay-subtle) px-4 py-8 text-center text-sm text-(--text-muted)">
-              Loading your saved molecules...
-            </div>
-          ) : savedMoleculesError !== null ? (
-            <div className="mt-4 rounded-[1.5rem] border border-rose-400/30 bg-rose-500/10 px-4 py-5 text-sm text-rose-100">
-              <p>{savedMoleculesError}</p>
-              <Button variant="ghost" size="sm" className="mt-3" onClick={onReloadSavedMolecules}>
-                Try Again
-              </Button>
-            </div>
-          ) : normalizedSavedMolecules.length === 0 ? (
-            <div className="mt-4 rounded-[1.5rem] border border-dashed border-(--border-subtle) bg-(--surface-overlay-subtle) px-4 py-8 text-center">
-              <p className="text-sm font-semibold text-foreground">Your gallery is empty.</p>
-              <p className="mt-2 text-sm text-(--text-muted)">
-                Save molecules from the editor to build this stick-view library.
-              </p>
-            </div>
-          ) : (
-            <div className={`mt-4 ${galleryGridClassName}`}>
-              {normalizedSavedMolecules.map((savedMolecule) => {
-                return (
-                  <MoleculeGalleryCard
-                    key={savedMolecule.id}
-                    savedMolecule={savedMolecule}
-                    isActive={savedMolecule.id === resolvedActiveSavedMoleculeId}
-                    onLoad={onLoadSavedMolecule}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </section>
-        </div>
+        <MoleculeGallerySection
+          savedMolecules={normalizedSavedMolecules}
+          activeSavedMoleculeId={resolvedActiveSavedMoleculeId}
+          galleryFeedback={galleryFeedback}
+          savedMoleculesError={savedMoleculesError}
+          isSavedMoleculesLoading={isSavedMoleculesLoading}
+          isSavedMoleculesMutating={isSavedMoleculesMutating}
+          onOpenGalleryEditModal={onOpenGalleryEditModal}
+          onOpenCurrentSavedMoleculeInEditor={onOpenCurrentSavedMoleculeInEditor}
+          onDeleteCurrentSavedMoleculeFromGallery={onDeleteCurrentSavedMoleculeFromGallery}
+          onReloadSavedMolecules={onReloadSavedMolecules}
+          onLoadSavedMolecule={onLoadSavedMolecule}
+        />
       ) : null}
 
       {isEditorPage ? (
