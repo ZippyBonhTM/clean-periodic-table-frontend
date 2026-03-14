@@ -2,12 +2,11 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import MoleculeComponentFocusRail from '@/components/organisms/molecular-editor/MoleculeComponentFocusRail';
-import MoleculeEditorCanvasPanel from '@/components/organisms/molecular-editor/MoleculeEditorCanvasPanel';
+import MoleculeEditorFeedbackToast from '@/components/organisms/molecular-editor/MoleculeEditorFeedbackToast';
 import MoleculeGallerySection from '@/components/organisms/molecular-editor/MoleculeGallerySection';
 import MoleculeImportModal from '@/components/organisms/molecular-editor/MoleculeImportModal';
 import MoleculeSaveModal from '@/components/organisms/molecular-editor/MoleculeSaveModal';
-import MoleculeEditorTopBar from '@/components/organisms/molecular-editor/MoleculeEditorTopBar';
+import MoleculeEditorSection from '@/components/organisms/molecular-editor/MoleculeEditorSection';
 import useMoleculeEditorActions from '@/components/organisms/molecular-editor/useMoleculeEditorActions';
 import useMoleculeEditorLayout from '@/components/organisms/molecular-editor/useMoleculeEditorLayout';
 import {
@@ -457,163 +456,149 @@ function MolecularEditor({
     activeSavedMolecule?.name ??
     activeSavedMolecule?.summary.formula ??
     (summary.atomCount === 0 ? 'Unsaved molecule' : formula);
-  const galleryFeedbackToastLabel =
-    galleryFeedback?.tone === 'error'
-      ? 'Sync issue'
-      : galleryFeedback?.tone === 'success'
-        ? isEditorPage
-          ? 'Work saved'
-          : 'Gallery ready'
-        : isEditorPage
-          ? 'Saving'
-          : 'Gallery';
 
   return (
     <section className="flex min-h-0 flex-col gap-3 overflow-visible pb-4" style={editorSectionStyle}>
       {isEditorPage ? (
-        <>
-      <div ref={topControlsRef} className={topControlsBlockClassName}>
-        <MoleculeEditorTopBar
-          activeView={activeView}
-          importButtonClassName={importButtonClassName}
-          isLandscapeCompactCanvas={isLandscapeCompactCanvas}
-          isSimplifiedView={isSimplifiedView}
-          onOpenImportModal={onOpenImportModal}
-          onResetCanvasView={onResetCanvasView}
-          onSetActiveView={onSetActiveView}
-          onZoomIn={onZoomIn}
-          onZoomOut={onZoomOut}
-          responsiveLayoutWidth={responsiveLayoutWidth}
-          topControlsLeadingGroupClassName={topControlsLeadingGroupClassName}
-          topControlsRowClassName={topControlsRowClassName}
-          viewModeButtonClassName={viewModeButtonClassName}
-          viewModeTabsClassName={viewModeTabsClassName}
-          viewOptions={VIEW_OPTIONS}
-          zoomControlsClassName={zoomControlsClassName}
-          zoomControlsVisibilityClassName={zoomControlsVisibilityClassName}
-          zoomPercent={zoomPercent}
+        <MoleculeEditorSection
+          topControlsBlockClassName={topControlsBlockClassName}
+          topControlsRef={topControlsRef}
+          topBarProps={{
+            activeView,
+            importButtonClassName,
+            isLandscapeCompactCanvas,
+            isSimplifiedView,
+            onOpenImportModal,
+            onResetCanvasView,
+            onSetActiveView,
+            onZoomIn,
+            onZoomOut,
+            responsiveLayoutWidth,
+            topControlsLeadingGroupClassName,
+            topControlsRowClassName,
+            viewModeButtonClassName,
+            viewModeTabsClassName,
+            viewOptions: VIEW_OPTIONS,
+            zoomControlsClassName,
+            zoomControlsVisibilityClassName,
+            zoomPercent,
+          }}
+          showComponentFocusRail={shouldShowComponentFocusRail}
+          componentFocusRailProps={{
+            components: moleculeComponents,
+            focusedComponentIndex: resolvedFocusedComponentIndex,
+            isCompact: isLandscapeCompactCanvas,
+            onFocusComponent,
+          }}
+          canvasPanelProps={{
+            activeView,
+            bottomNoticeRef,
+            canvasFrameClassName,
+            canvasFrameRef,
+            canvasPanelClassName,
+            canvasPanelStyle,
+            compactBottomNoticeClassName,
+            compactBottomOverlayClassName,
+            compactDisplayedEditorNotice,
+            compositionRows,
+            focusedComponentIndex: resolvedFocusedComponentIndex,
+            formulaDisplayValue,
+            formulaPanelProps: {
+              isCompact: isLandscapeCompactCanvas,
+              isOpen: isFormulaPanelOpen,
+              rows: formulaStatsRows,
+              style: formulaPanelStyle,
+              onToggle: () => setIsFormulaPanelOpen((current) => !current),
+            },
+            interactiveViewBox,
+            isLandscapeCompactCanvas,
+            isPaletteSearchOpen,
+            isSimplifiedView,
+            molecule,
+            moleculeComponentsCount: moleculeComponents.length,
+            onAtomPointerDown,
+            onCanvasPointerCancel,
+            onCanvasPointerDown,
+            onCanvasPointerMove,
+            onCanvasPointerUp,
+            onCanvasWheel,
+            onClearPaletteSearch,
+            onClosePaletteSearch,
+            onPaletteSearchChange,
+            onTogglePaletteSearch,
+            paletteQuery,
+            paletteRailProps: {
+              overlayRef: topOverlayRef,
+              overlayClassName: topOverlayClassName,
+              viewportRef: paletteViewportRef,
+              elements: filteredElements,
+              paletteEdgePadding,
+              isCompact: isLandscapeCompactCanvas,
+              isPaletteMoving,
+              isPalettePointerActive,
+              resolvedExpandedPaletteIndex,
+              resolvedCenterPaletteIndex,
+              wrapperClassName: paletteViewportWrapperClassName,
+              rowClassName: paletteRowClassName,
+              onPaletteScroll,
+              onPalettePointerDown,
+              onPalettePointerMove,
+              onPalettePointerUp,
+              onPalettePointerCancel,
+              onPrevious: goToPreviousPaletteElement,
+              onNext: goToNextPaletteElement,
+              onItemRef: onPaletteItemRef,
+            },
+            paletteSearchButtonClassName,
+            paletteSearchInnerStyle,
+            paletteSearchPanelStyle,
+            paletteSearchRailRef,
+            paletteSearchRailStyle,
+            paletteSearchShellClassName,
+            paletteSearchTriggerStyle,
+            resolvedEditorNotice,
+            searchInputRef,
+            shouldShowActivePaletteFilter: hasActivePaletteFilter,
+            simplifiedViewStyle,
+            svgRef,
+            toolRailProps: {
+              activeElementMaxBondSlots,
+              activeElementSymbol: activeElement?.symbol ?? null,
+              bondOrder,
+              bondOrderOptions: BOND_ORDER_OPTIONS,
+              canRedo,
+              canUndo,
+              collapsedToolRailSectionClassName,
+              effectiveToolRailCollapsed,
+              expandedToolRailSectionClassName,
+              floatingSaveShortcutInnerStyle,
+              floatingSaveShortcutPanelStyle,
+              floatingSaveShortcutTriggerStyle,
+              isFloatingSaveShortcutExpanded,
+              isLandscapeCompactCanvas,
+              isSaveModalOpen,
+              onAddSelectedElement,
+              onClearSelection,
+              onFloatingSaveShortcutExpandedChange: setIsFloatingSaveShortcutExpanded,
+              onOpenSaveModal,
+              onRedo,
+              onRemoveSelectedAtom,
+              onResetMolecule,
+              onSetBondOrder,
+              onToggleCollapsed: () => setIsToolRailCollapsed((current) => !current),
+              onUndo,
+              selectedAtomId,
+              shouldShowFloatingSaveShortcut,
+              shouldShowToolRail,
+              showExpandedToolRailContent,
+              summaryAtomCount: summary.atomCount,
+              toolRailBodyClassName,
+              toolRailCollapsedWidthClassName,
+              toolRailExpandedWidthClassName,
+              toolRailStyle,
+            },
+          }}
         />
-
-        {shouldShowComponentFocusRail ? (
-          <MoleculeComponentFocusRail
-            components={moleculeComponents}
-            focusedComponentIndex={resolvedFocusedComponentIndex}
-            isCompact={isLandscapeCompactCanvas}
-            onFocusComponent={onFocusComponent}
-          />
-        ) : null}
-      </div>
-
-      <MoleculeEditorCanvasPanel
-        activeView={activeView}
-        bottomNoticeRef={bottomNoticeRef}
-        canvasFrameClassName={canvasFrameClassName}
-        canvasFrameRef={canvasFrameRef}
-        canvasPanelClassName={canvasPanelClassName}
-        canvasPanelStyle={canvasPanelStyle}
-        compactBottomNoticeClassName={compactBottomNoticeClassName}
-        compactBottomOverlayClassName={compactBottomOverlayClassName}
-        compactDisplayedEditorNotice={compactDisplayedEditorNotice}
-        compositionRows={compositionRows}
-        focusedComponentIndex={resolvedFocusedComponentIndex}
-        formulaDisplayValue={formulaDisplayValue}
-        formulaPanelProps={{
-          isCompact: isLandscapeCompactCanvas,
-          isOpen: isFormulaPanelOpen,
-          rows: formulaStatsRows,
-          style: formulaPanelStyle,
-          onToggle: () => setIsFormulaPanelOpen((current) => !current),
-        }}
-        interactiveViewBox={interactiveViewBox}
-        isLandscapeCompactCanvas={isLandscapeCompactCanvas}
-        isPaletteSearchOpen={isPaletteSearchOpen}
-        isSimplifiedView={isSimplifiedView}
-        molecule={molecule}
-        moleculeComponentsCount={moleculeComponents.length}
-        onAtomPointerDown={onAtomPointerDown}
-        onCanvasPointerCancel={onCanvasPointerCancel}
-        onCanvasPointerDown={onCanvasPointerDown}
-        onCanvasPointerMove={onCanvasPointerMove}
-        onCanvasPointerUp={onCanvasPointerUp}
-        onCanvasWheel={onCanvasWheel}
-        onClearPaletteSearch={onClearPaletteSearch}
-        onClosePaletteSearch={onClosePaletteSearch}
-        onPaletteSearchChange={onPaletteSearchChange}
-        onTogglePaletteSearch={onTogglePaletteSearch}
-        paletteQuery={paletteQuery}
-        paletteRailProps={{
-          overlayRef: topOverlayRef,
-          overlayClassName: topOverlayClassName,
-          viewportRef: paletteViewportRef,
-          elements: filteredElements,
-          paletteEdgePadding,
-          isCompact: isLandscapeCompactCanvas,
-          isPaletteMoving,
-          isPalettePointerActive,
-          resolvedExpandedPaletteIndex,
-          resolvedCenterPaletteIndex,
-          wrapperClassName: paletteViewportWrapperClassName,
-          rowClassName: paletteRowClassName,
-          onPaletteScroll,
-          onPalettePointerDown,
-          onPalettePointerMove,
-          onPalettePointerUp,
-          onPalettePointerCancel,
-          onPrevious: goToPreviousPaletteElement,
-          onNext: goToNextPaletteElement,
-          onItemRef: onPaletteItemRef,
-        }}
-        paletteSearchButtonClassName={paletteSearchButtonClassName}
-        paletteSearchInnerStyle={paletteSearchInnerStyle}
-        paletteSearchPanelStyle={paletteSearchPanelStyle}
-        paletteSearchRailRef={paletteSearchRailRef}
-        paletteSearchRailStyle={paletteSearchRailStyle}
-        paletteSearchShellClassName={paletteSearchShellClassName}
-        paletteSearchTriggerStyle={paletteSearchTriggerStyle}
-        resolvedEditorNotice={resolvedEditorNotice}
-        searchInputRef={searchInputRef}
-        shouldShowActivePaletteFilter={hasActivePaletteFilter}
-        simplifiedViewStyle={simplifiedViewStyle}
-        svgRef={svgRef}
-        toolRailProps={{
-          activeElementMaxBondSlots,
-          activeElementSymbol: activeElement?.symbol ?? null,
-          bondOrder,
-          bondOrderOptions: BOND_ORDER_OPTIONS,
-          canRedo,
-          canUndo,
-          collapsedToolRailSectionClassName,
-          effectiveToolRailCollapsed,
-          expandedToolRailSectionClassName,
-          floatingSaveShortcutInnerStyle,
-          floatingSaveShortcutPanelStyle,
-          floatingSaveShortcutTriggerStyle,
-          isFloatingSaveShortcutExpanded,
-          isLandscapeCompactCanvas,
-          isSaveModalOpen,
-          onAddSelectedElement,
-          onClearSelection,
-          onFloatingSaveShortcutExpandedChange: setIsFloatingSaveShortcutExpanded,
-          onOpenSaveModal,
-          onRedo,
-          onRemoveSelectedAtom,
-          onResetMolecule,
-          onSetBondOrder,
-          onToggleCollapsed: () => setIsToolRailCollapsed((current) => !current),
-          onUndo,
-          selectedAtomId,
-          shouldShowFloatingSaveShortcut,
-          shouldShowToolRail,
-          showExpandedToolRailContent,
-          summaryAtomCount: summary.atomCount,
-          toolRailBodyClassName,
-          toolRailCollapsedWidthClassName,
-          toolRailExpandedWidthClassName,
-          toolRailStyle,
-        }}
-      />
-
-        </>
       ) : null}
 
       {isGalleryPage ? (
@@ -670,24 +655,7 @@ function MolecularEditor({
         onDeleteSelected={onDeleteCurrentSavedMolecule}
       />
 
-      {galleryFeedback !== null ? (
-        <div className="pointer-events-none fixed bottom-4 right-4 z-[100] w-[min(22rem,calc(100vw-2rem))]">
-          <div
-            role={galleryFeedback.tone === 'error' ? 'alert' : 'status'}
-            aria-live={galleryFeedback.tone === 'error' ? 'assertive' : 'polite'}
-            className={`rounded-[1.4rem] border px-4 py-3 shadow-xl backdrop-blur-xl ${
-              galleryFeedback.tone === 'error'
-                ? 'border-rose-400/40 bg-[#3a0f19]/92 text-rose-50'
-                : galleryFeedback.tone === 'success'
-                  ? 'border-emerald-400/35 bg-[#08281d]/92 text-emerald-50'
-                  : 'border-(--border-subtle) bg-[#0f1726]/90 text-white'
-            }`}
-          >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] opacity-80">{galleryFeedbackToastLabel}</p>
-            <p className="mt-1 text-sm leading-relaxed">{galleryFeedback.message}</p>
-          </div>
-        </div>
-      ) : null}
+      <MoleculeEditorFeedbackToast feedback={galleryFeedback} pageMode={pageMode} />
     </section>
   );
 }
