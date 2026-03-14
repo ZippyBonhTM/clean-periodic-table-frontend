@@ -15,6 +15,7 @@ import {
   VIEW_OPTIONS,
 } from '@/components/organisms/molecular-editor/moleculeEditorConfig';
 import useMoleculeEditorLayout from '@/components/organisms/molecular-editor/useMoleculeEditorLayout';
+import useMoleculeEditorOverlayProps from '@/components/organisms/molecular-editor/useMoleculeEditorOverlayProps';
 import {
   cloneMoleculeModel,
   normalizeSnapshotSelectedAtomId,
@@ -29,6 +30,7 @@ import useMoleculeEditorSession from '@/components/organisms/molecular-editor/us
 import useMoleculeEditorShortcuts from '@/components/organisms/molecular-editor/useMoleculeEditorShortcuts';
 import useMoleculeEditorState from '@/components/organisms/molecular-editor/useMoleculeEditorState';
 import useMoleculeEditorSectionProps from '@/components/organisms/molecular-editor/useMoleculeEditorSectionProps';
+import useMoleculeGallerySectionProps from '@/components/organisms/molecular-editor/useMoleculeGallerySectionProps';
 import useSavedMoleculeEditorWorkflow from '@/components/organisms/molecular-editor/useSavedMoleculeEditorWorkflow';
 import type {
   SaveMoleculeInput,
@@ -500,62 +502,54 @@ function MolecularEditor({
     zoomControlsVisibilityClassName,
     zoomPercent,
   });
+  const gallerySectionProps = useMoleculeGallerySectionProps({
+    savedMolecules: normalizedSavedMolecules,
+    activeSavedMoleculeId: resolvedActiveSavedMoleculeId,
+    galleryFeedback,
+    savedMoleculesError,
+    isSavedMoleculesLoading,
+    isSavedMoleculesMutating,
+    onOpenGalleryEditModal,
+    onOpenCurrentSavedMoleculeInEditor,
+    onDeleteCurrentSavedMoleculeFromGallery,
+    onReloadSavedMolecules,
+    onLoadSavedMolecule,
+  });
+  const overlayProps = useMoleculeEditorOverlayProps({
+    componentCount: moleculeComponents.length,
+    currentSaveLabel,
+    elements,
+    feedback: galleryFeedback,
+    focusedAtomCount: focusedSummary.atomCount,
+    focusedBondCount: focusedSummary.bondCount,
+    focusedComponentIndex: resolvedFocusedComponentIndex,
+    formula: formulaDisplayValue,
+    hasLinkedSelection: hasCurrentSavedSelection,
+    isImportModalOpen,
+    isMutating: isSavedMoleculesMutating,
+    isSaveModalOpen,
+    moleculeEducationalDescription,
+    moleculeTitle: moleculeName,
+    nomenclature: systematicNameDisplayValue,
+    onCloseImportModal,
+    onCloseSaveModal,
+    onDeleteSelected: onDeleteCurrentSavedMolecule,
+    onDetachSelection: onDetachSavedMolecule,
+    onEducationalDescriptionChange: setMoleculeEducationalDescription,
+    onImport: onImportExternalMolecule,
+    onMoleculeTitleChange: setMoleculeName,
+    onSaveAsNew: onSaveAsNewMolecule,
+    onUpdateSelected: onUpdateCurrentSavedMolecule,
+    pageMode,
+  });
 
   return (
     <section className="flex min-h-0 flex-col gap-3 overflow-visible pb-4" style={editorSectionStyle}>
       {isEditorPage ? <MoleculeEditorSection {...editorSectionProps} /> : null}
 
-      {isGalleryPage ? (
-        <MoleculeGallerySection
-          savedMolecules={normalizedSavedMolecules}
-          activeSavedMoleculeId={resolvedActiveSavedMoleculeId}
-          galleryFeedback={galleryFeedback}
-          savedMoleculesError={savedMoleculesError}
-          isSavedMoleculesLoading={isSavedMoleculesLoading}
-          isSavedMoleculesMutating={isSavedMoleculesMutating}
-          onOpenGalleryEditModal={onOpenGalleryEditModal}
-          onOpenCurrentSavedMoleculeInEditor={onOpenCurrentSavedMoleculeInEditor}
-          onDeleteCurrentSavedMoleculeFromGallery={onDeleteCurrentSavedMoleculeFromGallery}
-          onReloadSavedMolecules={onReloadSavedMolecules}
-          onLoadSavedMolecule={onLoadSavedMolecule}
-        />
-      ) : null}
+      {isGalleryPage ? <MoleculeGallerySection {...gallerySectionProps} /> : null}
 
-      <MoleculeEditorOverlays
-        feedback={galleryFeedback}
-        importModalProps={{
-          isOpen: isImportModalOpen,
-          elements,
-          onClose: onCloseImportModal,
-          onImport: onImportExternalMolecule,
-        }}
-        pageMode={pageMode}
-        saveModalProps={{
-          context: isGalleryPage ? 'gallery' : 'editor',
-          isOpen: isSaveModalOpen,
-          hasLinkedSelection: hasCurrentSavedSelection,
-          currentSaveLabel,
-          moleculeTitle: moleculeName,
-          educationalDescription: moleculeEducationalDescription,
-          formula: formulaDisplayValue,
-          nomenclature: systematicNameDisplayValue,
-          atomCount: focusedSummary.atomCount,
-          bondCount: focusedSummary.bondCount,
-          componentCount: moleculeComponents.length,
-          focusedComponentLabel:
-            moleculeComponents.length > 1
-              ? `Mol ${resolvedFocusedComponentIndex + 1} / ${moleculeComponents.length}`
-              : null,
-          isMutating: isSavedMoleculesMutating,
-          onClose: onCloseSaveModal,
-          onMoleculeTitleChange: setMoleculeName,
-          onEducationalDescriptionChange: setMoleculeEducationalDescription,
-          onSaveAsNew: onSaveAsNewMolecule,
-          onUpdateSelected: onUpdateCurrentSavedMolecule,
-          onDetachSelection: onDetachSavedMolecule,
-          onDeleteSelected: onDeleteCurrentSavedMolecule,
-        }}
-      />
+      <MoleculeEditorOverlays {...overlayProps} />
     </section>
   );
 }
