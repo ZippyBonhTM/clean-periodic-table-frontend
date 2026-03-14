@@ -1,12 +1,12 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import { memo, useRef, useState, useTransition } from 'react';
 
 import type { ChemicalElement } from '@/shared/types/element';
 
 import PeriodicTableExploreControls from './PeriodicTableExploreControls';
 import PeriodicTableOptionMenu from './PeriodicTableOptionMenu';
+import PeriodicTableStage from './PeriodicTableStage';
 import {
   SORT_OPTIONS,
   VIEW_OPTIONS,
@@ -22,20 +22,6 @@ type PeriodicTableProps = {
   elements: ChemicalElement[];
   mode?: PeriodicTableMode;
 };
-
-const ClassicPeriodicView = dynamic(
-  () => import('@/components/organisms/periodic-table/ClassicPeriodicView'),
-);
-const CategoryPeriodicView = dynamic(
-  () => import('@/components/organisms/periodic-table/CategoryPeriodicView'),
-);
-const CompactPeriodicView = dynamic(
-  () => import('@/components/organisms/periodic-table/CompactPeriodicView'),
-);
-const ElementDetailsModal = dynamic(
-  () => import('@/components/organisms/periodic-table/ElementDetailsModal'),
-  { ssr: false },
-);
 
 function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
   const [viewMode, setViewMode] = useState<PeriodicViewMode>('classic');
@@ -176,50 +162,22 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
         }}
       />
 
-      <div
-        ref={fullscreenContainerRef}
-        className={`relative ${isFullscreenActive ? 'h-[100dvh] overflow-auto bg-[var(--background-base)] p-3' : ''}`}
-      >
-        {isFullscreenActive && activeViewMode !== 'classic' ? (
-          <div className="pointer-events-none absolute right-3 top-3 z-40">
-            <button
-              type="button"
-              onClick={onToggleTableFullscreen}
-              aria-label="Exit fullscreen table"
-              className="pointer-events-auto rounded-md border border-[var(--border-subtle)] bg-[var(--surface-1)]/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)] shadow-[0_8px_20px_rgba(0,0,0,0.35)] backdrop-blur-sm transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
-            >
-              Exit Fullscreen
-            </button>
-          </div>
-        ) : null}
-
-        <div>
-          {activeViewMode === 'classic' ? (
-            <ClassicPeriodicView
-              elements={visibleElements}
-              onElementOpen={openElementModal}
-              zoomPercent={classicZoomPercent}
-              onZoomChange={setClassicZoomPercent}
-              isFullscreen={isFullscreenActive}
-              onToggleFullscreen={onToggleTableFullscreen}
-            />
-          ) : activeViewMode === 'category' ? (
-            <CategoryPeriodicView elements={visibleElements} onElementOpen={openElementModal} />
-          ) : (
-            <CompactPeriodicView elements={visibleElements} onElementOpen={openElementModal} />
-          )}
-        </div>
-
-        <ElementDetailsModal
-          element={selectedElement}
-          isOpen={selectedElement !== null}
-          onClose={closeElementModal}
-          hasPreviousElement={hasPreviousElement}
-          hasNextElement={hasNextElement}
-          onOpenPreviousElement={openPreviousElement}
-          onOpenNextElement={openNextElement}
-        />
-      </div>
+      <PeriodicTableStage
+        activeViewMode={activeViewMode}
+        visibleElements={visibleElements}
+        classicZoomPercent={classicZoomPercent}
+        isFullscreenActive={isFullscreenActive}
+        fullscreenContainerRef={fullscreenContainerRef}
+        onClassicZoomChange={setClassicZoomPercent}
+        onToggleTableFullscreen={onToggleTableFullscreen}
+        onElementOpen={openElementModal}
+        selectedElement={selectedElement}
+        onCloseElementModal={closeElementModal}
+        hasPreviousElement={hasPreviousElement}
+        hasNextElement={hasNextElement}
+        onOpenPreviousElement={openPreviousElement}
+        onOpenNextElement={openNextElement}
+      />
     </section>
   );
 }
