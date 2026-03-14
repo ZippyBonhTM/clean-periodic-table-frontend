@@ -1,18 +1,9 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import {
-  memo,
-  useCallback,
-  useDeferredValue,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from 'react';
+import { memo, useRef, useState, useTransition } from 'react';
 
 import type { ChemicalElement } from '@/shared/types/element';
-import { matchesElementQuery, sortElements } from '@/shared/utils/elementPresentation';
 
 import PeriodicTableExploreControls from './PeriodicTableExploreControls';
 import PeriodicTableOptionMenu from './PeriodicTableOptionMenu';
@@ -24,6 +15,7 @@ import {
   type SortMode,
 } from './periodicTable.types';
 import useFloatingMenuPosition from './useFloatingMenuPosition';
+import usePeriodicTableElements from './usePeriodicTableElements';
 import usePeriodicTableFullscreen from './usePeriodicTableFullscreen';
 
 type PeriodicTableProps = {
@@ -50,100 +42,34 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
   const [classicZoomPercent, setClassicZoomPercent] = useState(100);
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
-  const [sortMode, setSortMode] = useState<SortMode>('number');
-  const [query, setQuery] = useState('');
-  const [selectedElement, setSelectedElement] = useState<ChemicalElement | null>(null);
   const viewToggleRef = useRef<HTMLButtonElement | null>(null);
   const sortToggleRef = useRef<HTMLButtonElement | null>(null);
   const [isPendingTransition, startTransition] = useTransition();
   const isExploreMode = mode === 'explore';
-  const deferredQuery = useDeferredValue(query);
-
-  const openElementModal = useCallback((element: ChemicalElement) => {
-    setSelectedElement(element);
-  }, []);
-
-  const closeElementModal = useCallback(() => {
-    setSelectedElement(null);
-  }, []);
-
-  const filteredElements = useMemo(() => {
-    if (!isExploreMode) {
-      return elements;
-    }
-
-    return elements.filter((element) => matchesElementQuery(element, deferredQuery));
-  }, [deferredQuery, elements, isExploreMode]);
-
-  const sortedElements = useMemo(() => {
-    if (!isExploreMode) {
-      return elements;
-    }
-
-    return sortElements(filteredElements, sortMode);
-  }, [elements, filteredElements, isExploreMode, sortMode]);
-
   const activeViewMode: PeriodicViewMode = isExploreMode ? viewMode : 'classic';
 
-  const visibleElements = useMemo(() => {
-    if (activeViewMode === 'classic') {
-      return filteredElements;
-    }
-
-    return sortedElements;
-  }, [activeViewMode, filteredElements, sortedElements]);
-
-  const onClearQuery = useCallback(() => {
-    setQuery('');
-  }, []);
-
-  const onLuckySearch = useCallback(() => {
-    if (elements.length === 0) {
-      return;
-    }
-
-    const randomIndex = Math.floor(Math.random() * elements.length);
-    const randomElement = elements[randomIndex];
-
-    setQuery(randomElement.name);
-    setSelectedElement(randomElement);
-  }, [elements]);
-
-  const selectedElementIndex = useMemo(() => {
-    if (selectedElement === null) {
-      return -1;
-    }
-
-    return visibleElements.findIndex((element) => element.symbol === selectedElement.symbol);
-  }, [selectedElement, visibleElements]);
-
-  const hasPreviousElement = selectedElementIndex > 0;
-  const hasNextElement =
-    selectedElementIndex >= 0 && selectedElementIndex < visibleElements.length - 1;
-
-  const openPreviousElement = useCallback(() => {
-    if (!hasPreviousElement) {
-      return;
-    }
-
-    const previousElement = visibleElements[selectedElementIndex - 1];
-
-    if (previousElement !== undefined) {
-      setSelectedElement(previousElement);
-    }
-  }, [hasPreviousElement, selectedElementIndex, visibleElements]);
-
-  const openNextElement = useCallback(() => {
-    if (!hasNextElement) {
-      return;
-    }
-
-    const nextElement = visibleElements[selectedElementIndex + 1];
-
-    if (nextElement !== undefined) {
-      setSelectedElement(nextElement);
-    }
-  }, [hasNextElement, selectedElementIndex, visibleElements]);
+  const {
+    sortMode,
+    setSortMode,
+    query,
+    setQuery,
+    deferredQuery,
+    visibleElements,
+    selectedElement,
+    currentSortOption,
+    onClearQuery,
+    onLuckySearch,
+    openElementModal,
+    closeElementModal,
+    hasPreviousElement,
+    hasNextElement,
+    openPreviousElement,
+    openNextElement,
+  } = usePeriodicTableElements({
+    elements,
+    isExploreMode,
+    activeViewMode,
+  });
 
   const sortMenuPosition = useFloatingMenuPosition({
     anchorRef: sortToggleRef,
@@ -165,10 +91,6 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
       classicZoomPercent,
       onClassicZoomChange: setClassicZoomPercent,
     });
-
-  const currentSortOption = useMemo(() => {
-    return SORT_OPTIONS.find((option) => option.mode === sortMode) ?? SORT_OPTIONS[0];
-  }, [sortMode]);
 
   return (
     <section className="space-y-4">
