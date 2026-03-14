@@ -8,42 +8,34 @@ import MoleculeGallerySection from '@/components/organisms/molecular-editor/Mole
 import MoleculeImportModal from '@/components/organisms/molecular-editor/MoleculeImportModal';
 import MoleculeSaveModal from '@/components/organisms/molecular-editor/MoleculeSaveModal';
 import MoleculeEditorTopBar from '@/components/organisms/molecular-editor/MoleculeEditorTopBar';
+import useMoleculeEditorActions from '@/components/organisms/molecular-editor/useMoleculeEditorActions';
 import useMoleculeEditorLayout from '@/components/organisms/molecular-editor/useMoleculeEditorLayout';
 import {
-  preserveViewportAcrossModelChange,
+  type CanvasViewport,
+  cloneEditorSnapshot,
+  cloneMoleculeModel,
+  type EditorViewMode,
+  normalizeOptionalText,
+  normalizeSavedMoleculeRecord,
+  normalizeSnapshotSelectedAtomId,
+  type SavedEditorDraft,
+} from '@/components/organisms/molecular-editor/moleculeEditorSession';
+import {
   resolveInteractiveViewBox,
-  resolveNextStandalonePoint,
-  resolveScaledViewBoxMetrics,
-  resolveViewBox,
 } from '@/components/organisms/molecular-editor/moleculeCanvasViewport';
 import useCanvasInteractions from '@/components/organisms/molecular-editor/useCanvasInteractions';
 import useEditorHistory from '@/components/organisms/molecular-editor/useEditorHistory';
 import useMoleculePaletteController from '@/components/organisms/molecular-editor/useMoleculePaletteController';
+import useMoleculeEditorSession from '@/components/organisms/molecular-editor/useMoleculeEditorSession';
+import useMoleculeEditorShortcuts from '@/components/organisms/molecular-editor/useMoleculeEditorShortcuts';
 import useSavedMoleculeWorkflow from '@/components/organisms/molecular-editor/useSavedMoleculeWorkflow';
-import type { ResolvedImportedPubChemCompound } from '@/shared/api/pubchemApi';
 import type {
   SaveMoleculeInput,
   SavedMolecule,
-  SavedMoleculeEditorState,
 } from '@/shared/types/molecule';
 import type { ChemicalElement } from '@/shared/types/element';
 import {
-  addAttachedAtom,
-  addStandaloneAtom,
-  buildCompositionRows,
-  dedupeBondConnections,
-  buildMolecularFormula,
-  buildSystematicMoleculeName,
-  connectAtoms,
-  normalizeMoleculeModel,
-  rebalanceMoleculeLayout,
-  removeAtom,
-  resolveMoleculeComponents,
-  resolveMaxBondSlots,
-  resolvePrimaryMoleculeComponentIndex,
-  summarizeMolecule,
   syncMoleculeIdCounter,
-  type MoleculeComponent,
   type BondOrder,
   type MoleculeModel,
 } from '@/shared/utils/moleculeEditor';
@@ -59,30 +51,6 @@ type MolecularEditorProps = {
   onCreateSavedMolecule: (input: SaveMoleculeInput) => Promise<SavedMolecule>;
   onUpdateSavedMolecule: (moleculeId: string, input: SaveMoleculeInput) => Promise<SavedMolecule>;
   onDeleteSavedMolecule: (moleculeId: string) => Promise<void>;
-};
-
-type EditorViewMode = SavedMoleculeEditorState['activeView'];
-
-type CanvasViewport = {
-  offsetX: number;
-  offsetY: number;
-  scale: number;
-};
-
-type SavedEditorDraft = {
-  molecule: MoleculeModel;
-  selectedAtomId: string | null;
-  nomenclatureFallback: string | null;
-  activeView: EditorViewMode;
-  bondOrder: BondOrder;
-  canvasViewport: CanvasViewport;
-};
-
-type GalleryFeedbackTone = 'info' | 'success' | 'error';
-
-type GalleryFeedback = {
-  tone: GalleryFeedbackTone;
-  message: string;
 };
 
 const VIEW_OPTIONS: Array<{ mode: EditorViewMode; label: string }> = [
@@ -111,94 +79,7 @@ const DEFAULT_CANVAS_VIEWPORT: CanvasViewport = {
   scale: 1,
 };
 
-const CANVAS_ZOOM_MIN = 0.5;
-const CANVAS_ZOOM_MAX = 3;
-const CANVAS_ZOOM_STEP = 1.15;
 const EDITOR_HISTORY_LIMIT = 80;
-const GALLERY_FEEDBACK_AUTO_HIDE_MS = 4200;
-
-function cloneMoleculeModel(model: MoleculeModel): MoleculeModel {
-  return dedupeBondConnections({
-    atoms: model.atoms.map((atom) => ({ ...atom })),
-    bonds: model.bonds.map((bond) => ({ ...bond })),
-  });
-}
-
-function normalizeSnapshotSelectedAtomId(model: MoleculeModel, selectedAtomId: string | null): string | null {
-  return selectedAtomId !== null && model.atoms.some((atom) => atom.id === selectedAtomId) ? selectedAtomId : null;
-}
-
-function cloneEditorSnapshot(snapshot: SavedEditorDraft): SavedEditorDraft {
-  return {
-    molecule: cloneMoleculeModel(snapshot.molecule),
-    selectedAtomId: normalizeSnapshotSelectedAtomId(snapshot.molecule, snapshot.selectedAtomId),
-    nomenclatureFallback: snapshot.nomenclatureFallback,
-    activeView: snapshot.activeView,
-    bondOrder: snapshot.bondOrder,
-    canvasViewport: {
-      offsetX: snapshot.canvasViewport.offsetX,
-      offsetY: snapshot.canvasViewport.offsetY,
-      scale: snapshot.canvasViewport.scale,
-    },
-  };
-}
-
-function normalizeSavedMoleculeRecord(savedMolecule: SavedMolecule): SavedMolecule {
-  const normalized = normalizeMoleculeModel(savedMolecule.molecule);
-  const normalizedModel = normalized.model;
-  const components = resolveMoleculeComponents(normalizedModel);
-  const primaryComponent = components[resolvePrimaryMoleculeComponentIndex(components)]?.model ?? normalizedModel;
-  const selectedAtomId =
-    savedMolecule.editorState.selectedAtomId === null
-      ? null
-      : normalized.atomIdsByOriginalId.get(savedMolecule.editorState.selectedAtomId)?.[0] ?? null;
-  const normalizedSummary = summarizeMolecule(normalizedModel);
-  const systematicName = buildSystematicMoleculeName(primaryComponent);
-
-  return {
-    ...savedMolecule,
-    molecule: normalizedModel,
-    editorState: {
-      ...savedMolecule.editorState,
-      selectedAtomId,
-    },
-    summary: {
-      systematicName,
-      componentCount: components.length,
-      formula: buildMolecularFormula(normalizedModel),
-      atomCount: normalizedSummary.atomCount,
-      bondCount: normalizedSummary.bondCount,
-      totalBondOrder: normalizedSummary.totalBondOrder,
-      composition: buildCompositionRows(normalizedModel),
-    },
-  };
-}
-
-function resolveMoleculeComponentIndexByAtomId(
-  components: MoleculeComponent[],
-  atomId: string | null,
-): number | null {
-  if (atomId === null) {
-    return null;
-  }
-
-  const componentIndex = components.findIndex((component) => component.atomIds.includes(atomId));
-  return componentIndex === -1 ? null : componentIndex;
-}
-
-function resolveDefaultFocusedComponentIndex(
-  model: MoleculeModel,
-  selectedAtomId: string | null,
-): number {
-  const components = resolveMoleculeComponents(model);
-  const selectedComponentIndex = resolveMoleculeComponentIndexByAtomId(components, selectedAtomId);
-
-  if (selectedComponentIndex !== null) {
-    return selectedComponentIndex;
-  }
-
-  return resolvePrimaryMoleculeComponentIndex(components);
-}
 
 function isTextEditingElement(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
@@ -211,80 +92,6 @@ function isTextEditingElement(target: EventTarget | null): boolean {
     target.isContentEditable ||
     target.closest('[contenteditable="true"]') !== null
   );
-}
-
-function toSvgPoint(svg: SVGSVGElement, clientX: number, clientY: number) {
-  const rect = svg.getBoundingClientRect();
-  const viewBox = svg.viewBox.baseVal;
-
-  return {
-    x: viewBox.x + ((clientX - rect.left) / rect.width) * viewBox.width,
-    y: viewBox.y + ((clientY - rect.top) / rect.height) * viewBox.height,
-  };
-}
-
-function toSvgDelta(
-  svg: SVGSVGElement,
-  viewBox: { width: number; height: number },
-  deltaClientX: number,
-  deltaClientY: number,
-) {
-  const rect = svg.getBoundingClientRect();
-
-  return {
-    x: (deltaClientX / rect.width) * viewBox.width,
-    y: (deltaClientY / rect.height) * viewBox.height,
-  };
-}
-
-function clampCanvasScale(scale: number): number {
-  return Math.min(CANVAS_ZOOM_MAX, Math.max(CANVAS_ZOOM_MIN, scale));
-}
-
-function resolveViewportCenter(
-  model: MoleculeModel,
-  viewport: CanvasViewport,
-  frameAspectRatio?: number,
-) {
-  const viewBox = resolveInteractiveViewBox(model, viewport, frameAspectRatio);
-
-  return {
-    x: viewBox.x + viewBox.width / 2,
-    y: viewBox.y + viewBox.height / 2,
-  };
-}
-
-function zoomCanvasViewport(
-  model: MoleculeModel,
-  currentViewport: CanvasViewport,
-  nextScale: number,
-  anchorPoint: { x: number; y: number },
-  frameAspectRatio?: number,
-): CanvasViewport {
-  const safeScale = clampCanvasScale(nextScale);
-  const baseViewBox = resolveViewBox(model);
-  const currentViewBox = resolveInteractiveViewBox(model, currentViewport, frameAspectRatio);
-  const ratioX =
-    currentViewBox.width === 0 ? 0.5 : (anchorPoint.x - currentViewBox.x) / currentViewBox.width;
-  const ratioY =
-    currentViewBox.height === 0 ? 0.5 : (anchorPoint.y - currentViewBox.y) / currentViewBox.height;
-  const nextWidth = baseViewBox.width / safeScale;
-  const nextHeight = baseViewBox.height / safeScale;
-  const nextX = anchorPoint.x - ratioX * nextWidth;
-  const nextY = anchorPoint.y - ratioY * nextHeight;
-  const baseCenterX = baseViewBox.x + baseViewBox.width / 2;
-  const baseCenterY = baseViewBox.y + baseViewBox.height / 2;
-
-  return {
-    offsetX: nextX + nextWidth / 2 - baseCenterX,
-    offsetY: nextY + nextHeight / 2 - baseCenterY,
-    scale: safeScale,
-  };
-}
-
-function normalizeOptionalText(value: string): string | null {
-  const normalized = value.trim();
-  return normalized.length > 0 ? normalized : null;
 }
 
 function MolecularEditor({
@@ -313,10 +120,10 @@ function MolecularEditor({
   const [nomenclatureFallback, setNomenclatureFallback] = useState<string | null>(null);
   const [moleculeName, setMoleculeName] = useState('');
   const [moleculeEducationalDescription, setMoleculeEducationalDescription] = useState('');
-  const [galleryFeedback, setGalleryFeedback] = useState<GalleryFeedback | null>(null);
   const [canvasViewport, setCanvasViewport] = useState<CanvasViewport>(DEFAULT_CANVAS_VIEWPORT);
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const galleryFeedbackTimeoutRef = useRef<number | null>(null);
+  const clearPendingCanvasPlacementRef = useRef<() => void>(() => undefined);
+  const clearTransientEditorStateRef = useRef<() => void>(() => undefined);
 
   const {
     activeElement,
@@ -346,213 +153,45 @@ function MolecularEditor({
     searchInputRef,
   } = useMoleculePaletteController({ elements });
 
-  const activeElementMaxBondSlots = activeElement === null ? null : resolveMaxBondSlots(activeElement);
-  const summary = useMemo(() => summarizeMolecule(molecule), [molecule]);
-  const formula = useMemo(() => buildMolecularFormula(molecule), [molecule]);
-  const moleculeComponents = useMemo(() => resolveMoleculeComponents(molecule), [molecule]);
-  const selectedComponentIndex = useMemo(
-    () => resolveMoleculeComponentIndexByAtomId(moleculeComponents, selectedAtomId),
-    [moleculeComponents, selectedAtomId],
-  );
-  const resolvedFocusedComponentIndex =
-    moleculeComponents.length === 0
-      ? 0
-      : selectedComponentIndex ?? Math.min(Math.max(focusedComponentIndex, 0), moleculeComponents.length - 1);
-  const focusedComponent = moleculeComponents[resolvedFocusedComponentIndex] ?? null;
-  const focusedComponentModel = focusedComponent?.model ?? molecule;
-  const focusedSummary = useMemo(() => summarizeMolecule(focusedComponentModel), [focusedComponentModel]);
-  const focusedFormula = useMemo(() => buildMolecularFormula(focusedComponentModel), [focusedComponentModel]);
-  const focusedSystematicName = useMemo(
-    () => buildSystematicMoleculeName(focusedComponentModel),
-    [focusedComponentModel],
-  );
-  const resolvedNomenclatureValue =
-    focusedSystematicName ??
-    (moleculeComponents.length === 1 && nomenclatureFallback !== null
-      ? normalizeOptionalText(nomenclatureFallback)
-      : null);
-  const formulaDisplayValue = focusedSummary.atomCount === 0 ? 'N/A' : focusedFormula;
-  const systematicNameDisplayValue =
-    focusedSummary.atomCount === 0 ? 'N/A' : (resolvedNomenclatureValue ?? 'Unavailable');
-  const compactSystematicNameDisplayValue = systematicNameDisplayValue === 'Unavailable' ? 'Unavail.' : systematicNameDisplayValue;
-  const formulaStatsRows = useMemo(
-    () => {
-      const baseRows = [
-        {
-          label: 'Nomen.',
-          compactLabel: 'Nomen.',
-          title: 'Nomenclature',
-          value: systematicNameDisplayValue,
-          compactValue: compactSystematicNameDisplayValue,
-        },
-        {
-          label: 'Formula',
-          compactLabel: 'Formula',
-          value: formulaDisplayValue,
-        },
-        {
-          label: 'Atoms',
-          compactLabel: 'Atoms',
-          value: String(focusedSummary.atomCount),
-        },
-        {
-          label: 'Bonds',
-          compactLabel: 'Bonds',
-          value: String(focusedSummary.bondCount),
-        },
-        {
-          label: 'Slots',
-          compactLabel: 'Slots',
-          value: String(focusedSummary.totalBondOrder),
-        },
-      ];
-
-      if (moleculeComponents.length <= 1) {
-        return baseRows;
-      }
-
-      return [
-        {
-          label: 'Comp.',
-          compactLabel: 'Comp.',
-          title: 'Component',
-          value: `Mol ${resolvedFocusedComponentIndex + 1} / ${moleculeComponents.length}`,
-          compactValue: `${resolvedFocusedComponentIndex + 1}/${moleculeComponents.length}`,
-        },
-        ...baseRows,
-      ];
-    },
-    [
-      compactSystematicNameDisplayValue,
-      formulaDisplayValue,
-      focusedSummary.atomCount,
-      focusedSummary.bondCount,
-      focusedSummary.totalBondOrder,
-      moleculeComponents.length,
-      resolvedFocusedComponentIndex,
-      systematicNameDisplayValue,
-    ],
-  );
-  const compositionRows = useMemo(() => buildCompositionRows(focusedComponentModel), [focusedComponentModel]);
-  const normalizedSavedMolecules = useMemo(
-    () => savedMolecules.map((entry) => normalizeSavedMoleculeRecord(entry)),
-    [savedMolecules],
-  );
-
-  const clearGalleryFeedbackTimeout = useCallback(() => {
-    if (galleryFeedbackTimeoutRef.current !== null) {
-      window.clearTimeout(galleryFeedbackTimeoutRef.current);
-      galleryFeedbackTimeoutRef.current = null;
-    }
-  }, []);
-
-  const showGalleryFeedback = useCallback(
-    (
-      tone: GalleryFeedbackTone,
-      message: string,
-      options?: {
-        persist?: boolean;
-      },
-    ) => {
-      clearGalleryFeedbackTimeout();
-      setGalleryFeedback({ tone, message });
-
-      if (options?.persist === true) {
-        return;
-      }
-
-      galleryFeedbackTimeoutRef.current = window.setTimeout(() => {
-        setGalleryFeedback((current) => (current?.message === message ? null : current));
-        galleryFeedbackTimeoutRef.current = null;
-      }, GALLERY_FEEDBACK_AUTO_HIDE_MS);
-    },
-    [clearGalleryFeedbackTimeout],
-  );
-
-  useEffect(() => {
-    return () => {
-      clearGalleryFeedbackTimeout();
-    };
-  }, [clearGalleryFeedbackTimeout]);
-
-  const buildEditorSnapshot = useCallback(
-    (
-      overrides?: Partial<SavedEditorDraft>,
-    ): SavedEditorDraft => {
-      const snapshot: SavedEditorDraft = {
-        molecule: cloneMoleculeModel(overrides?.molecule ?? molecule),
-        selectedAtomId: normalizeSnapshotSelectedAtomId(
-          overrides?.molecule ?? molecule,
-          overrides?.selectedAtomId ?? selectedAtomId,
-        ),
-        nomenclatureFallback: overrides?.nomenclatureFallback ?? nomenclatureFallback,
-        activeView: overrides?.activeView ?? activeView,
-        bondOrder: overrides?.bondOrder ?? bondOrder,
-        canvasViewport: {
-          offsetX: overrides?.canvasViewport?.offsetX ?? canvasViewport.offsetX,
-          offsetY: overrides?.canvasViewport?.offsetY ?? canvasViewport.offsetY,
-          scale: overrides?.canvasViewport?.scale ?? canvasViewport.scale,
-        },
-      };
-
-      return snapshot;
-    },
-    [
-      activeView,
-      bondOrder,
-      canvasViewport.offsetX,
-      canvasViewport.offsetY,
-      canvasViewport.scale,
-      molecule,
-      nomenclatureFallback,
-      selectedAtomId,
-    ],
-  );
-
-  const buildHistorySnapshot = useCallback((): SavedEditorDraft => {
-    return buildEditorSnapshot({
-      selectedAtomId: null,
-    });
-  }, [buildEditorSnapshot]);
-
   const {
-    clearPendingCanvasPlacement,
-    clearTransientEditorState,
-    onAtomPointerDown,
-    onCanvasPointerCancel,
-    onCanvasPointerDown,
-    onCanvasPointerMove,
-    onCanvasPointerUp,
-  } = useCanvasInteractions({
+    activeElementMaxBondSlots,
+    applyEditorSnapshot,
+    buildHistorySnapshot,
+    buildSaveMoleculeInput,
+    compositionRows,
+    focusedSummary,
+    formula,
+    formulaDisplayValue,
+    formulaStatsRows,
+    galleryFeedback,
+    moleculeComponents,
+    normalizedSavedMolecules,
+    resolvedFocusedComponentIndex,
+    showGalleryFeedback,
+    summary,
+    systematicNameDisplayValue,
+  } = useMoleculeEditorSession({
+    activeElement,
     activeView,
+    bondOrder,
     canvasViewport,
+    clearTransientEditorStateRef,
+    focusedComponentIndex,
     molecule,
+    moleculeEducationalDescription,
+    moleculeName,
+    nomenclatureFallback,
+    savedMolecules,
     selectedAtomId,
+    setActiveView,
+    setBondOrder,
     setCanvasViewport,
     setEditorNotice,
+    setFocusedComponentIndex,
+    setMolecule,
+    setNomenclatureFallback,
     setSelectedAtomId,
-    svgRef,
-    onCanvasPlacement: handleCanvasPlacement,
-    onAtomActivate: handleAtomActivate,
   });
-
-  const applyEditorSnapshot = useCallback(
-    (snapshot: SavedEditorDraft, notice: string) => {
-      const nextSnapshot = cloneEditorSnapshot(snapshot);
-      const nextMolecule = dedupeBondConnections(nextSnapshot.molecule);
-      const nextSelectedAtomId = normalizeSnapshotSelectedAtomId(nextMolecule, nextSnapshot.selectedAtomId);
-      clearTransientEditorState();
-      setMolecule(nextMolecule);
-      setSelectedAtomId(nextSelectedAtomId);
-      setNomenclatureFallback(nextSnapshot.nomenclatureFallback);
-      setFocusedComponentIndex(resolveDefaultFocusedComponentIndex(nextMolecule, nextSelectedAtomId));
-      setActiveView(nextSnapshot.activeView);
-      setBondOrder(nextSnapshot.bondOrder);
-      setCanvasViewport(nextSnapshot.canvasViewport);
-      setEditorNotice(notice);
-    },
-    [clearTransientEditorState],
-  );
 
   const { canRedo, canUndo, clearHistory, onRedo, onUndo, pushHistorySnapshot } = useEditorHistory<SavedEditorDraft>({
     limit: EDITOR_HISTORY_LIMIT,
@@ -560,32 +199,6 @@ function MolecularEditor({
     buildCurrentSnapshot: buildHistorySnapshot,
     applySnapshot: applyEditorSnapshot,
   });
-
-  const buildSaveMoleculeInput = useCallback((): SaveMoleculeInput => {
-    const snapshot = buildEditorSnapshot();
-    const normalized = normalizeMoleculeModel(snapshot.molecule);
-    const normalizedModel = normalized.model;
-    const normalizedSelectedAtomId =
-      snapshot.selectedAtomId === null ? null : normalized.atomIdsByOriginalId.get(snapshot.selectedAtomId)?.[0] ?? null;
-
-    syncMoleculeIdCounter(normalizedModel);
-
-    return {
-      name: normalizeOptionalText(moleculeName),
-      educationalDescription: normalizeOptionalText(moleculeEducationalDescription),
-      molecule: normalizedModel,
-      editorState: {
-        selectedAtomId: normalizeSnapshotSelectedAtomId(normalizedModel, normalizedSelectedAtomId),
-        activeView: snapshot.activeView,
-        bondOrder: snapshot.bondOrder,
-        canvasViewport: {
-          offsetX: snapshot.canvasViewport.offsetX,
-          offsetY: snapshot.canvasViewport.offsetY,
-          scale: snapshot.canvasViewport.scale,
-        },
-      },
-    };
-  }, [buildEditorSnapshot, moleculeEducationalDescription, moleculeName]);
 
   const applySavedMolecule = useCallback(
     (savedMolecule: SavedMolecule, notice: string) => {
@@ -723,139 +336,12 @@ function MolecularEditor({
   );
   const zoomPercent = Math.round(canvasViewport.scale * 100);
 
-  const commitMoleculeChange = useCallback(
-    (
-      previousMolecule: MoleculeModel,
-      result: {
-        molecule: MoleculeModel;
-        selectedAtomId: string | null;
-        error?: string;
-      },
-      successMessage: string,
-      anchorPoint?: { x: number; y: number },
-    ) => {
-      clearPendingCanvasPlacement();
-      const nextMolecule = dedupeBondConnections(result.molecule);
-      const nextSelectedAtomId = normalizeSnapshotSelectedAtomId(nextMolecule, result.selectedAtomId);
-      const previousSelectedAtomId = normalizeSnapshotSelectedAtomId(molecule, selectedAtomId);
-      const didMoleculeChange = nextMolecule !== previousMolecule;
-      const didSelectionChange = nextSelectedAtomId !== previousSelectedAtomId;
-
-      if (didMoleculeChange) {
-        pushHistorySnapshot(buildHistorySnapshot());
-      }
-
-      if (didMoleculeChange) {
-        const nextViewport = preserveViewportAcrossModelChange(
-          previousMolecule,
-          nextMolecule,
-          canvasViewport,
-          canvasFrameAspectRatio,
-          anchorPoint,
-        );
-
-        setCanvasViewport(nextViewport);
-        setMolecule(nextMolecule);
-        setNomenclatureFallback(null);
-      }
-
-      if (didMoleculeChange || didSelectionChange) {
-        setSelectedAtomId(nextSelectedAtomId);
-      }
-      setEditorNotice(result.error ?? successMessage);
-    },
-    [buildHistorySnapshot, canvasFrameAspectRatio, canvasViewport, clearPendingCanvasPlacement, molecule, pushHistorySnapshot, selectedAtomId],
-  );
-
-  const onAddSelectedElement = useCallback(() => {
-    if (activeElement === null) {
-      setEditorNotice('No element matches the current search.');
-      return;
-    }
-
-    if (molecule.atoms.length === 0 || selectedAtomId === null) {
-      const nextPoint = resolveNextStandalonePoint(molecule);
-      const result = addStandaloneAtom(molecule, activeElement, nextPoint);
-      commitMoleculeChange(molecule, result, `${activeElement.symbol} added to the canvas.`, nextPoint);
-      return;
-    }
-
-    const result = addAttachedAtom(molecule, selectedAtomId, activeElement, bondOrder);
-    commitMoleculeChange(molecule, result, `${activeElement.symbol} attached with a bond order of ${bondOrder}.`);
-  }, [activeElement, bondOrder, commitMoleculeChange, molecule, selectedAtomId]);
-
-  function handleCanvasPlacement(point: { x: number; y: number }) {
-    if (activeView !== 'editor') {
-      return;
-    }
-
-    if (activeElement === null) {
-      setEditorNotice('Choose an element before placing atoms.');
-      return;
-    }
-
-    if (selectedAtomId === null) {
-      const result = addStandaloneAtom(molecule, activeElement, point);
-      commitMoleculeChange(molecule, result, `${activeElement.symbol} placed on the canvas.`, point);
-      return;
-    }
-
-    const result = addAttachedAtom(molecule, selectedAtomId, activeElement, bondOrder);
-    commitMoleculeChange(molecule, result, `${activeElement.symbol} attached to the selected atom.`);
-  }
-
-  function handleAtomActivate(atomId: string) {
-    clearPendingCanvasPlacement();
-
-    if (selectedAtomId === null) {
-      setSelectedAtomId(atomId);
-      setEditorNotice('Atom selected. Tap another atom to create a bond, or use the tools to attach the active element.');
-      return;
-    }
-
-    if (selectedAtomId === atomId) {
-      setSelectedAtomId(null);
-      setEditorNotice('Selection cleared.');
-      return;
-    }
-
-    const result = connectAtoms(molecule, selectedAtomId, atomId, bondOrder);
-    commitMoleculeChange(molecule, result, `Bond updated to order ${bondOrder}.`);
-  }
-
   const onSetActiveView = useCallback(
     (nextView: EditorViewMode) => {
       setIsFloatingSaveShortcutExpanded(false);
       setActiveView(nextView);
     },
     [],
-  );
-
-  const onFocusComponent = useCallback(
-    (componentIndex: number) => {
-      const component = moleculeComponents[componentIndex];
-
-      if (component === undefined) {
-        return;
-      }
-
-      setFocusedComponentIndex(componentIndex);
-      setSelectedAtomId(null);
-      setEditorNotice(`Mol ${componentIndex + 1} focused.`);
-
-      const nextViewportMetrics = resolveScaledViewBoxMetrics(
-        molecule,
-        canvasViewport.scale,
-        canvasFrameAspectRatio,
-      );
-
-      setCanvasViewport((currentViewport) => ({
-        ...currentViewport,
-        offsetX: component.center.x - nextViewportMetrics.centerX,
-        offsetY: component.center.y - nextViewportMetrics.centerY,
-      }));
-    },
-    [canvasFrameAspectRatio, canvasViewport.scale, molecule, moleculeComponents],
   );
 
   const onSetBondOrder = useCallback(
@@ -865,154 +351,82 @@ function MolecularEditor({
     [],
   );
 
-  const onClearSelection = useCallback(() => {
-    clearPendingCanvasPlacement();
-    setSelectedAtomId(null);
-    setEditorNotice('Selection cleared.');
-  }, [clearPendingCanvasPlacement]);
+  const {
+    handleAtomActivate,
+    handleCanvasPlacement,
+    onAddSelectedElement,
+    onCanvasWheel,
+    onClearSelection,
+    onFocusComponent,
+    onImportExternalMolecule,
+    onRemoveSelectedAtom,
+    onResetCanvasView,
+    onResetMolecule,
+    onZoomIn,
+    onZoomOut,
+  } = useMoleculeEditorActions<SavedEditorDraft>({
+    activeElement,
+    activeView,
+    applyEditorSnapshot,
+    bondOrder,
+    buildHistorySnapshot,
+    canvasFrameAspectRatio,
+    canvasFrameSize,
+    canvasViewport,
+    clearPendingCanvasPlacementRef,
+    clearTransientEditorStateRef,
+    cloneMoleculeModel,
+    defaultCanvasViewport: DEFAULT_CANVAS_VIEWPORT,
+    emptyMolecule: EMPTY_MOLECULE,
+    isImportModalOpen,
+    isSaveModalOpen,
+    isTextEditingElement,
+    molecule,
+    moleculeComponents,
+    normalizeSelectedAtomId: normalizeSnapshotSelectedAtomId,
+    pageMode,
+    pushHistorySnapshot,
+    selectedAtomId,
+    setActiveSavedMoleculeId,
+    setActiveView,
+    setBondOrder,
+    setCanvasViewport,
+    setEditorNotice,
+    setFocusedComponentIndex,
+    setIsImportModalOpen,
+    setMolecule,
+    setMoleculeEducationalDescription,
+    setMoleculeName,
+    setNomenclatureFallback,
+    setSelectedAtomId,
+    showGalleryFeedback,
+  });
 
-  const onCanvasWheel = useCallback(
-    (event: React.WheelEvent<SVGSVGElement>) => {
-      if (activeView === 'simplified') {
-        return;
-      }
-
-      event.preventDefault();
-
-      if (event.shiftKey) {
-        const nextScale = clampCanvasScale(
-          canvasViewport.scale * (event.deltaY > 0 ? 1 / CANVAS_ZOOM_STEP : CANVAS_ZOOM_STEP),
-        );
-
-        if (nextScale === canvasViewport.scale) {
-          return;
-        }
-
-        const anchorPoint = toSvgPoint(event.currentTarget, event.clientX, event.clientY);
-        setCanvasViewport(
-          zoomCanvasViewport(
-            molecule,
-            canvasViewport,
-            nextScale,
-            anchorPoint,
-            canvasFrameSize.width > 0 && canvasFrameSize.height > 0
-              ? canvasFrameSize.width / canvasFrameSize.height
-              : undefined,
-          ),
-        );
-        return;
-      }
-
-      const svg = svgRef.current;
-
-      if (svg === null) {
-        return;
-      }
-
-      const delta = toSvgDelta(svg, svg.viewBox.baseVal, event.deltaX, event.deltaY);
-      setCanvasViewport((current) => ({
-        ...current,
-        offsetX: current.offsetX + delta.x,
-        offsetY: current.offsetY + delta.y,
-      }));
-    },
-    [activeView, canvasFrameSize.height, canvasFrameSize.width, canvasViewport, molecule],
-  );
-
-  const onRemoveSelectedAtom = useCallback(() => {
-    if (selectedAtomId === null) {
-      setEditorNotice('Select an atom before removing it.');
-      return;
-    }
-
-    const neighborBond =
-      molecule.bonds.find((bond) => bond.sourceId === selectedAtomId || bond.targetId === selectedAtomId) ?? null;
-    const fallbackAnchorAtomId =
-      neighborBond === null
-        ? undefined
-        : neighborBond.sourceId === selectedAtomId
-          ? neighborBond.targetId
-          : neighborBond.sourceId;
-    const nextMolecule = removeAtom(molecule, selectedAtomId);
-    const rebalancedMolecule =
-      nextMolecule.atoms.length === 0
-        ? nextMolecule
-        : rebalanceMoleculeLayout(
-            nextMolecule,
-            fallbackAnchorAtomId !== undefined && fallbackAnchorAtomId !== selectedAtomId
-              ? fallbackAnchorAtomId
-              : nextMolecule.atoms[0]?.id,
-          );
-    const nextViewport = preserveViewportAcrossModelChange(
-      molecule,
-      rebalancedMolecule,
-      canvasViewport,
-      canvasFrameAspectRatio,
-    );
-    const sanitizedMolecule = dedupeBondConnections(rebalancedMolecule);
-
-    setCanvasViewport(nextViewport);
-    pushHistorySnapshot(buildHistorySnapshot());
-    setMolecule(sanitizedMolecule);
-    setSelectedAtomId(normalizeSnapshotSelectedAtomId(sanitizedMolecule, null));
-    setEditorNotice('Selected atom removed.');
-  }, [buildHistorySnapshot, canvasFrameAspectRatio, canvasViewport, molecule, pushHistorySnapshot, selectedAtomId]);
+  const {
+    clearPendingCanvasPlacement,
+    clearTransientEditorState,
+    onAtomPointerDown,
+    onCanvasPointerCancel,
+    onCanvasPointerDown,
+    onCanvasPointerMove,
+    onCanvasPointerUp,
+  } = useCanvasInteractions({
+    activeView,
+    canvasViewport,
+    molecule,
+    selectedAtomId,
+    setCanvasViewport,
+    setEditorNotice,
+    setSelectedAtomId,
+    svgRef,
+    onCanvasPlacement: handleCanvasPlacement,
+    onAtomActivate: handleAtomActivate,
+  });
 
   useEffect(() => {
-    if (pageMode !== 'editor') {
-      return;
-    }
-
-    const handleDeleteKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Delete' && event.key !== 'Backspace') {
-        return;
-      }
-
-      if (event.altKey || event.ctrlKey || event.metaKey || isSaveModalOpen || isImportModalOpen) {
-        return;
-      }
-
-      if (isTextEditingElement(event.target) || selectedAtomId === null) {
-        return;
-      }
-
-      event.preventDefault();
-      onRemoveSelectedAtom();
-    };
-
-    window.addEventListener('keydown', handleDeleteKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleDeleteKeyDown);
-    };
-  }, [isImportModalOpen, isSaveModalOpen, onRemoveSelectedAtom, pageMode, selectedAtomId]);
-
-  const onResetMolecule = useCallback(() => {
-    const isAlreadyPristine =
-      molecule.atoms.length === 0 &&
-      selectedAtomId === null &&
-      activeView === 'editor' &&
-      bondOrder === 1 &&
-      canvasViewport.offsetX === DEFAULT_CANVAS_VIEWPORT.offsetX &&
-      canvasViewport.offsetY === DEFAULT_CANVAS_VIEWPORT.offsetY &&
-      canvasViewport.scale === DEFAULT_CANVAS_VIEWPORT.scale;
-
-    if (isAlreadyPristine) {
-      setEditorNotice('Editor already reset.');
-      return;
-    }
-
-    pushHistorySnapshot(buildHistorySnapshot());
-    clearTransientEditorState();
-    setMolecule(EMPTY_MOLECULE);
-    setSelectedAtomId(null);
-    setFocusedComponentIndex(0);
-    setNomenclatureFallback(null);
-    setActiveView('editor');
-    setBondOrder(1);
-    setCanvasViewport(DEFAULT_CANVAS_VIEWPORT);
-    setEditorNotice('Editor reset.');
-  }, [activeView, bondOrder, buildHistorySnapshot, canvasViewport.offsetX, canvasViewport.offsetY, canvasViewport.scale, clearTransientEditorState, molecule.atoms.length, pushHistorySnapshot, selectedAtomId]);
+    clearPendingCanvasPlacementRef.current = clearPendingCanvasPlacement;
+    clearTransientEditorStateRef.current = clearTransientEditorState;
+  }, [clearPendingCanvasPlacement, clearTransientEditorState]);
 
   const onOpenImportModal = useCallback(() => {
     setIsFloatingSaveShortcutExpanded(false);
@@ -1024,113 +438,13 @@ function MolecularEditor({
     setIsImportModalOpen(false);
   }, []);
 
-  const onImportExternalMolecule = useCallback(
-    async (compound: ResolvedImportedPubChemCompound) => {
-      const importedMolecule = cloneMoleculeModel(compound.molecule);
-
-      syncMoleculeIdCounter(importedMolecule);
-      pushHistorySnapshot(buildHistorySnapshot());
-      applyEditorSnapshot(
-        {
-          molecule: importedMolecule,
-          selectedAtomId: null,
-          nomenclatureFallback: compound.iupacName ?? null,
-          activeView: 'editor',
-          bondOrder: 1,
-          canvasViewport: DEFAULT_CANVAS_VIEWPORT,
-        },
-        `${compound.title} imported from PubChem.`,
-      );
-      setActiveSavedMoleculeId(null);
-      setNomenclatureFallback(compound.iupacName ?? null);
-      setMoleculeName(compound.title);
-      setMoleculeEducationalDescription('');
-      setIsImportModalOpen(false);
-      showGalleryFeedback(
-        'info',
-        compound.importMode === 'main' && compound.omittedFragmentCount > 0
-          ? `${compound.title} imported from PubChem. ${compound.omittedFragmentCount} detached fragment${
-              compound.omittedFragmentCount === 1 ? '' : 's'
-            } omitted so the main molecule stays editable.`
-          : compound.importMode === 'all' && compound.componentCount > 1
-            ? `${compound.title} imported from PubChem as a ${compound.componentCount}-component work.`
-          : `${compound.title} imported from PubChem. Save it to keep this draft.`,
-      );
-    },
-    [applyEditorSnapshot, buildHistorySnapshot, pushHistorySnapshot, showGalleryFeedback],
-  );
-
-  const onZoomOut = useCallback(() => {
-    const frameAspectRatio =
-      canvasFrameSize.width > 0 && canvasFrameSize.height > 0
-        ? canvasFrameSize.width / canvasFrameSize.height
-        : undefined;
-    const anchorPoint = resolveViewportCenter(molecule, canvasViewport, frameAspectRatio);
-
-    const nextViewport = zoomCanvasViewport(
-      molecule,
-      canvasViewport,
-      canvasViewport.scale / CANVAS_ZOOM_STEP,
-      anchorPoint,
-      frameAspectRatio,
-    );
-
-    setCanvasViewport(nextViewport);
-  }, [canvasFrameSize.height, canvasFrameSize.width, canvasViewport, molecule]);
-
-  const onZoomIn = useCallback(() => {
-    const frameAspectRatio =
-      canvasFrameSize.width > 0 && canvasFrameSize.height > 0
-        ? canvasFrameSize.width / canvasFrameSize.height
-        : undefined;
-    const anchorPoint = resolveViewportCenter(molecule, canvasViewport, frameAspectRatio);
-
-    const nextViewport = zoomCanvasViewport(
-      molecule,
-      canvasViewport,
-      canvasViewport.scale * CANVAS_ZOOM_STEP,
-      anchorPoint,
-      frameAspectRatio,
-    );
-
-    setCanvasViewport(nextViewport);
-  }, [canvasFrameSize.height, canvasFrameSize.width, canvasViewport, molecule]);
-
-  const onResetCanvasView = useCallback(() => {
-    setCanvasViewport(DEFAULT_CANVAS_VIEWPORT);
-    setEditorNotice('Canvas view reset.');
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (isSaveModalOpen || isImportModalOpen) {
-        return;
-      }
-
-      if (event.altKey || !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z') {
-        return;
-      }
-
-      if (isTextEditingElement(event.target)) {
-        return;
-      }
-
-      event.preventDefault();
-
-      if (event.shiftKey) {
-        onRedo();
-        return;
-      }
-
-      onUndo();
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isImportModalOpen, isSaveModalOpen, onRedo, onUndo]);
+  useMoleculeEditorShortcuts({
+    isImportModalOpen,
+    isSaveModalOpen,
+    isTextEditingElement,
+    onRedo,
+    onUndo,
+  });
 
   const isEditorPage = pageMode === 'editor';
   const isGalleryPage = pageMode === 'gallery';
