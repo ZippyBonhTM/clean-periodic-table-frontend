@@ -1,8 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
 
 import MoleculeComponentFocusRail from '@/components/organisms/molecular-editor/MoleculeComponentFocusRail';
 import MoleculeEditorCanvasPanel from '@/components/organisms/molecular-editor/MoleculeEditorCanvasPanel';
@@ -10,6 +8,7 @@ import MoleculeGallerySection from '@/components/organisms/molecular-editor/Mole
 import MoleculeImportModal from '@/components/organisms/molecular-editor/MoleculeImportModal';
 import MoleculeSaveModal from '@/components/organisms/molecular-editor/MoleculeSaveModal';
 import MoleculeEditorTopBar from '@/components/organisms/molecular-editor/MoleculeEditorTopBar';
+import useMoleculeEditorLayout from '@/components/organisms/molecular-editor/useMoleculeEditorLayout';
 import {
   preserveViewportAcrossModelChange,
   resolveInteractiveViewBox,
@@ -20,13 +19,8 @@ import {
 import useCanvasInteractions from '@/components/organisms/molecular-editor/useCanvasInteractions';
 import useEditorHistory from '@/components/organisms/molecular-editor/useEditorHistory';
 import useMoleculePaletteController from '@/components/organisms/molecular-editor/useMoleculePaletteController';
+import useSavedMoleculeWorkflow from '@/components/organisms/molecular-editor/useSavedMoleculeWorkflow';
 import type { ResolvedImportedPubChemCompound } from '@/shared/api/pubchemApi';
-import { mapSavedMoleculesErrorMessage } from '@/shared/hooks/useSavedMolecules';
-import {
-  clearPendingSavedMoleculeId,
-  readPendingSavedMoleculeId,
-  writePendingSavedMoleculeId,
-} from '@/shared/storage/pendingSavedMoleculeStorage';
 import type {
   SaveMoleculeInput,
   SavedMolecule,
@@ -305,7 +299,6 @@ function MolecularEditor({
   onUpdateSavedMolecule,
   onDeleteSavedMolecule,
 }: MolecularEditorProps) {
-  const router = useRouter();
   const [molecule, setMolecule] = useState<MoleculeModel>(EMPTY_MOLECULE);
   const [selectedAtomId, setSelectedAtomId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<EditorViewMode>('editor');
@@ -313,7 +306,6 @@ function MolecularEditor({
   const [isToolRailCollapsed, setIsToolRailCollapsed] = useState(true);
   const [isFormulaPanelOpen, setIsFormulaPanelOpen] = useState(false);
   const [editorNotice, setEditorNotice] = useState<string | null>(null);
-  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isFloatingSaveShortcutExpanded, setIsFloatingSaveShortcutExpanded] = useState(false);
   const [activeSavedMoleculeId, setActiveSavedMoleculeId] = useState<string | null>(null);
@@ -323,20 +315,8 @@ function MolecularEditor({
   const [moleculeEducationalDescription, setMoleculeEducationalDescription] = useState('');
   const [galleryFeedback, setGalleryFeedback] = useState<GalleryFeedback | null>(null);
   const [canvasViewport, setCanvasViewport] = useState<CanvasViewport>(DEFAULT_CANVAS_VIEWPORT);
-  const [hasCheckedPendingSavedMolecule, setHasCheckedPendingSavedMolecule] = useState(pageMode !== 'editor');
-  const [hasPendingSavedMolecule, setHasPendingSavedMolecule] = useState(false);
-  const topControlsRef = useRef<HTMLDivElement | null>(null);
-  const topOverlayRef = useRef<HTMLDivElement | null>(null);
-  const bottomNoticeRef = useRef<HTMLDivElement | null>(null);
-  const canvasFrameRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const galleryFeedbackTimeoutRef = useRef<number | null>(null);
-  const pendingSavedMoleculeIdRef = useRef<string | null>(null);
-  const [topControlsHeight, setTopControlsHeight] = useState(0);
-  const [topOverlayHeight, setTopOverlayHeight] = useState(0);
-  const [paletteSearchRailHeight, setPaletteSearchRailHeight] = useState(0);
-  const [bottomNoticeHeight, setBottomNoticeHeight] = useState(0);
-  const [canvasFrameSize, setCanvasFrameSize] = useState({ width: 0, height: 0 });
 
   const {
     activeElement,
@@ -390,14 +370,6 @@ function MolecularEditor({
     focusedSystematicName ??
     (moleculeComponents.length === 1 && nomenclatureFallback !== null
       ? normalizeOptionalText(nomenclatureFallback)
-      : null);
-  const resolvedEditorNotice =
-    editorNotice ??
-    (hasCheckedPendingSavedMolecule &&
-    !hasPendingSavedMolecule &&
-    summary.atomCount === 0 &&
-    selectedAtomId === null
-      ? DEFAULT_EDITOR_NOTICE
       : null);
   const formulaDisplayValue = focusedSummary.atomCount === 0 ? 'N/A' : focusedFormula;
   const systematicNameDisplayValue =
@@ -462,39 +434,9 @@ function MolecularEditor({
     ],
   );
   const compositionRows = useMemo(() => buildCompositionRows(focusedComponentModel), [focusedComponentModel]);
-  const interactiveViewBox = useMemo(
-    () =>
-      resolveInteractiveViewBox(
-        molecule,
-        canvasViewport,
-        canvasFrameSize.width > 0 && canvasFrameSize.height > 0
-          ? canvasFrameSize.width / canvasFrameSize.height
-          : undefined,
-      ),
-    [canvasFrameSize.height, canvasFrameSize.width, canvasViewport, molecule],
-  );
-  const canvasFrameAspectRatio =
-    canvasFrameSize.width > 0 && canvasFrameSize.height > 0
-      ? canvasFrameSize.width / canvasFrameSize.height
-      : undefined;
-  const zoomPercent = Math.round(canvasViewport.scale * 100);
   const normalizedSavedMolecules = useMemo(
     () => savedMolecules.map((entry) => normalizeSavedMoleculeRecord(entry)),
     [savedMolecules],
-  );
-
-  const resolvedActiveSavedMoleculeId = useMemo(() => {
-    if (activeSavedMoleculeId === null) {
-      return null;
-    }
-
-    return normalizedSavedMolecules.some((entry) => entry.id === activeSavedMoleculeId)
-      ? activeSavedMoleculeId
-      : null;
-  }, [activeSavedMoleculeId, normalizedSavedMolecules]);
-  const activeSavedMolecule = useMemo(
-    () => normalizedSavedMolecules.find((entry) => entry.id === resolvedActiveSavedMoleculeId) ?? null,
-    [normalizedSavedMolecules, resolvedActiveSavedMoleculeId],
   );
 
   const clearGalleryFeedbackTimeout = useCallback(() => {
@@ -674,57 +616,112 @@ function MolecularEditor({
     [applyEditorSnapshot, clearHistory],
   );
 
-  useEffect(() => {
-    if (pageMode !== 'editor') {
-      return;
-    }
+  const {
+    activeSavedMolecule,
+    hasCheckedPendingSavedMolecule,
+    hasPendingSavedMolecule,
+    isSaveModalOpen,
+    onCloseSaveModal,
+    onDeleteCurrentSavedMolecule,
+    onDeleteCurrentSavedMoleculeFromGallery,
+    onDetachSavedMolecule,
+    onLoadSavedMolecule,
+    onOpenCurrentSavedMoleculeInEditor,
+    onOpenGalleryEditModal,
+    onOpenSaveModal,
+    onSaveAsNewMolecule,
+    onUpdateCurrentSavedMolecule,
+    resolvedActiveSavedMoleculeId,
+  } = useSavedMoleculeWorkflow({
+    activeSavedMoleculeId,
+    applySavedMolecule,
+    buildSaveMoleculeInput,
+    closeImportModal: () => setIsImportModalOpen(false),
+    collapseFloatingSaveShortcut: () => setIsFloatingSaveShortcutExpanded(false),
+    isSavedMoleculesLoading,
+    normalizedSavedMolecules,
+    onCreateSavedMolecule,
+    onDeleteSavedMolecule,
+    onUpdateSavedMolecule,
+    pageMode,
+    setActiveSavedMoleculeId,
+    setMoleculeEducationalDescription,
+    setMoleculeName,
+    showGalleryFeedback,
+    summaryAtomCount: summary.atomCount,
+  });
 
-    if (pendingSavedMoleculeIdRef.current === null) {
-      pendingSavedMoleculeIdRef.current = readPendingSavedMoleculeId();
-    }
-
-    setHasPendingSavedMolecule(pendingSavedMoleculeIdRef.current !== null);
-    setHasCheckedPendingSavedMolecule(true);
-
-    const pendingSavedMoleculeId = pendingSavedMoleculeIdRef.current;
-
-    if (pendingSavedMoleculeId === null) {
-      return;
-    }
-
-    if (isSavedMoleculesLoading) {
-      return;
-    }
-
-    const pendingSavedMolecule = normalizedSavedMolecules.find((entry) => entry.id === pendingSavedMoleculeId);
-
-    if (pendingSavedMolecule === undefined) {
-      const timeoutId = window.setTimeout(() => {
-        clearPendingSavedMoleculeId();
-        pendingSavedMoleculeIdRef.current = null;
-        setHasPendingSavedMolecule(false);
-        showGalleryFeedback('error', 'Could not find the selected gallery molecule.');
-      }, 0);
-
-      return () => {
-        window.clearTimeout(timeoutId);
-      };
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      clearPendingSavedMoleculeId();
-      pendingSavedMoleculeIdRef.current = null;
-      setHasPendingSavedMolecule(false);
-      applySavedMolecule(
-        pendingSavedMolecule,
-        `${pendingSavedMolecule.name ?? pendingSavedMolecule.summary.formula} loaded from gallery.`,
-      );
-    }, 0);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [applySavedMolecule, isSavedMoleculesLoading, normalizedSavedMolecules, pageMode, showGalleryFeedback]);
+  const resolvedEditorNotice =
+    editorNotice ??
+    (hasCheckedPendingSavedMolecule &&
+    !hasPendingSavedMolecule &&
+    summary.atomCount === 0 &&
+    selectedAtomId === null
+      ? DEFAULT_EDITOR_NOTICE
+      : null);
+  const {
+    bottomNoticeRef,
+    canvasFrameAspectRatio,
+    canvasFrameClassName,
+    canvasFrameRef,
+    canvasFrameSize,
+    canvasPanelClassName,
+    canvasPanelStyle,
+    collapsedToolRailSectionClassName,
+    compactBottomNoticeClassName,
+    compactBottomOverlayClassName,
+    compactDisplayedEditorNotice,
+    editorSectionStyle,
+    effectiveToolRailCollapsed,
+    expandedToolRailSectionClassName,
+    floatingSaveShortcutInnerStyle,
+    floatingSaveShortcutPanelStyle,
+    floatingSaveShortcutTriggerStyle,
+    formulaPanelStyle,
+    importButtonClassName,
+    isLandscapeCompactCanvas,
+    isSimplifiedView,
+    paletteRowClassName,
+    paletteSearchButtonClassName,
+    paletteSearchInnerStyle,
+    paletteSearchPanelStyle,
+    paletteSearchRailStyle,
+    paletteSearchShellClassName,
+    paletteSearchTriggerStyle,
+    paletteViewportWrapperClassName,
+    responsiveLayoutWidth,
+    showExpandedToolRailContent,
+    simplifiedViewStyle,
+    toolRailBodyClassName,
+    toolRailCollapsedWidthClassName,
+    toolRailExpandedWidthClassName,
+    toolRailStyle,
+    topControlsBlockClassName,
+    topControlsLeadingGroupClassName,
+    topControlsRef,
+    topControlsRowClassName,
+    topOverlayClassName,
+    topOverlayRef,
+    viewModeButtonClassName,
+    viewModeTabsClassName,
+    zoomControlsClassName,
+    zoomControlsVisibilityClassName,
+  } = useMoleculeEditorLayout({
+    activeView,
+    componentCount: moleculeComponents.length,
+    isFloatingSaveShortcutExpanded,
+    isFormulaPanelOpen,
+    isPaletteSearchOpen,
+    isToolRailCollapsed,
+    pageMode,
+    paletteSearchRailRef,
+    resolvedEditorNotice,
+  });
+  const interactiveViewBox = useMemo(
+    () => resolveInteractiveViewBox(molecule, canvasViewport, canvasFrameAspectRatio),
+    [canvasFrameAspectRatio, canvasViewport, molecule],
+  );
+  const zoomPercent = Math.round(canvasViewport.scale * 100);
 
   const commitMoleculeChange = useCallback(
     (
@@ -1017,37 +1014,11 @@ function MolecularEditor({
     setEditorNotice('Editor reset.');
   }, [activeView, bondOrder, buildHistorySnapshot, canvasViewport.offsetX, canvasViewport.offsetY, canvasViewport.scale, clearTransientEditorState, molecule.atoms.length, pushHistorySnapshot, selectedAtomId]);
 
-  const onDetachSavedMolecule = useCallback(() => {
-    setActiveSavedMoleculeId(null);
-    showGalleryFeedback('info', 'Current canvas detached. Saving now will create a new record.');
-  }, [showGalleryFeedback]);
-
-  const onOpenSaveModal = useCallback(() => {
-    setIsFloatingSaveShortcutExpanded(false);
-    setIsImportModalOpen(false);
-    setIsSaveModalOpen(true);
-  }, []);
-
-  const onOpenGalleryEditModal = useCallback(() => {
-    if (resolvedActiveSavedMoleculeId === null) {
-      showGalleryFeedback('error', 'Select a saved molecule before editing its gallery data.');
-      return;
-    }
-
-    setIsImportModalOpen(false);
-    setIsFloatingSaveShortcutExpanded(false);
-    setIsSaveModalOpen(true);
-  }, [resolvedActiveSavedMoleculeId, showGalleryFeedback]);
-
-  const onCloseSaveModal = useCallback(() => {
-    setIsSaveModalOpen(false);
-  }, []);
-
   const onOpenImportModal = useCallback(() => {
     setIsFloatingSaveShortcutExpanded(false);
-    setIsSaveModalOpen(false);
+    onCloseSaveModal();
     setIsImportModalOpen(true);
-  }, []);
+  }, [onCloseSaveModal]);
 
   const onCloseImportModal = useCallback(() => {
     setIsImportModalOpen(false);
@@ -1088,98 +1059,6 @@ function MolecularEditor({
     },
     [applyEditorSnapshot, buildHistorySnapshot, pushHistorySnapshot, showGalleryFeedback],
   );
-
-  const onLoadSavedMolecule = useCallback(
-    (savedMolecule: SavedMolecule) => {
-      applySavedMolecule(savedMolecule, `${savedMolecule.name ?? savedMolecule.summary.formula} loaded.`);
-    },
-    [applySavedMolecule],
-  );
-
-  const onOpenCurrentSavedMoleculeInEditor = useCallback(() => {
-    if (activeSavedMolecule === null) {
-      showGalleryFeedback('error', 'Select a saved molecule before opening it in the editor.');
-      return;
-    }
-
-    writePendingSavedMoleculeId(activeSavedMolecule.id);
-    router.push('/molecular-editor');
-  }, [activeSavedMolecule, router, showGalleryFeedback]);
-
-  const onSaveAsNewMolecule = useCallback(async () => {
-    if (summary.atomCount === 0) {
-      showGalleryFeedback('error', 'Add atoms before saving a molecule to the gallery.');
-      return;
-    }
-
-    try {
-      showGalleryFeedback('info', 'Save request sent.', { persist: true });
-      const created = await onCreateSavedMolecule(buildSaveMoleculeInput());
-      setActiveSavedMoleculeId(created.id);
-      setMoleculeName(created.name ?? '');
-      setMoleculeEducationalDescription(created.educationalDescription ?? '');
-      setIsSaveModalOpen(false);
-      showGalleryFeedback('success', 'Work saved.');
-    } catch (caughtError: unknown) {
-      showGalleryFeedback('error', mapSavedMoleculesErrorMessage(caughtError));
-    }
-  }, [buildSaveMoleculeInput, onCreateSavedMolecule, showGalleryFeedback, summary.atomCount]);
-
-  const onUpdateCurrentSavedMolecule = useCallback(async () => {
-    if (resolvedActiveSavedMoleculeId === null) {
-      showGalleryFeedback('error', 'Select a saved molecule before updating it.');
-      return;
-    }
-
-    if (summary.atomCount === 0) {
-      showGalleryFeedback('error', 'Add atoms before updating a saved molecule.');
-      return;
-    }
-
-    try {
-      showGalleryFeedback('info', 'Save request sent.', { persist: true });
-      const updated = await onUpdateSavedMolecule(resolvedActiveSavedMoleculeId, buildSaveMoleculeInput());
-      setMoleculeName(updated.name ?? '');
-      setMoleculeEducationalDescription(updated.educationalDescription ?? '');
-      setIsSaveModalOpen(false);
-      showGalleryFeedback('success', 'Work saved.');
-    } catch (caughtError: unknown) {
-      showGalleryFeedback('error', mapSavedMoleculesErrorMessage(caughtError));
-    }
-  }, [buildSaveMoleculeInput, onUpdateSavedMolecule, resolvedActiveSavedMoleculeId, showGalleryFeedback, summary.atomCount]);
-
-  const onDeleteCurrentSavedMolecule = useCallback(async () => {
-    if (resolvedActiveSavedMoleculeId === null) {
-      showGalleryFeedback('error', 'Select a saved molecule before deleting it.');
-      return;
-    }
-
-    try {
-      showGalleryFeedback('info', 'Delete request sent.', { persist: true });
-      await onDeleteSavedMolecule(resolvedActiveSavedMoleculeId);
-      setActiveSavedMoleculeId(null);
-      setIsSaveModalOpen(false);
-      showGalleryFeedback('success', 'Saved work deleted.');
-    } catch (caughtError: unknown) {
-      showGalleryFeedback('error', mapSavedMoleculesErrorMessage(caughtError));
-    }
-  }, [onDeleteSavedMolecule, resolvedActiveSavedMoleculeId, showGalleryFeedback]);
-
-  const onDeleteCurrentSavedMoleculeFromGallery = useCallback(async () => {
-    if (activeSavedMolecule === null) {
-      showGalleryFeedback('error', 'Select a saved molecule before deleting it.');
-      return;
-    }
-
-    const label = activeSavedMolecule.name ?? activeSavedMolecule.summary.formula;
-    const shouldDelete = window.confirm(`Delete "${label}" from your gallery?`);
-
-    if (!shouldDelete) {
-      return;
-    }
-
-    await onDeleteCurrentSavedMolecule();
-  }, [activeSavedMolecule, onDeleteCurrentSavedMolecule, showGalleryFeedback]);
 
   const onZoomOut = useCallback(() => {
     const frameAspectRatio =
@@ -1253,252 +1132,6 @@ function MolecularEditor({
     };
   }, [isImportModalOpen, isSaveModalOpen, onRedo, onUndo]);
 
-  useEffect(() => {
-    const topControlsElement = topControlsRef.current;
-    const overlayElement = topOverlayRef.current;
-    const searchRailElement = paletteSearchRailRef.current;
-    const bottomNoticeElement = bottomNoticeRef.current;
-    const canvasElement = canvasFrameRef.current;
-
-    if (
-      topControlsElement === null &&
-      overlayElement === null &&
-      searchRailElement === null &&
-      bottomNoticeElement === null &&
-      canvasElement === null
-    ) {
-      return;
-    }
-
-    const updateMeasurements = () => {
-      if (topControlsElement !== null) {
-        const nextTopControlsHeight = Math.round(topControlsElement.getBoundingClientRect().height);
-        setTopControlsHeight((currentHeight) =>
-          currentHeight === nextTopControlsHeight ? currentHeight : nextTopControlsHeight,
-        );
-      }
-
-      if (overlayElement !== null) {
-        const nextOverlayHeight = Math.round(overlayElement.getBoundingClientRect().height);
-        setTopOverlayHeight((currentHeight) =>
-          currentHeight === nextOverlayHeight ? currentHeight : nextOverlayHeight,
-        );
-      }
-
-      if (searchRailElement !== null) {
-        const nextSearchRailHeight = Math.round(searchRailElement.getBoundingClientRect().height);
-        setPaletteSearchRailHeight((currentHeight) =>
-          currentHeight === nextSearchRailHeight ? currentHeight : nextSearchRailHeight,
-        );
-      }
-
-      if (bottomNoticeElement !== null) {
-        const nextBottomNoticeHeight = Math.round(bottomNoticeElement.getBoundingClientRect().height);
-        setBottomNoticeHeight((currentHeight) =>
-          currentHeight === nextBottomNoticeHeight ? currentHeight : nextBottomNoticeHeight,
-        );
-      } else {
-        setBottomNoticeHeight((currentHeight) => (currentHeight === 0 ? currentHeight : 0));
-      }
-
-      if (canvasElement !== null) {
-        const rect = canvasElement.getBoundingClientRect();
-        const nextWidth = Math.round(rect.width);
-        const nextHeight = Math.round(rect.height);
-
-        setCanvasFrameSize((currentSize) =>
-          currentSize.width === nextWidth && currentSize.height === nextHeight
-            ? currentSize
-            : { width: nextWidth, height: nextHeight },
-        );
-      }
-    };
-
-    updateMeasurements();
-
-    const resizeObserver = new ResizeObserver(() => {
-      updateMeasurements();
-    });
-
-    if (topControlsElement !== null) {
-      resizeObserver.observe(topControlsElement);
-    }
-
-    if (overlayElement !== null) {
-      resizeObserver.observe(overlayElement);
-    }
-
-    if (searchRailElement !== null) {
-      resizeObserver.observe(searchRailElement);
-    }
-
-    if (bottomNoticeElement !== null) {
-      resizeObserver.observe(bottomNoticeElement);
-    }
-
-    if (canvasElement !== null) {
-      resizeObserver.observe(canvasElement);
-    }
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, [activeView, paletteSearchRailRef]);
-
-  const isCompactCanvas = canvasFrameSize.width > 0 && canvasFrameSize.width < 640;
-  const isWideCanvas = canvasFrameSize.width >= 1024;
-  const isSimplifiedView = activeView === 'simplified';
-  const editorSectionGap = 12;
-  const editorSectionTopPadding = 2;
-  const editorSectionBottomPadding = 16;
-  const isLandscapeCompactCanvas =
-    !isSimplifiedView &&
-    canvasFrameSize.width > 0 &&
-    canvasFrameSize.height > 0 &&
-    canvasFrameSize.width > canvasFrameSize.height &&
-    canvasFrameSize.height < 360;
-  const viewportMainHeightCss = 'var(--app-viewport-main-height, 100svh)';
-  const viewportMainGutterCss = 'var(--app-viewport-main-gutter, 0px)';
-  const viewportMainTopGutterCss = `calc(${viewportMainGutterCss} + ${editorSectionTopPadding}px)`;
-  const canvasPanelHeightCss = `max(280px, calc(${viewportMainHeightCss} - ${topControlsHeight + editorSectionGap + editorSectionBottomPadding}px - ${viewportMainTopGutterCss}))`;
-  const canvasPanelStyle: CSSProperties = {
-    height: canvasPanelHeightCss,
-    minHeight: canvasPanelHeightCss,
-    maxHeight: canvasPanelHeightCss,
-  };
-  const editorSectionStyle: CSSProperties = {
-    minHeight: viewportMainHeightCss,
-    paddingTop: viewportMainTopGutterCss,
-  };
-  const canvasContentInsetTop = topOverlayHeight > 0 ? topOverlayHeight + 16 : 96;
-  const paletteSearchRailGap = paletteSearchRailHeight > 0 ? (isLandscapeCompactCanvas ? 6 : 8) : 0;
-  const paletteSearchRailOffset = paletteSearchRailHeight + paletteSearchRailGap;
-  const toolRailTop = canvasContentInsetTop + paletteSearchRailOffset;
-  const toolRailStyle: CSSProperties = {
-    top: toolRailTop,
-    maxHeight: `calc(100% - ${toolRailTop + 12}px)`,
-  };
-  const simplifiedHorizontalPadding = isWideCanvas ? 32 : isCompactCanvas ? 14 : 22;
-  const simplifiedFloatingSaveClearance =
-    isSimplifiedView && pageMode === 'editor' ? (isLandscapeCompactCanvas ? 54 : 62) : 0;
-  const simplifiedTopPadding =
-    canvasContentInsetTop + paletteSearchRailOffset + (isCompactCanvas ? 12 : 16);
-  const simplifiedBottomPadding = isWideCanvas ? 36 : isCompactCanvas ? 24 : 30;
-  const simplifiedViewStyle: CSSProperties = {
-    paddingTop: simplifiedTopPadding,
-    paddingLeft: simplifiedHorizontalPadding + simplifiedFloatingSaveClearance,
-    paddingRight: simplifiedHorizontalPadding,
-    paddingBottom: simplifiedBottomPadding,
-    WebkitOverflowScrolling: 'touch',
-  };
-  const effectiveToolRailCollapsed = isLandscapeCompactCanvas || isToolRailCollapsed;
-  const showExpandedToolRailContent = !effectiveToolRailCollapsed;
-  const responsiveLayoutWidth = canvasFrameSize.width > 0 ? canvasFrameSize.width : 320;
-
-  const topControlsRowClassName = isLandscapeCompactCanvas
-    ? 'flex min-w-0 flex-nowrap items-center justify-between gap-1.5'
-    : responsiveLayoutWidth < 430
-      ? 'flex min-w-0 flex-nowrap items-center justify-between gap-1.5'
-      : 'flex flex-wrap items-center justify-between gap-2';
-  const topControlsBlockClassName = moleculeComponents.length > 1 ? 'space-y-2' : '';
-  const topControlsLeadingGroupClassName = isLandscapeCompactCanvas
-    ? 'flex min-w-0 flex-nowrap items-center gap-1.5'
-    : responsiveLayoutWidth < 430
-      ? 'flex min-w-0 flex-nowrap items-center gap-1.5'
-      : 'flex flex-wrap items-center gap-2';
-  const viewModeTabsClassName = isLandscapeCompactCanvas
-    ? 'flex items-center gap-0.5 rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) p-0.5 shadow-lg backdrop-blur-xl'
-    : 'flex items-center gap-1 rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) p-1 shadow-lg backdrop-blur-xl';
-  const viewModeButtonClassName = isLandscapeCompactCanvas
-    ? 'inline-flex h-7 min-w-7 items-center justify-center rounded-lg px-1.5 text-[10px] font-semibold transition-colors'
-    : responsiveLayoutWidth < 430
-      ? 'inline-flex h-7 min-w-7 items-center justify-center rounded-lg px-1.5 text-[10px] font-semibold transition-colors'
-      : 'inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-[11px] font-semibold transition-colors';
-  const importButtonClassName = isLandscapeCompactCanvas
-    ? 'inline-flex h-7 items-center gap-1 rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) px-2 text-[10px] font-semibold text-(--text-muted) shadow-lg backdrop-blur-xl transition-colors hover:border-(--accent) hover:text-foreground'
-    : responsiveLayoutWidth < 430
-      ? 'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) px-0 text-[10px] font-semibold text-(--text-muted) shadow-lg backdrop-blur-xl transition-colors hover:border-(--accent) hover:text-foreground'
-      : 'inline-flex h-8 items-center gap-1.5 rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) px-2.5 text-[11px] font-semibold text-(--text-muted) shadow-lg backdrop-blur-xl transition-colors hover:border-(--accent) hover:text-foreground';
-  const zoomControlsClassName = isLandscapeCompactCanvas
-    ? 'ml-auto flex items-center gap-0.5 rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) p-0.5 shadow-lg backdrop-blur-xl'
-    : responsiveLayoutWidth < 430
-      ? 'ml-auto flex shrink-0 items-center gap-px rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) p-0.5 shadow-lg backdrop-blur-xl'
-      : 'ml-auto flex items-center gap-0.5 rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) p-0.5 shadow-lg backdrop-blur-xl';
-  const zoomControlsVisibilityClassName = isSimplifiedView ? 'pointer-events-none invisible' : '';
-  const topOverlayClassName = isLandscapeCompactCanvas
-    ? 'absolute inset-x-2 top-2 z-30'
-    : 'absolute inset-x-3 top-3 z-30';
-  const toolRailCollapsedWidthClassName = isLandscapeCompactCanvas ? 'w-10' : 'w-12';
-  const toolRailExpandedWidthClassName = isLandscapeCompactCanvas
-    ? 'w-[min(56vw,8.5rem)]'
-    : 'w-[min(72vw,224px)] sm:w-52';
-  const paletteSearchShellClassName = isLandscapeCompactCanvas
-    ? 'h-6 rounded-xl'
-    : 'h-7 rounded-xl';
-  const toolRailInsetPx = 12;
-  const toolRailCollapsedWidthPx = isLandscapeCompactCanvas ? 40 : 48;
-  const paletteSearchTriggerWidthPx = isLandscapeCompactCanvas ? 40 : 48;
-  const paletteSearchClosedWidthPx = toolRailCollapsedWidthPx;
-  const toolRailExpandedWidthPx = isLandscapeCompactCanvas
-    ? Math.round(Math.min(responsiveLayoutWidth * 0.56, 136))
-    : responsiveLayoutWidth >= 640
-      ? 208
-      : Math.round(Math.min(responsiveLayoutWidth * 0.72, 224));
-  const paletteSearchExpandedWidthPx = Math.round(
-    toolRailExpandedWidthPx,
-  );
-  const paletteSearchRailStyle: CSSProperties = {
-    top: canvasContentInsetTop,
-    left: `${toolRailInsetPx + (toolRailCollapsedWidthPx - paletteSearchClosedWidthPx) / 2}px`,
-  };
-  const paletteSearchPanelStyle: CSSProperties = {
-    width: `${isPaletteSearchOpen ? paletteSearchExpandedWidthPx : paletteSearchClosedWidthPx}px`,
-  };
-  const paletteSearchInnerStyle: CSSProperties = {
-    width: `${paletteSearchExpandedWidthPx}px`,
-  };
-  const paletteSearchTriggerStyle: CSSProperties = {
-    width: `${paletteSearchTriggerWidthPx}px`,
-  };
-  const floatingSaveShortcutClosedWidthPx = toolRailCollapsedWidthPx;
-  const floatingSaveShortcutExpandedWidthPx = isLandscapeCompactCanvas ? 132 : 156;
-  const floatingSaveShortcutPanelStyle: CSSProperties = {
-    width: `${isFloatingSaveShortcutExpanded ? floatingSaveShortcutExpandedWidthPx : floatingSaveShortcutClosedWidthPx}px`,
-  };
-  const floatingSaveShortcutInnerStyle: CSSProperties = {
-    width: `${floatingSaveShortcutExpandedWidthPx}px`,
-  };
-  const floatingSaveShortcutTriggerStyle: CSSProperties = {
-    width: `${floatingSaveShortcutClosedWidthPx}px`,
-  };
-  const paletteSearchButtonClassName = isLandscapeCompactCanvas ? 'h-5 w-5' : 'h-5.5 w-5.5';
-  const paletteViewportWrapperClassName = isLandscapeCompactCanvas
-    ? 'relative overflow-hidden px-8 py-1'
-    : 'relative overflow-hidden px-9 py-1 sm:px-10 sm:py-1.5';
-  const paletteRowClassName = isLandscapeCompactCanvas
-    ? 'flex h-8 items-center gap-0.5'
-    : 'flex h-11 items-center gap-1 sm:h-12 sm:gap-1.5 lg:h-[3.25rem] lg:gap-2';
-  const compactBottomOverlayClassName = isLandscapeCompactCanvas
-    ? 'pointer-events-none absolute bottom-2 left-1/2 z-20 flex w-full -translate-x-1/2 justify-center px-2'
-    : 'pointer-events-none absolute bottom-3 left-1/2 z-20 flex w-full -translate-x-1/2 justify-center px-3';
-  const compactBottomNoticeClassName = isLandscapeCompactCanvas
-    ? 'pointer-events-auto max-w-[min(84vw,320px)] rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-panel) px-2 py-1.5 text-[10px] leading-[1.2] text-(--text-muted) shadow-lg backdrop-blur-xl'
-    : 'pointer-events-auto max-w-[min(92vw,620px)] rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-panel) px-3 py-2 text-xs text-(--text-muted) shadow-lg backdrop-blur-xl sm:text-[13px]';
-  const compactDisplayedEditorNotice =
-    isLandscapeCompactCanvas && resolvedEditorNotice === DEFAULT_EDITOR_NOTICE
-      ? 'Select an element, then double-tap to place it.'
-      : resolvedEditorNotice;
-  const toolRailBodyClassName = effectiveToolRailCollapsed
-    ? 'flex flex-1 flex-col items-center gap-2 overflow-y-auto px-1.5 py-2'
-    : 'flex-1 space-y-2.5 overflow-y-auto p-2';
-  const collapsedToolRailSectionClassName = 'flex w-full flex-col items-center gap-2';
-  const expandedToolRailSectionClassName = 'space-y-1.5';
-  const formulaPanelBottom = bottomNoticeHeight > 0 ? bottomNoticeHeight + (isLandscapeCompactCanvas ? 8 : 16) : isLandscapeCompactCanvas ? 10 : 56;
-  const formulaPanelStyle: CSSProperties = {
-    bottom: `${formulaPanelBottom}px`,
-  };
-  const canvasPanelClassName = 'surface-panel relative overflow-hidden rounded-3xl border border-(--border-subtle) shadow-sm';
-  const canvasFrameClassName = 'relative h-full w-full';
   const isEditorPage = pageMode === 'editor';
   const isGalleryPage = pageMode === 'gallery';
   const shouldShowToolRail = isEditorPage && activeView === 'editor';
