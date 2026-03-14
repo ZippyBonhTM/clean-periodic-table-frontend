@@ -11,6 +11,7 @@ import MoleculeImportModal from '@/components/organisms/molecular-editor/Molecul
 import MoleculePaletteRail from '@/components/organisms/molecular-editor/MoleculePaletteRail';
 import MoleculeSaveModal from '@/components/organisms/molecular-editor/MoleculeSaveModal';
 import MoleculeSummaryPanel from '@/components/organisms/molecular-editor/MoleculeSummaryPanel';
+import useEditorHistory from '@/components/organisms/molecular-editor/useEditorHistory';
 import type { ResolvedImportedPubChemCompound } from '@/shared/api/pubchemApi';
 import { mapSavedMoleculesErrorMessage } from '@/shared/hooks/useSavedMolecules';
 import {
@@ -1476,8 +1477,6 @@ function MolecularEditor({
   const [selectedAtomId, setSelectedAtomId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<EditorViewMode>('editor');
   const [bondOrder, setBondOrder] = useState<BondOrder>(1);
-  const [historyPast, setHistoryPast] = useState<SavedEditorDraft[]>([]);
-  const [historyFuture, setHistoryFuture] = useState<SavedEditorDraft[]>([]);
   const [isToolRailCollapsed, setIsToolRailCollapsed] = useState(true);
   const [paletteQuery, setPaletteQuery] = useState('');
   const [isPaletteSearchExpanded, setIsPaletteSearchExpanded] = useState(false);
@@ -1664,8 +1663,6 @@ function MolecularEditor({
       systematicNameDisplayValue,
     ],
   );
-  const canUndo = historyPast.length > 0;
-  const canRedo = historyFuture.length > 0;
   const compositionRows = useMemo(() => buildCompositionRows(focusedComponentModel), [focusedComponentModel]);
   const interactiveViewBox = useMemo(
     () =>
@@ -1806,12 +1803,6 @@ function MolecularEditor({
     ],
   );
 
-  const pushHistorySnapshot = useCallback((snapshot: SavedEditorDraft) => {
-    const nextSnapshot = cloneEditorSnapshot(snapshot);
-    setHistoryPast((currentPast) => [...currentPast.slice(-(EDITOR_HISTORY_LIMIT - 1)), nextSnapshot]);
-    setHistoryFuture([]);
-  }, []);
-
   const buildHistorySnapshot = useCallback((): SavedEditorDraft => {
     return buildEditorSnapshot({
       selectedAtomId: null,
@@ -1835,6 +1826,13 @@ function MolecularEditor({
     },
     [clearTransientEditorState],
   );
+
+  const { canRedo, canUndo, clearHistory, onRedo, onUndo, pushHistorySnapshot } = useEditorHistory<SavedEditorDraft>({
+    limit: EDITOR_HISTORY_LIMIT,
+    cloneSnapshot: cloneEditorSnapshot,
+    buildCurrentSnapshot: buildHistorySnapshot,
+    applySnapshot: applyEditorSnapshot,
+  });
 
   const buildSaveMoleculeInput = useCallback((): SaveMoleculeInput => {
     const snapshot = buildEditorSnapshot();
@@ -1882,14 +1880,13 @@ function MolecularEditor({
         },
         notice,
       );
-      setHistoryPast([]);
-      setHistoryFuture([]);
+      clearHistory();
       setActiveSavedMoleculeId(normalizedSavedMolecule.id);
       setNomenclatureFallback(null);
       setMoleculeName(normalizedSavedMolecule.name ?? '');
       setMoleculeEducationalDescription(normalizedSavedMolecule.educationalDescription ?? '');
     },
-    [applyEditorSnapshot],
+    [applyEditorSnapshot, clearHistory],
   );
 
   useEffect(() => {
@@ -1943,32 +1940,6 @@ function MolecularEditor({
       window.clearTimeout(timeoutId);
     };
   }, [applySavedMolecule, isSavedMoleculesLoading, normalizedSavedMolecules, pageMode, showGalleryFeedback]);
-
-  const onUndo = useCallback(() => {
-    if (historyPast.length === 0) {
-      return;
-    }
-
-    const previousSnapshot = historyPast[historyPast.length - 1];
-    const currentSnapshot = buildHistorySnapshot();
-
-    setHistoryPast((currentPast) => currentPast.slice(0, -1));
-    setHistoryFuture((currentFuture) => [...currentFuture.slice(-(EDITOR_HISTORY_LIMIT - 1)), currentSnapshot]);
-    applyEditorSnapshot(previousSnapshot, 'Undo applied.');
-  }, [applyEditorSnapshot, buildHistorySnapshot, historyPast]);
-
-  const onRedo = useCallback(() => {
-    if (historyFuture.length === 0) {
-      return;
-    }
-
-    const nextSnapshot = historyFuture[historyFuture.length - 1];
-    const currentSnapshot = buildHistorySnapshot();
-
-    setHistoryFuture((currentFuture) => currentFuture.slice(0, -1));
-    setHistoryPast((currentPast) => [...currentPast.slice(-(EDITOR_HISTORY_LIMIT - 1)), currentSnapshot]);
-    applyEditorSnapshot(nextSnapshot, 'Redo applied.');
-  }, [applyEditorSnapshot, buildHistorySnapshot, historyFuture]);
 
   const resetPaletteSearchViewport = useCallback(() => {
     setExpandedPaletteIndex(0);
