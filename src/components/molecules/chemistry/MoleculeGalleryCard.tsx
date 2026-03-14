@@ -3,8 +3,8 @@
 import { memo, useCallback, useMemo } from 'react';
 
 import MarkdownContent from '@/components/atoms/MarkdownContent';
-import MoleculeGalleryPreview from '@/components/organisms/molecular-editor/MoleculeGalleryPreview';
-import { formatSavedAtLabel, stripMarkdownForPreview } from '@/components/organisms/molecular-editor/moleculeGalleryUtils';
+import MoleculeGalleryPreview from '@/components/molecules/chemistry/MoleculeGalleryPreview';
+import { formatSavedAtLabel, stripMarkdownForPreview } from '@/components/molecules/chemistry/moleculeGalleryUtils';
 import type { SavedMolecule } from '@/shared/types/molecule';
 
 type MoleculeGalleryCardProps = {

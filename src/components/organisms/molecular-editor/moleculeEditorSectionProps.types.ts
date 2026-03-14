@@ -7,7 +7,7 @@ import type MoleculeEditorSection from '@/components/organisms/molecular-editor/
 import type MoleculeEditorToolRail from '@/components/organisms/molecular-editor/MoleculeEditorToolRail';
 import type MoleculeEditorTopBar from '@/components/organisms/molecular-editor/MoleculeEditorTopBar';
 import type MoleculePaletteRail from '@/components/organisms/molecular-editor/MoleculePaletteRail';
-import type MoleculeSummaryPanel from '@/components/organisms/molecular-editor/MoleculeSummaryPanel';
+import type MoleculeSummaryPanel from '@/components/molecules/chemistry/MoleculeSummaryPanel';
 import type { SavedMoleculeEditorState } from '@/shared/types/molecule';
 import type { MoleculeComponent, MoleculeModel } from '@/shared/utils/moleculeEditor';
 

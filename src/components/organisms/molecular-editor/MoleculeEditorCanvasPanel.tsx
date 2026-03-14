@@ -11,7 +11,7 @@ import type {
 import EditorCanvas from '@/components/organisms/molecular-editor/MoleculeEditorCanvas';
 import MoleculeEditorToolRail from '@/components/organisms/molecular-editor/MoleculeEditorToolRail';
 import MoleculePaletteRail from '@/components/organisms/molecular-editor/MoleculePaletteRail';
-import MoleculeSummaryPanel from '@/components/organisms/molecular-editor/MoleculeSummaryPanel';
+import MoleculeSummaryPanel from '@/components/molecules/chemistry/MoleculeSummaryPanel';
 import type { SavedMoleculeEditorState } from '@/shared/types/molecule';
 import type { MoleculeModel } from '@/shared/utils/moleculeEditor';
 

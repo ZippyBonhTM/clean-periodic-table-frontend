@@ -2,7 +2,7 @@
 
 
 import Button from '@/components/atoms/Button';
-import MoleculeGalleryCard from '@/components/organisms/molecular-editor/MoleculeGalleryCard';
+import MoleculeGalleryCard from '@/components/molecules/chemistry/MoleculeGalleryCard';
 import type { SavedMolecule } from '@/shared/types/molecule';
 
 type GalleryFeedback = {

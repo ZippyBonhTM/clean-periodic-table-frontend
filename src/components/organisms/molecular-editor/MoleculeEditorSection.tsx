@@ -2,7 +2,7 @@
 
 import type { ComponentProps, RefObject } from 'react';
 
-import MoleculeComponentFocusRail from '@/components/organisms/molecular-editor/MoleculeComponentFocusRail';
+import MoleculeComponentFocusRail from '@/components/molecules/chemistry/MoleculeComponentFocusRail';
 import MoleculeEditorCanvasPanel from '@/components/organisms/molecular-editor/MoleculeEditorCanvasPanel';
 import MoleculeEditorTopBar from '@/components/organisms/molecular-editor/MoleculeEditorTopBar';
 
