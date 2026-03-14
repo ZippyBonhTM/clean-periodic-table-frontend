@@ -9,7 +9,6 @@ import useMoleculeEditorActions from '@/components/organisms/molecular-editor/us
 import useMoleculeEditorLayout from '@/components/organisms/molecular-editor/useMoleculeEditorLayout';
 import {
   type CanvasViewport,
-  cloneEditorSnapshot,
   cloneMoleculeModel,
   type EditorViewMode,
   normalizeOptionalText,
@@ -21,7 +20,6 @@ import {
   resolveInteractiveViewBox,
 } from '@/components/organisms/molecular-editor/moleculeCanvasViewport';
 import useCanvasInteractions from '@/components/organisms/molecular-editor/useCanvasInteractions';
-import useEditorHistory from '@/components/organisms/molecular-editor/useEditorHistory';
 import useMoleculePaletteController from '@/components/organisms/molecular-editor/useMoleculePaletteController';
 import useMoleculeEditorSession from '@/components/organisms/molecular-editor/useMoleculeEditorSession';
 import useMoleculeEditorShortcuts from '@/components/organisms/molecular-editor/useMoleculeEditorShortcuts';
@@ -75,8 +73,6 @@ const DEFAULT_CANVAS_VIEWPORT: CanvasViewport = {
   offsetY: 0,
   scale: 1,
 };
-
-const EDITOR_HISTORY_LIMIT = 80;
 
 function isTextEditingElement(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
@@ -155,6 +151,9 @@ function MolecularEditor({
     applyEditorSnapshot,
     buildHistorySnapshot,
     buildSaveMoleculeInput,
+    canRedo,
+    canUndo,
+    clearHistory,
     compositionRows,
     focusedSummary,
     formula,
@@ -163,6 +162,9 @@ function MolecularEditor({
     galleryFeedback,
     moleculeComponents,
     normalizedSavedMolecules,
+    onRedo,
+    onUndo,
+    pushHistorySnapshot,
     resolvedFocusedComponentIndex,
     showGalleryFeedback,
     summary,
@@ -188,13 +190,6 @@ function MolecularEditor({
     setMolecule,
     setNomenclatureFallback,
     setSelectedAtomId,
-  });
-
-  const { canRedo, canUndo, clearHistory, onRedo, onUndo, pushHistorySnapshot } = useEditorHistory<SavedEditorDraft>({
-    limit: EDITOR_HISTORY_LIMIT,
-    cloneSnapshot: cloneEditorSnapshot,
-    buildCurrentSnapshot: buildHistorySnapshot,
-    applySnapshot: applyEditorSnapshot,
   });
 
   const applySavedMolecule = useCallback(

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 
+import useEditorHistory from '@/components/organisms/molecular-editor/useEditorHistory';
 import type { SaveMoleculeInput, SavedMolecule } from '@/shared/types/molecule';
 import type { ChemicalElement } from '@/shared/types/element';
 import {
@@ -34,6 +35,7 @@ import {
 } from '@/components/organisms/molecular-editor/moleculeEditorSession';
 
 const GALLERY_FEEDBACK_AUTO_HIDE_MS = 4200;
+const EDITOR_HISTORY_LIMIT = 80;
 
 type UseMoleculeEditorSessionOptions = {
   activeElement: ChemicalElement | null;
@@ -281,6 +283,13 @@ export default function useMoleculeEditorSession({
     ],
   );
 
+  const { canRedo, canUndo, clearHistory, onRedo, onUndo, pushHistorySnapshot } = useEditorHistory<SavedEditorDraft>({
+    limit: EDITOR_HISTORY_LIMIT,
+    cloneSnapshot: cloneEditorSnapshot,
+    buildCurrentSnapshot: buildHistorySnapshot,
+    applySnapshot: applyEditorSnapshot,
+  });
+
   const buildSaveMoleculeInput = useCallback((): SaveMoleculeInput => {
     const snapshot = buildEditorSnapshot();
     const normalized = normalizeMoleculeModel(snapshot.molecule);
@@ -313,6 +322,9 @@ export default function useMoleculeEditorSession({
     buildEditorSnapshot,
     buildHistorySnapshot,
     buildSaveMoleculeInput,
+    canRedo,
+    canUndo,
+    clearHistory,
     compositionRows,
     focusedSummary,
     formula,
@@ -321,6 +333,9 @@ export default function useMoleculeEditorSession({
     galleryFeedback,
     moleculeComponents,
     normalizedSavedMolecules,
+    onRedo,
+    onUndo,
+    pushHistorySnapshot,
     resolvedFocusedComponentIndex,
     showGalleryFeedback,
     summary,
