@@ -6,8 +6,10 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from
 
 import Button from '@/components/atoms/Button';
 import MarkdownContent from '@/components/atoms/MarkdownContent';
+import MoleculeComponentFocusRail from '@/components/organisms/molecular-editor/MoleculeComponentFocusRail';
 import MoleculeImportModal from '@/components/organisms/molecular-editor/MoleculeImportModal';
 import MoleculeSaveModal from '@/components/organisms/molecular-editor/MoleculeSaveModal';
+import MoleculeSummaryPanel from '@/components/organisms/molecular-editor/MoleculeSummaryPanel';
 import type { ResolvedImportedPubChemCompound } from '@/shared/api/pubchemApi';
 import { mapSavedMoleculesErrorMessage } from '@/shared/hooks/useSavedMolecules';
 import {
@@ -3584,9 +3586,6 @@ function MolecularEditor({
     : responsiveLayoutWidth < 430
       ? 'flex min-w-0 flex-nowrap items-center gap-1.5'
       : 'flex flex-wrap items-center gap-2';
-  const componentFocusRailClassName = isLandscapeCompactCanvas
-    ? 'flex flex-wrap items-center gap-1.5'
-    : 'flex flex-wrap items-center gap-2';
   const viewModeTabsClassName = isLandscapeCompactCanvas
     ? 'flex items-center gap-0.5 rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) p-0.5 shadow-lg backdrop-blur-xl'
     : 'flex items-center gap-1 rounded-xl border border-(--border-subtle) bg-(--surface-overlay-mid) p-1 shadow-lg backdrop-blur-xl';
@@ -3678,20 +3677,6 @@ function MolecularEditor({
   const formulaPanelStyle: CSSProperties = {
     bottom: `${formulaPanelBottom}px`,
   };
-  const formulaPanelHeightClassName =
-    formulaStatsRows.length > 5
-      ? isLandscapeCompactCanvas
-        ? 'h-[84px]'
-        : 'h-[108px] sm:h-[124px]'
-      : isLandscapeCompactCanvas
-        ? 'h-[72px]'
-        : 'h-[92px] sm:h-[108px]';
-  const formulaPanelCollapsedWidthClassName = isLandscapeCompactCanvas ? 'w-7' : 'w-8 sm:w-9';
-  const formulaPanelExpandedWidthClassName = isLandscapeCompactCanvas
-    ? 'w-[min(60vw,10.5rem)]'
-    : 'w-[min(72vw,12rem)] sm:w-48 lg:w-56';
-  const formulaPanelWidthClassName = isFormulaPanelOpen ? formulaPanelExpandedWidthClassName : formulaPanelCollapsedWidthClassName;
-  const formulaPanelButtonClassName = isLandscapeCompactCanvas ? 'w-7 text-[6px]' : 'w-8 text-[7px] sm:w-9 sm:text-[8px]';
   const canvasPanelClassName = 'surface-panel relative overflow-hidden rounded-3xl border border-(--border-subtle) shadow-sm';
   const canvasFrameClassName = 'relative h-full w-full';
   const isEditorPage = pageMode === 'editor';
@@ -3825,31 +3810,12 @@ function MolecularEditor({
         </div>
 
         {shouldShowComponentFocusRail ? (
-          <div className={componentFocusRailClassName}>
-            <span className="rounded-full border border-(--border-subtle) bg-(--surface-overlay-soft) px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)">
-              {moleculeComponents.length} components
-            </span>
-            {moleculeComponents.map((component, index) => {
-              const isFocused = index === resolvedFocusedComponentIndex;
-              const componentFormula = buildMolecularFormula(component.model);
-
-              return (
-                <button
-                  key={component.atomIds.join(':')}
-                  type="button"
-                  onClick={() => onFocusComponent(index)}
-                  className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-                    isFocused
-                      ? 'border-(--accent) bg-(--accent)/18 text-foreground'
-                      : 'border-(--border-subtle) bg-(--surface-overlay-mid) text-(--text-muted) hover:border-(--accent) hover:text-foreground'
-                  }`}
-                  title={`Focus Mol ${index + 1}${componentFormula.length > 0 ? ` (${componentFormula})` : ''}`}
-                >
-                  Mol {index + 1}
-                </button>
-              );
-            })}
-          </div>
+          <MoleculeComponentFocusRail
+            components={moleculeComponents}
+            focusedComponentIndex={resolvedFocusedComponentIndex}
+            isCompact={isLandscapeCompactCanvas}
+            onFocusComponent={onFocusComponent}
+          />
         ) : null}
       </div>
 
@@ -4247,60 +4213,13 @@ function MolecularEditor({
         )}
 
         {isSimplifiedView ? null : (
-          <div className="absolute right-3 z-20" style={formulaPanelStyle}>
-            <div
-              className={`relative overflow-hidden rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-soft) shadow-lg backdrop-blur-xl transition-[width,opacity] duration-300 ${formulaPanelHeightClassName} ${formulaPanelWidthClassName} ${
-                isFormulaPanelOpen ? 'opacity-100' : 'opacity-95'
-              }`}
-            >
-              <div className={`absolute inset-y-0 right-0 flex items-stretch ${formulaPanelExpandedWidthClassName}`}>
-                <div
-                  className={`min-w-0 flex-1 overflow-hidden transition-opacity duration-200 ${
-                    isFormulaPanelOpen ? 'opacity-100' : 'opacity-0'
-                  }`}
-                  aria-hidden={!isFormulaPanelOpen}
-                >
-                  <table className={`h-full w-full table-fixed border-collapse text-left text-(--text-muted) ${isLandscapeCompactCanvas ? 'text-[7px]' : 'text-[8px] sm:text-[9px]'}`}>
-                    <tbody className="h-full">
-                        {formulaStatsRows.map((row, index) => {
-                          const resolvedLabel = isLandscapeCompactCanvas ? row.compactLabel : row.label;
-                          const resolvedValue =
-                            isLandscapeCompactCanvas && row.compactValue !== undefined ? row.compactValue : row.value;
-
-                          return (
-                          <tr key={row.title ?? row.label} className={index % 2 === 0 ? 'bg-(--surface-zebra-odd)' : 'bg-(--surface-zebra-even)'}>
-                            <th
-                              className={`border-r border-(--border-subtle)/35 font-semibold uppercase tracking-[0.08em] text-(--text-muted) ${isLandscapeCompactCanvas ? 'w-[34%] px-1 py-[2px]' : 'w-[36%] px-1.5 py-[3px]'}`}
-                              title={row.title ?? row.label}
-                            >
-                              {resolvedLabel}
-                            </th>
-                            <td
-                              className={`min-w-0 overflow-hidden text-right font-semibold text-foreground tabular-nums ${isLandscapeCompactCanvas ? 'px-1 py-[2px]' : 'px-1.5 py-[3px]'}`}
-                              title={row.value}
-                            >
-                              <span className="block truncate leading-tight">{resolvedValue}</span>
-                            </td>
-                          </tr>
-                          );
-                        })}
-                    </tbody>
-                  </table>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsFormulaPanelOpen((current) => !current)}
-                  className={`inline-flex h-full shrink-0 items-center justify-center border-l border-(--border-subtle)/70 font-semibold uppercase tracking-[0.2em] text-(--text-muted) transition-colors hover:text-foreground ${formulaPanelButtonClassName}`}
-                  style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
-                  aria-label={isFormulaPanelOpen ? 'Hide summary' : 'Show summary'}
-                  title={isFormulaPanelOpen ? 'Hide summary' : 'Show summary'}
-                >
-                  SUMMARY
-                </button>
-              </div>
-            </div>
-          </div>
+          <MoleculeSummaryPanel
+            isCompact={isLandscapeCompactCanvas}
+            isOpen={isFormulaPanelOpen}
+            rows={formulaStatsRows}
+            style={formulaPanelStyle}
+            onToggle={() => setIsFormulaPanelOpen((current) => !current)}
+          />
         )}
       </div>
 
