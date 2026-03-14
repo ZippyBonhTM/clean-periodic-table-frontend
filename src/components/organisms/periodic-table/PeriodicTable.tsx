@@ -1,41 +1,35 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import { createPortal } from 'react-dom';
+import {
+  memo,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 
-import Button from '@/components/atoms/Button';
 import type { ChemicalElement } from '@/shared/types/element';
 import { matchesElementQuery, sortElements } from '@/shared/utils/elementPresentation';
 
-type PeriodicViewMode = 'classic' | 'category' | 'compact';
-
-type SortMode = 'number' | 'name' | 'symbol' | 'mass';
-type PeriodicTableMode = 'explore' | 'table';
+import PeriodicTableExploreControls from './PeriodicTableExploreControls';
+import PeriodicTableOptionMenu from './PeriodicTableOptionMenu';
+import {
+  SORT_OPTIONS,
+  VIEW_OPTIONS,
+  type FloatingMenuPosition,
+  type PeriodicTableMode,
+  type PeriodicViewMode,
+  type SortMode,
+} from './periodicTable.types';
 
 type PeriodicTableProps = {
   elements: ChemicalElement[];
   mode?: PeriodicTableMode;
 };
-
-type FloatingMenuPosition = {
-  left: number;
-  top: number;
-  width: number;
-};
-
-const VIEW_OPTIONS: Array<{ mode: PeriodicViewMode; label: string }> = [
-  { mode: 'classic', label: 'Classic' },
-  { mode: 'category', label: 'Category' },
-  { mode: 'compact', label: 'Compact' },
-];
-
-const SORT_OPTIONS: Array<{ mode: SortMode; label: string }> = [
-  { mode: 'number', label: 'Atomic Number' },
-  { mode: 'name', label: 'Name' },
-  { mode: 'symbol', label: 'Symbol' },
-  { mode: 'mass', label: 'Atomic Mass' },
-];
 
 const ClassicPeriodicView = dynamic(
   () => import('@/components/organisms/periodic-table/ClassicPeriodicView'),
@@ -50,27 +44,6 @@ const ElementDetailsModal = dynamic(
   () => import('@/components/organisms/periodic-table/ElementDetailsModal'),
   { ssr: false },
 );
-
-function WideChevron({ isOpen }: { isOpen: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 16 10"
-      aria-hidden="true"
-      className={`h-1.5 w-2.5 transition-transform duration-200 [transform-origin:50%_50%] ${
-        isOpen ? 'rotate-180' : 'rotate-0'
-      }`}
-      fill="none"
-    >
-      <path
-        d="M1.25 2.25L8 8L14.75 2.25"
-        stroke="currentColor"
-        strokeWidth="1.9"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
   const [viewMode, setViewMode] = useState<PeriodicViewMode>('classic');
@@ -125,7 +98,6 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
     const viewportWidth = Math.max(window.innerWidth - 48, 320);
     const viewportHeight = Math.max(window.innerHeight - 180, 280);
 
-    // Conservative baseline for 18x10 classic grid including gaps.
     const classicBaseWidth = 1804;
     const classicBaseHeight = 998;
     const fitScale = Math.min(viewportWidth / classicBaseWidth, viewportHeight / classicBaseHeight);
@@ -285,6 +257,7 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
 
     setViewMenuPosition(getFloatingMenuPosition(viewToggleRef.current, 176));
   }, [getFloatingMenuPosition]);
+
   const scheduleViewMenuPositionSync = useCallback(() => {
     if (viewMenuFrameRef.current !== null) {
       return;
@@ -303,6 +276,7 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
 
     setSortMenuPosition(getFloatingMenuPosition(sortToggleRef.current, 208));
   }, [getFloatingMenuPosition]);
+
   const scheduleSortMenuPositionSync = useCallback(() => {
     if (sortMenuFrameRef.current !== null) {
       return;
@@ -413,243 +387,89 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
     return SORT_OPTIONS.find((option) => option.mode === sortMode) ?? SORT_OPTIONS[0];
   }, [sortMode]);
 
-  const compactViewMenuPortal =
-    isViewMenuOpen && viewMenuPosition !== null && typeof document !== 'undefined'
-      ? createPortal(
-          <div
-            className="fixed inset-0 z-[70]"
-            onClick={() => setIsViewMenuOpen(false)}
-            aria-hidden="true"
-          >
-            <div
-              className="absolute inset-0 bg-transparent"
-            />
-            <div
-              className="absolute origin-top-left rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] p-2 shadow-lg animate-[rise-fade_180ms_ease-out]"
-              style={{
-                left: viewMenuPosition.left,
-                top: viewMenuPosition.top,
-                width: viewMenuPosition.width,
-              }}
-              onClick={(event) => event.stopPropagation()}
-              role="menu"
-              aria-label="View options"
-            >
-              <div className="flex flex-col gap-1.5">
-                {VIEW_OPTIONS.map((option) => (
-                  <Button
-                    key={option.mode}
-                    type="button"
-                    variant={option.mode === viewMode ? 'secondary' : 'ghost'}
-                    size="sm"
-                    align="left"
-                    onClick={() => {
-                      startTransition(() => {
-                        setViewMode(option.mode);
-                      });
-                      setIsViewMenuOpen(false);
-                    }}
-                    className="w-full"
-                    role="menuitem"
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )
-      : null;
-
-  const sortMenuPortal =
-    isSortMenuOpen && sortMenuPosition !== null && typeof document !== 'undefined'
-      ? createPortal(
-          <div
-            className="fixed inset-0 z-[71]"
-            onClick={() => setIsSortMenuOpen(false)}
-            aria-hidden="true"
-          >
-            <div className="absolute inset-0 bg-transparent" />
-            <div
-              className="absolute origin-top-left rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] p-2 shadow-lg animate-[rise-fade_180ms_ease-out]"
-              style={{
-                left: sortMenuPosition.left,
-                top: sortMenuPosition.top,
-                width: sortMenuPosition.width,
-              }}
-              onClick={(event) => event.stopPropagation()}
-              role="menu"
-              aria-label="Sort options"
-            >
-              <div className="flex flex-col gap-1.5">
-                {SORT_OPTIONS.map((option) => (
-                  <Button
-                    key={option.mode}
-                    type="button"
-                    variant={option.mode === sortMode ? 'secondary' : 'ghost'}
-                    size="sm"
-                    align="left"
-                    onClick={() => {
-                      startTransition(() => {
-                        setSortMode(option.mode);
-                      });
-                      setIsSortMenuOpen(false);
-                    }}
-                    className="w-full"
-                    role="menuitem"
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )
-      : null;
-
   return (
     <section className="space-y-4">
       {isExploreMode ? (
-        <div className="surface-panel rounded-2xl border border-[var(--border-subtle)] overflow-visible [contain:none] p-4 md:p-5">
-          <div className="flex flex-col gap-3 min-[768px]:flex-row min-[768px]:items-start">
-            <div className="min-w-0 min-[768px]:flex-[1_1_360px]">
-              <label
-                htmlFor="element-search"
-                className="mb-1 block text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]"
-              >
-                Search Element
-              </label>
-              <input
-                id="element-search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Name, symbol, number, phase, category..."
-                className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)]"
-              />
+        <PeriodicTableExploreControls
+          query={query}
+          deferredQuery={deferredQuery}
+          isPendingTransition={isPendingTransition}
+          totalElements={elements.length}
+          visibleElementsCount={visibleElements.length}
+          viewMode={viewMode}
+          isViewMenuOpen={isViewMenuOpen}
+          isSortMenuOpen={isSortMenuOpen}
+          currentSortLabel={currentSortOption.label}
+          onQueryChange={setQuery}
+          onToggleSortMenu={() => {
+            setIsSortMenuOpen((previous) => {
+              const nextState = !previous;
 
-              <div className="mt-3 flex flex-wrap items-end gap-2">
-                <div className="relative">
-                  <label
-                    htmlFor="sort-mode-toggle"
-                    className="mb-1 block text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]"
-                  >
-                    Sort
-                  </label>
-                  <Button
-                    id="sort-mode-toggle"
-                    type="button"
-                    ref={sortToggleRef}
-                    variant="ghost"
-                    size="md"
-                    align="between"
-                    className="min-w-[172px] whitespace-nowrap"
-                    onClick={() => {
-                      setIsSortMenuOpen((previous) => {
-                        const nextState = !previous;
+              if (nextState) {
+                setIsViewMenuOpen(false);
+              }
 
-                        if (nextState) {
-                          setIsViewMenuOpen(false);
-                        }
+              return nextState;
+            });
+          }}
+          onLuckySearch={onLuckySearch}
+          onClearQuery={onClearQuery}
+          onToggleViewMenu={() => {
+            setIsViewMenuOpen((previous) => {
+              const nextState = !previous;
 
-                        return nextState;
-                      });
-                    }}
-                    aria-expanded={isSortMenuOpen}
-                    aria-label="Toggle sort options"
-                  >
-                    <span>{currentSortOption.label}</span>
-                    <WideChevron isOpen={isSortMenuOpen} />
-                  </Button>
-                </div>
+              if (nextState) {
+                setIsSortMenuOpen(false);
+              }
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="md"
-                  onClick={onLuckySearch}
-                >
-                  Lucky Search
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="md"
-                  onClick={onClearQuery}
-                >
-                  Clear
-                </Button>
-
-                <div className="relative min-[768px]:hidden">
-                  <Button
-                    type="button"
-                    ref={viewToggleRef}
-                    variant="ghost"
-                    size="md"
-                    align="between"
-                    className="min-w-[108px] whitespace-nowrap"
-                    onClick={() => {
-                      setIsViewMenuOpen((previous) => {
-                        const nextState = !previous;
-
-                        if (nextState) {
-                          setIsSortMenuOpen(false);
-                        }
-
-                        return nextState;
-                      });
-                    }}
-                    aria-expanded={isViewMenuOpen}
-                    aria-label="Toggle view options"
-                  >
-                    View
-                    <WideChevron isOpen={isViewMenuOpen} />
-                  </Button>
-                </div>
-              </div>
-
-              <p className="mt-3 text-xs text-[var(--text-muted)]">
-                Showing {visibleElements.length} of {elements.length} elements.
-              </p>
-              {query !== deferredQuery || isPendingTransition ? (
-                <p className="mt-1 text-xs text-[var(--text-muted)]">Updating view...</p>
-              ) : null}
-            </div>
-
-            <div className="hidden min-[768px]:ml-auto min-[768px]:w-fit min-[768px]:shrink-0 min-[768px]:block">
-              <div className="rounded-xl border border-[var(--border-subtle)] px-2.5 py-2">
-                <p className="mb-1 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]">View</p>
-                <div className="flex flex-col items-start gap-1.5">
-                  {VIEW_OPTIONS.map((option) => (
-                    <Button
-                      key={option.mode}
-                      type="button"
-                      variant={option.mode === viewMode ? 'secondary' : 'ghost'}
-                      size="sm"
-                      align="left"
-                      onClick={() => {
-                        startTransition(() => {
-                          setViewMode(option.mode);
-                        });
-                      }}
-                      className="w-full"
-                    >
-                      {option.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+              return nextState;
+            });
+          }}
+          onSelectViewMode={(nextViewMode) => {
+            startTransition(() => {
+              setViewMode(nextViewMode);
+            });
+            setIsViewMenuOpen(false);
+          }}
+          sortToggleRef={sortToggleRef}
+          viewToggleRef={viewToggleRef}
+        />
       ) : (
         <div className="surface-panel rounded-2xl border border-[var(--border-subtle)] px-4 py-3 text-xs text-[var(--text-muted)] shadow-sm">
           Dedicated periodic table mode. Click an element to open full details.
         </div>
       )}
-      {sortMenuPortal}
-      {compactViewMenuPortal}
+
+      <PeriodicTableOptionMenu
+        isOpen={isSortMenuOpen}
+        position={sortMenuPosition}
+        ariaLabel="Sort options"
+        options={SORT_OPTIONS}
+        selectedMode={sortMode}
+        onClose={() => setIsSortMenuOpen(false)}
+        onSelect={(nextSortMode) => {
+          startTransition(() => {
+            setSortMode(nextSortMode as SortMode);
+          });
+          setIsSortMenuOpen(false);
+        }}
+        zIndexClassName="z-[71]"
+      />
+
+      <PeriodicTableOptionMenu
+        isOpen={isViewMenuOpen}
+        position={viewMenuPosition}
+        ariaLabel="View options"
+        options={VIEW_OPTIONS}
+        selectedMode={viewMode}
+        onClose={() => setIsViewMenuOpen(false)}
+        onSelect={(nextViewMode) => {
+          startTransition(() => {
+            setViewMode(nextViewMode as PeriodicViewMode);
+          });
+          setIsViewMenuOpen(false);
+        }}
+      />
 
       <div
         ref={fullscreenContainerRef}
