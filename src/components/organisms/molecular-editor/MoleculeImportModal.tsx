@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 
 import FloatingModal from '@/components/molecules/FloatingModal';
-import MoleculeImportResultCard from '@/components/organisms/molecular-editor/MoleculeImportResultCard';
+import MoleculeImportResultCard from '@/components/molecules/chemistry/MoleculeImportResultCard';
 import MoleculeImportSidebar from '@/components/organisms/molecular-editor/MoleculeImportSidebar';
 import {
   importPubChemCompound,
