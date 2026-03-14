@@ -1,16 +1,22 @@
 'use client';
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 
 import MoleculeGallerySection from '@/components/organisms/molecular-editor/MoleculeGallerySection';
 import MoleculeEditorOverlays from '@/components/organisms/molecular-editor/MoleculeEditorOverlays';
 import MoleculeEditorSection from '@/components/organisms/molecular-editor/MoleculeEditorSection';
 import useMoleculeEditorActions from '@/components/organisms/molecular-editor/useMoleculeEditorActions';
+import {
+  BOND_ORDER_OPTIONS,
+  DEFAULT_CANVAS_VIEWPORT,
+  DEFAULT_EDITOR_NOTICE,
+  EMPTY_MOLECULE,
+  isTextEditingElement,
+  VIEW_OPTIONS,
+} from '@/components/organisms/molecular-editor/moleculeEditorConfig';
 import useMoleculeEditorLayout from '@/components/organisms/molecular-editor/useMoleculeEditorLayout';
 import {
-  type CanvasViewport,
   cloneMoleculeModel,
-  type EditorViewMode,
   normalizeSnapshotSelectedAtomId,
   type SavedEditorDraft,
 } from '@/components/organisms/molecular-editor/moleculeEditorSession';
@@ -21,13 +27,13 @@ import useCanvasInteractions from '@/components/organisms/molecular-editor/useCa
 import useMoleculePaletteController from '@/components/organisms/molecular-editor/useMoleculePaletteController';
 import useMoleculeEditorSession from '@/components/organisms/molecular-editor/useMoleculeEditorSession';
 import useMoleculeEditorShortcuts from '@/components/organisms/molecular-editor/useMoleculeEditorShortcuts';
+import useMoleculeEditorState from '@/components/organisms/molecular-editor/useMoleculeEditorState';
 import useSavedMoleculeEditorWorkflow from '@/components/organisms/molecular-editor/useSavedMoleculeEditorWorkflow';
 import type {
   SaveMoleculeInput,
   SavedMolecule,
 } from '@/shared/types/molecule';
 import type { ChemicalElement } from '@/shared/types/element';
-import { type BondOrder, type MoleculeModel } from '@/shared/utils/moleculeEditor';
 
 type MolecularEditorProps = {
   pageMode: 'editor' | 'gallery';
@@ -42,45 +48,6 @@ type MolecularEditorProps = {
   onDeleteSavedMolecule: (moleculeId: string) => Promise<void>;
 };
 
-const VIEW_OPTIONS: Array<{ mode: EditorViewMode; label: string }> = [
-  { mode: 'editor', label: 'Editor' },
-  { mode: 'structural', label: 'Structural' },
-  { mode: 'simplified', label: 'Simplified' },
-  { mode: 'stick', label: 'Stick' },
-];
-
-const BOND_ORDER_OPTIONS: Array<{ order: BondOrder; label: string }> = [
-  { order: 1, label: 'Single' },
-  { order: 2, label: 'Double' },
-  { order: 3, label: 'Triple' },
-];
-
-const DEFAULT_EDITOR_NOTICE = 'Select an element, then double-click or double-tap the canvas to place it.';
-
-const EMPTY_MOLECULE: MoleculeModel = {
-  atoms: [],
-  bonds: [],
-};
-
-const DEFAULT_CANVAS_VIEWPORT: CanvasViewport = {
-  offsetX: 0,
-  offsetY: 0,
-  scale: 1,
-};
-
-function isTextEditingElement(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  return (
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target.isContentEditable ||
-    target.closest('[contenteditable="true"]') !== null
-  );
-}
-
 function MolecularEditor({
   pageMode,
   elements,
@@ -93,24 +60,45 @@ function MolecularEditor({
   onUpdateSavedMolecule,
   onDeleteSavedMolecule,
 }: MolecularEditorProps) {
-  const [molecule, setMolecule] = useState<MoleculeModel>(EMPTY_MOLECULE);
-  const [selectedAtomId, setSelectedAtomId] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<EditorViewMode>('editor');
-  const [bondOrder, setBondOrder] = useState<BondOrder>(1);
-  const [isToolRailCollapsed, setIsToolRailCollapsed] = useState(true);
-  const [isFormulaPanelOpen, setIsFormulaPanelOpen] = useState(false);
-  const [editorNotice, setEditorNotice] = useState<string | null>(null);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [isFloatingSaveShortcutExpanded, setIsFloatingSaveShortcutExpanded] = useState(false);
-  const [activeSavedMoleculeId, setActiveSavedMoleculeId] = useState<string | null>(null);
-  const [focusedComponentIndex, setFocusedComponentIndex] = useState(0);
-  const [nomenclatureFallback, setNomenclatureFallback] = useState<string | null>(null);
-  const [moleculeName, setMoleculeName] = useState('');
-  const [moleculeEducationalDescription, setMoleculeEducationalDescription] = useState('');
-  const [canvasViewport, setCanvasViewport] = useState<CanvasViewport>(DEFAULT_CANVAS_VIEWPORT);
-  const svgRef = useRef<SVGSVGElement | null>(null);
-  const clearPendingCanvasPlacementRef = useRef<() => void>(() => undefined);
-  const clearTransientEditorStateRef = useRef<() => void>(() => undefined);
+  const {
+    activeSavedMoleculeId,
+    activeView,
+    bondOrder,
+    canvasViewport,
+    clearPendingCanvasPlacementRef,
+    clearTransientEditorStateRef,
+    editorNotice,
+    focusedComponentIndex,
+    isFloatingSaveShortcutExpanded,
+    isFormulaPanelOpen,
+    isImportModalOpen,
+    isToolRailCollapsed,
+    molecule,
+    moleculeEducationalDescription,
+    moleculeName,
+    nomenclatureFallback,
+    onCloseImportModal,
+    onOpenImportModal,
+    onSetActiveView,
+    onSetBondOrder,
+    selectedAtomId,
+    setActiveSavedMoleculeId,
+    setActiveView,
+    setBondOrder,
+    setCanvasViewport,
+    setEditorNotice,
+    setFocusedComponentIndex,
+    setIsFloatingSaveShortcutExpanded,
+    setIsFormulaPanelOpen,
+    setIsImportModalOpen,
+    setIsToolRailCollapsed,
+    setMolecule,
+    setMoleculeEducationalDescription,
+    setMoleculeName,
+    setNomenclatureFallback,
+    setSelectedAtomId,
+    svgRef,
+  } = useMoleculeEditorState();
 
   const {
     activeElement,
@@ -207,7 +195,7 @@ function MolecularEditor({
     activeSavedMoleculeId,
     applyEditorSnapshot,
     buildSaveMoleculeInput,
-    closeImportModal: () => setIsImportModalOpen(false),
+    closeImportModal: onCloseImportModal,
     collapseFloatingSaveShortcut: () => setIsFloatingSaveShortcutExpanded(false),
     clearHistory,
     formula,
@@ -298,21 +286,6 @@ function MolecularEditor({
   );
   const zoomPercent = Math.round(canvasViewport.scale * 100);
 
-  const onSetActiveView = useCallback(
-    (nextView: EditorViewMode) => {
-      setIsFloatingSaveShortcutExpanded(false);
-      setActiveView(nextView);
-    },
-    [],
-  );
-
-  const onSetBondOrder = useCallback(
-    (nextBondOrder: BondOrder) => {
-      setBondOrder(nextBondOrder);
-    },
-    [],
-  );
-
   const {
     handleAtomActivate,
     handleCanvasPlacement,
@@ -388,17 +361,12 @@ function MolecularEditor({
   useEffect(() => {
     clearPendingCanvasPlacementRef.current = clearPendingCanvasPlacement;
     clearTransientEditorStateRef.current = clearTransientEditorState;
-  }, [clearPendingCanvasPlacement, clearTransientEditorState]);
-
-  const onOpenImportModal = useCallback(() => {
-    setIsFloatingSaveShortcutExpanded(false);
-    onCloseSaveModal();
-    setIsImportModalOpen(true);
-  }, [onCloseSaveModal]);
-
-  const onCloseImportModal = useCallback(() => {
-    setIsImportModalOpen(false);
-  }, []);
+  }, [
+    clearPendingCanvasPlacement,
+    clearPendingCanvasPlacementRef,
+    clearTransientEditorState,
+    clearTransientEditorStateRef,
+  ]);
 
   useMoleculeEditorShortcuts({
     isImportModalOpen,
@@ -425,7 +393,7 @@ function MolecularEditor({
             importButtonClassName,
             isLandscapeCompactCanvas,
             isSimplifiedView,
-            onOpenImportModal,
+            onOpenImportModal: () => onOpenImportModal(onCloseSaveModal),
             onResetCanvasView,
             onSetActiveView,
             onZoomIn,
