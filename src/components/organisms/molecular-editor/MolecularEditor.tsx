@@ -11,8 +11,6 @@ import {
   type CanvasViewport,
   cloneMoleculeModel,
   type EditorViewMode,
-  normalizeOptionalText,
-  normalizeSavedMoleculeRecord,
   normalizeSnapshotSelectedAtomId,
   type SavedEditorDraft,
 } from '@/components/organisms/molecular-editor/moleculeEditorSession';
@@ -23,17 +21,13 @@ import useCanvasInteractions from '@/components/organisms/molecular-editor/useCa
 import useMoleculePaletteController from '@/components/organisms/molecular-editor/useMoleculePaletteController';
 import useMoleculeEditorSession from '@/components/organisms/molecular-editor/useMoleculeEditorSession';
 import useMoleculeEditorShortcuts from '@/components/organisms/molecular-editor/useMoleculeEditorShortcuts';
-import useSavedMoleculeWorkflow from '@/components/organisms/molecular-editor/useSavedMoleculeWorkflow';
+import useSavedMoleculeEditorWorkflow from '@/components/organisms/molecular-editor/useSavedMoleculeEditorWorkflow';
 import type {
   SaveMoleculeInput,
   SavedMolecule,
 } from '@/shared/types/molecule';
 import type { ChemicalElement } from '@/shared/types/element';
-import {
-  syncMoleculeIdCounter,
-  type BondOrder,
-  type MoleculeModel,
-} from '@/shared/utils/moleculeEditor';
+import { type BondOrder, type MoleculeModel } from '@/shared/utils/moleculeEditor';
 
 type MolecularEditorProps = {
   pageMode: 'editor' | 'gallery';
@@ -192,38 +186,10 @@ function MolecularEditor({
     setSelectedAtomId,
   });
 
-  const applySavedMolecule = useCallback(
-    (savedMolecule: SavedMolecule, notice: string) => {
-      const normalizedSavedMolecule = normalizeSavedMoleculeRecord(savedMolecule);
-
-      syncMoleculeIdCounter(normalizedSavedMolecule.molecule);
-      applyEditorSnapshot(
-        {
-          molecule: cloneMoleculeModel(normalizedSavedMolecule.molecule),
-          selectedAtomId: normalizedSavedMolecule.editorState.selectedAtomId,
-          nomenclatureFallback: null,
-          activeView: normalizedSavedMolecule.editorState.activeView,
-          bondOrder: normalizedSavedMolecule.editorState.bondOrder,
-          canvasViewport: {
-            offsetX: normalizedSavedMolecule.editorState.canvasViewport.offsetX,
-            offsetY: normalizedSavedMolecule.editorState.canvasViewport.offsetY,
-            scale: normalizedSavedMolecule.editorState.canvasViewport.scale,
-          },
-        },
-        notice,
-      );
-      clearHistory();
-      setActiveSavedMoleculeId(normalizedSavedMolecule.id);
-      setNomenclatureFallback(null);
-      setMoleculeName(normalizedSavedMolecule.name ?? '');
-      setMoleculeEducationalDescription(normalizedSavedMolecule.educationalDescription ?? '');
-    },
-    [applyEditorSnapshot, clearHistory],
-  );
-
   const {
-    activeSavedMolecule,
+    currentSaveLabel,
     hasCheckedPendingSavedMolecule,
+    hasCurrentSavedSelection,
     hasPendingSavedMolecule,
     isSaveModalOpen,
     onCloseSaveModal,
@@ -237,13 +203,16 @@ function MolecularEditor({
     onSaveAsNewMolecule,
     onUpdateCurrentSavedMolecule,
     resolvedActiveSavedMoleculeId,
-  } = useSavedMoleculeWorkflow({
+  } = useSavedMoleculeEditorWorkflow({
     activeSavedMoleculeId,
-    applySavedMolecule,
+    applyEditorSnapshot,
     buildSaveMoleculeInput,
     closeImportModal: () => setIsImportModalOpen(false),
     collapseFloatingSaveShortcut: () => setIsFloatingSaveShortcutExpanded(false),
+    clearHistory,
+    formula,
     isSavedMoleculesLoading,
+    moleculeName,
     normalizedSavedMolecules,
     onCreateSavedMolecule,
     onDeleteSavedMolecule,
@@ -252,6 +221,7 @@ function MolecularEditor({
     setActiveSavedMoleculeId,
     setMoleculeEducationalDescription,
     setMoleculeName,
+    setNomenclatureFallback,
     showGalleryFeedback,
     summaryAtomCount: summary.atomCount,
   });
@@ -443,12 +413,6 @@ function MolecularEditor({
   const shouldShowToolRail = isEditorPage && activeView === 'editor';
   const shouldShowFloatingSaveShortcut = isEditorPage && activeView !== 'editor';
   const shouldShowComponentFocusRail = moleculeComponents.length > 1;
-  const hasCurrentSavedSelection = resolvedActiveSavedMoleculeId !== null;
-  const currentSaveLabel =
-    normalizeOptionalText(moleculeName) ??
-    activeSavedMolecule?.name ??
-    activeSavedMolecule?.summary.formula ??
-    (summary.atomCount === 0 ? 'Unsaved molecule' : formula);
 
   return (
     <section className="flex min-h-0 flex-col gap-3 overflow-visible pb-4" style={editorSectionStyle}>
