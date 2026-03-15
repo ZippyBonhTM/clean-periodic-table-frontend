@@ -1,15 +1,9 @@
 'use client';
 
-import { useCallback } from 'react';
-
-import {
-  cloneMoleculeModel,
-  normalizeSavedMoleculeRecord,
-  type SavedEditorDraft,
-} from '@/components/organisms/molecular-editor/moleculeEditorSession';
+import type { SavedEditorDraft } from '@/components/organisms/molecular-editor/moleculeEditorSession';
+import useApplySavedMoleculeToEditor from '@/components/organisms/molecular-editor/useApplySavedMoleculeToEditor';
 import useSavedMoleculeWorkflow from '@/components/organisms/molecular-editor/useSavedMoleculeWorkflow';
 import type { SaveMoleculeInput, SavedMolecule } from '@/shared/types/molecule';
-import { syncMoleculeIdCounter } from '@/shared/utils/moleculeEditor';
 
 type ShowGalleryFeedback = (
   tone: 'info' | 'success' | 'error',
@@ -64,41 +58,14 @@ export default function useSavedMoleculeEditorWorkflow({
   showGalleryFeedback,
   summaryAtomCount,
 }: UseSavedMoleculeEditorWorkflowOptions) {
-  const applySavedMolecule = useCallback(
-    (savedMolecule: SavedMolecule, notice: string) => {
-      const normalizedSavedMolecule = normalizeSavedMoleculeRecord(savedMolecule);
-
-      syncMoleculeIdCounter(normalizedSavedMolecule.molecule);
-      applyEditorSnapshot(
-        {
-          molecule: cloneMoleculeModel(normalizedSavedMolecule.molecule),
-          selectedAtomId: normalizedSavedMolecule.editorState.selectedAtomId,
-          nomenclatureFallback: null,
-          activeView: normalizedSavedMolecule.editorState.activeView,
-          bondOrder: normalizedSavedMolecule.editorState.bondOrder,
-          canvasViewport: {
-            offsetX: normalizedSavedMolecule.editorState.canvasViewport.offsetX,
-            offsetY: normalizedSavedMolecule.editorState.canvasViewport.offsetY,
-            scale: normalizedSavedMolecule.editorState.canvasViewport.scale,
-          },
-        },
-        notice,
-      );
-      clearHistory();
-      setActiveSavedMoleculeId(normalizedSavedMolecule.id);
-      setNomenclatureFallback(null);
-      setMoleculeName(normalizedSavedMolecule.name ?? '');
-      setMoleculeEducationalDescription(normalizedSavedMolecule.educationalDescription ?? '');
-    },
-    [
-      applyEditorSnapshot,
-      clearHistory,
-      setActiveSavedMoleculeId,
-      setMoleculeEducationalDescription,
-      setMoleculeName,
-      setNomenclatureFallback,
-    ],
-  );
+  const applySavedMolecule = useApplySavedMoleculeToEditor({
+    applyEditorSnapshot,
+    clearHistory,
+    setActiveSavedMoleculeId,
+    setMoleculeEducationalDescription,
+    setMoleculeName,
+    setNomenclatureFallback,
+  });
 
   const workflow = useSavedMoleculeWorkflow({
     activeSavedMoleculeId,
