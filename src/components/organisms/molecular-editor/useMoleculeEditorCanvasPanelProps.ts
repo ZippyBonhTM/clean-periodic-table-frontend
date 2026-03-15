@@ -4,9 +4,10 @@ import { useMemo } from 'react';
 
 import type {
   CanvasPanelProps,
-  PaletteRailProps,
   UseMoleculeEditorCanvasPanelPropsOptions,
 } from '@/components/organisms/molecular-editor/moleculeEditorSectionProps.types';
+import useMoleculeFormulaPanelProps from '@/components/organisms/molecular-editor/useMoleculeFormulaPanelProps';
+import useMoleculePaletteRailProps from '@/components/organisms/molecular-editor/useMoleculePaletteRailProps';
 
 export default function useMoleculeEditorCanvasPanelProps({
   activeView,
@@ -75,63 +76,36 @@ export default function useMoleculeEditorCanvasPanelProps({
   svgRef,
   toolRailProps,
 }: UseMoleculeEditorCanvasPanelPropsOptions): CanvasPanelProps {
-  const formulaPanelProps = useMemo(
-    () => ({
-      isCompact: isLandscapeCompactCanvas,
-      isOpen: isFormulaPanelOpen,
-      rows: formulaStatsRows,
-      style: formulaPanelStyle,
-      onToggle: onToggleFormulaPanel,
-    }),
-    [isFormulaPanelOpen, isLandscapeCompactCanvas, formulaPanelStyle, formulaStatsRows, onToggleFormulaPanel],
-  );
+  const formulaPanelProps = useMoleculeFormulaPanelProps({
+    formulaPanelStyle,
+    formulaStatsRows,
+    isFormulaPanelOpen,
+    isLandscapeCompactCanvas,
+    onToggleFormulaPanel,
+  });
 
-  const paletteRailProps = useMemo<PaletteRailProps>(
-    () => ({
-      overlayRef,
-      overlayClassName,
-      viewportRef: paletteViewportRef,
-      elements: filteredElements,
-      paletteEdgePadding,
-      isCompact: isLandscapeCompactCanvas,
-      isPaletteMoving,
-      isPalettePointerActive,
-      resolvedExpandedPaletteIndex,
-      resolvedCenterPaletteIndex,
-      wrapperClassName: paletteViewportWrapperClassName,
-      rowClassName: paletteRowClassName,
-      onPaletteScroll,
-      onPalettePointerDown,
-      onPalettePointerMove,
-      onPalettePointerUp,
-      onPalettePointerCancel,
-      onPrevious: goToPreviousPaletteElement,
-      onNext: goToNextPaletteElement,
-      onItemRef,
-    }),
-    [
-      filteredElements,
-      goToNextPaletteElement,
-      goToPreviousPaletteElement,
-      isLandscapeCompactCanvas,
-      isPaletteMoving,
-      isPalettePointerActive,
-      onItemRef,
-      onPalettePointerCancel,
-      onPalettePointerDown,
-      onPalettePointerMove,
-      onPalettePointerUp,
-      onPaletteScroll,
-      overlayClassName,
-      overlayRef,
-      paletteEdgePadding,
-      paletteRowClassName,
-      paletteViewportRef,
-      paletteViewportWrapperClassName,
-      resolvedCenterPaletteIndex,
-      resolvedExpandedPaletteIndex,
-    ],
-  );
+  const paletteRailProps = useMoleculePaletteRailProps({
+    filteredElements,
+    goToNextPaletteElement,
+    goToPreviousPaletteElement,
+    isLandscapeCompactCanvas,
+    isPaletteMoving,
+    isPalettePointerActive,
+    onItemRef,
+    onPalettePointerCancel,
+    onPalettePointerDown,
+    onPalettePointerMove,
+    onPalettePointerUp,
+    onPaletteScroll,
+    overlayClassName,
+    overlayRef,
+    paletteEdgePadding,
+    paletteRowClassName,
+    paletteViewportRef,
+    paletteViewportWrapperClassName,
+    resolvedCenterPaletteIndex,
+    resolvedExpandedPaletteIndex,
+  });
 
   return useMemo(
     () => ({

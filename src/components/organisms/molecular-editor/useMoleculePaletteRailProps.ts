@@ -1,0 +1,78 @@
+'use client';
+
+import { useMemo } from 'react';
+
+import type {
+  PaletteRailProps,
+  UseMoleculePaletteRailPropsOptions,
+} from '@/components/organisms/molecular-editor/moleculeEditorSectionProps.types';
+
+export default function useMoleculePaletteRailProps({
+  filteredElements,
+  goToNextPaletteElement,
+  goToPreviousPaletteElement,
+  isLandscapeCompactCanvas,
+  isPaletteMoving,
+  isPalettePointerActive,
+  onItemRef,
+  onPalettePointerCancel,
+  onPalettePointerDown,
+  onPalettePointerMove,
+  onPalettePointerUp,
+  onPaletteScroll,
+  overlayClassName,
+  overlayRef,
+  paletteEdgePadding,
+  paletteRowClassName,
+  paletteViewportRef,
+  paletteViewportWrapperClassName,
+  resolvedCenterPaletteIndex,
+  resolvedExpandedPaletteIndex,
+}: UseMoleculePaletteRailPropsOptions): PaletteRailProps {
+  return useMemo(
+    () => ({
+      overlayRef,
+      overlayClassName,
+      viewportRef: paletteViewportRef,
+      elements: filteredElements,
+      paletteEdgePadding,
+      isCompact: isLandscapeCompactCanvas,
+      isPaletteMoving,
+      isPalettePointerActive,
+      resolvedExpandedPaletteIndex,
+      resolvedCenterPaletteIndex,
+      wrapperClassName: paletteViewportWrapperClassName,
+      rowClassName: paletteRowClassName,
+      onPaletteScroll,
+      onPalettePointerDown,
+      onPalettePointerMove,
+      onPalettePointerUp,
+      onPalettePointerCancel,
+      onPrevious: goToPreviousPaletteElement,
+      onNext: goToNextPaletteElement,
+      onItemRef,
+    }),
+    [
+      filteredElements,
+      goToNextPaletteElement,
+      goToPreviousPaletteElement,
+      isLandscapeCompactCanvas,
+      isPaletteMoving,
+      isPalettePointerActive,
+      onItemRef,
+      onPalettePointerCancel,
+      onPalettePointerDown,
+      onPalettePointerMove,
+      onPalettePointerUp,
+      onPaletteScroll,
+      overlayClassName,
+      overlayRef,
+      paletteEdgePadding,
+      paletteRowClassName,
+      paletteViewportRef,
+      paletteViewportWrapperClassName,
+      resolvedCenterPaletteIndex,
+      resolvedExpandedPaletteIndex,
+    ],
+  );
+}

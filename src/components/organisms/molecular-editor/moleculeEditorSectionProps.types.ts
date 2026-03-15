@@ -275,3 +275,32 @@ export type UseMoleculeEditorCanvasPanelPropsOptions = Pick<
 > & {
   toolRailProps: ToolRailProps;
 };
+
+export type UseMoleculeFormulaPanelPropsOptions = Pick<
+  UseMoleculeEditorCanvasPanelPropsOptions,
+  'formulaPanelStyle' | 'formulaStatsRows' | 'isFormulaPanelOpen' | 'isLandscapeCompactCanvas' | 'onToggleFormulaPanel'
+>;
+
+export type UseMoleculePaletteRailPropsOptions = Pick<
+  UseMoleculeEditorCanvasPanelPropsOptions,
+  | 'filteredElements'
+  | 'goToNextPaletteElement'
+  | 'goToPreviousPaletteElement'
+  | 'isLandscapeCompactCanvas'
+  | 'isPaletteMoving'
+  | 'isPalettePointerActive'
+  | 'onItemRef'
+  | 'onPalettePointerCancel'
+  | 'onPalettePointerDown'
+  | 'onPalettePointerMove'
+  | 'onPalettePointerUp'
+  | 'onPaletteScroll'
+  | 'overlayClassName'
+  | 'overlayRef'
+  | 'paletteEdgePadding'
+  | 'paletteRowClassName'
+  | 'paletteViewportRef'
+  | 'paletteViewportWrapperClassName'
+  | 'resolvedCenterPaletteIndex'
+  | 'resolvedExpandedPaletteIndex'
+>;
