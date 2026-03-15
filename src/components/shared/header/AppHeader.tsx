@@ -14,7 +14,9 @@ import type { AppTheme } from '@/shared/hooks/useTheme';
 import { readJwtDisplayName } from '@/shared/utils/jwt';
 import type { AuthUserProfile } from '@/shared/types/auth';
 
-type AuthEntryMode = 'modal' | 'route';
+import AppHeaderDesktopNav from './AppHeaderDesktopNav';
+import AppHeaderRouteMenu from './AppHeaderRouteMenu';
+import type { AuthEntryMode } from './appHeader.types';
 
 type AppHeaderProps = {
   hasToken: boolean;
@@ -26,13 +28,6 @@ type AppHeaderProps = {
   onRequestLogin?: () => void;
   onRequestRegister?: () => void;
 };
-
-const NAV_LINKS = [
-  { href: '/periodic-table', label: 'Periodic Table' },
-  { href: '/search', label: 'Search' },
-  { href: '/molecular-editor', label: 'Molecular Editor', badge: 'BETA' },
-  { href: '/molecule-gallery', label: 'Molecule Gallery', badge: 'BETA' },
-];
 
 const USER_MENU_DRAG_CLOSE_THRESHOLD = 70;
 
@@ -93,19 +88,6 @@ function ThemeGlyph({ theme }: { theme: AppTheme }) {
       <path d="m6.34 17.66-1.41 1.41" />
       <path d="m19.07 4.93-1.41 1.41" />
     </svg>
-  );
-}
-
-function NavLinkLabel({ label, badge }: { label: string; badge?: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span>{label}</span>
-      {badge === undefined ? null : (
-        <span className="inline-flex items-center rounded-full border border-(--accent)/45 bg-(--accent)/12 px-1.5 py-px text-[8px] font-bold uppercase tracking-[0.18em] text-foreground">
-          {badge}
-        </span>
-      )}
-    </span>
   );
 }
 
@@ -438,24 +420,8 @@ function AppHeader({
               ) : null}
             </div>
           </div>
-          
-          <nav className="flex flex-wrap items-center gap-2 md:col-start-1 md:row-start-2">
-            {NAV_LINKS.map((item) => {
-              const isActive = pathname === item.href || (pathname === '/' && item.href === '/search');
 
-              return (
-                <LinkButton
-                  key={item.href}
-                  href={item.href}
-                  variant={isActive ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="rounded-lg px-2.5 text-[11px]"
-                >
-                  <NavLinkLabel label={item.label} badge={item.badge} />
-                </LinkButton>
-              );
-            })}
-          </nav>
+          <AppHeaderDesktopNav pathname={pathname} />
         </div>
       </header>
 
@@ -560,62 +526,7 @@ function AppHeader({
         </header>
       </div>
 
-      <div
-        className={`fixed inset-0 z-150 transition-opacity duration-300 md:hidden ${
-          isRouteMenuOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-        }`}
-        aria-hidden={!isRouteMenuOpen}
-      >
-        <button
-          type="button"
-          onClick={closeRouteMenu}
-          className="absolute inset-0 bg-black/45"
-          aria-label="Close routes menu backdrop"
-        />
-
-        <aside
-          className={`absolute left-0 top-0 h-full w-[min(84vw,320px)] border-r border-(--border-subtle) bg-(--surface-1)/92 p-4 shadow-2xl backdrop-blur-sm transition-transform duration-300 ${
-            isRouteMenuOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Routes menu"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-(--text-muted)">Routes</p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="px-2"
-              onClick={closeRouteMenu}
-              aria-label="Close routes menu"
-            >
-              Close
-            </Button>
-          </div>
-
-          <nav className="mt-3 flex flex-col gap-2">
-            {NAV_LINKS.map((item) => {
-              const isActive = pathname === item.href || (pathname === '/' && item.href === '/search');
-
-              return (
-                <LinkButton
-                  key={`mobile-${item.href}`}
-                  href={item.href}
-                  variant={isActive ? 'secondary' : 'ghost'}
-                  size="sm"
-                  align="left"
-                  className="px-3 text-[11px]"
-                >
-                  <NavLinkLabel label={item.label} badge={item.badge} />
-                </LinkButton>
-              );
-            })}
-          </nav>
-
-        </aside>
-      </div>
+      <AppHeaderRouteMenu isOpen={isRouteMenuOpen} pathname={pathname} onClose={closeRouteMenu} />
 
       <div
         className={`fixed inset-0 z-160 transition-opacity duration-300 ${
@@ -672,7 +583,9 @@ function AppHeader({
           <p className="mt-1 text-xs text-(--text-muted)">User menu</p>
 
           <section className="mt-4 rounded-xl border border-(--border-subtle) bg-(--surface-2)/55 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-(--text-muted)">Profile</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-(--text-muted)">
+              Profile
+            </p>
 
             {!hasToken ? (
               <p className="mt-2 text-xs text-(--text-muted)">Not authenticated.</p>
