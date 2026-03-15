@@ -1,12 +1,9 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
-
 import usePendingSavedMoleculeLoader from '@/components/organisms/molecular-editor/usePendingSavedMoleculeLoader';
 import useResolvedSavedMoleculeSelection from '@/components/organisms/molecular-editor/useResolvedSavedMoleculeSelection';
 import useSavedMoleculeMutations from '@/components/organisms/molecular-editor/useSavedMoleculeMutations';
-import { writePendingSavedMoleculeId } from '@/shared/storage/pendingSavedMoleculeStorage';
+import useSavedMoleculeWorkflowUi from '@/components/organisms/molecular-editor/useSavedMoleculeWorkflowUi';
 import type { SaveMoleculeInput, SavedMolecule } from '@/shared/types/molecule';
 
 type GalleryFeedbackTone = 'info' | 'success' | 'error';
@@ -56,9 +53,6 @@ export default function useSavedMoleculeWorkflow({
   showGalleryFeedback,
   summaryAtomCount,
 }: UseSavedMoleculeWorkflowOptions) {
-  const router = useRouter();
-  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-
   const { activeSavedMolecule, resolvedActiveSavedMoleculeId } = useResolvedSavedMoleculeSelection({
     activeSavedMoleculeId,
     normalizedSavedMolecules,
@@ -72,48 +66,24 @@ export default function useSavedMoleculeWorkflow({
     showGalleryFeedback,
   });
 
-  const onDetachSavedMolecule = useCallback(() => {
-    setActiveSavedMoleculeId(null);
-    showGalleryFeedback('info', 'Current canvas detached. Saving now will create a new record.');
-  }, [setActiveSavedMoleculeId, showGalleryFeedback]);
-
-  const onOpenSaveModal = useCallback(() => {
-    collapseFloatingSaveShortcut();
-    closeImportModal();
-    setIsSaveModalOpen(true);
-  }, [closeImportModal, collapseFloatingSaveShortcut]);
-
-  const onOpenGalleryEditModal = useCallback(() => {
-    if (resolvedActiveSavedMoleculeId === null) {
-      showGalleryFeedback('error', 'Select a saved molecule before editing its gallery data.');
-      return;
-    }
-
-    closeImportModal();
-    collapseFloatingSaveShortcut();
-    setIsSaveModalOpen(true);
-  }, [closeImportModal, collapseFloatingSaveShortcut, resolvedActiveSavedMoleculeId, showGalleryFeedback]);
-
-  const onCloseSaveModal = useCallback(() => {
-    setIsSaveModalOpen(false);
-  }, []);
-
-  const onLoadSavedMolecule = useCallback(
-    (savedMolecule: SavedMolecule) => {
-      applySavedMolecule(savedMolecule, `${savedMolecule.name ?? savedMolecule.summary.formula} loaded.`);
-    },
-    [applySavedMolecule],
-  );
-
-  const onOpenCurrentSavedMoleculeInEditor = useCallback(() => {
-    if (activeSavedMolecule === null) {
-      showGalleryFeedback('error', 'Select a saved molecule before opening it in the editor.');
-      return;
-    }
-
-    writePendingSavedMoleculeId(activeSavedMolecule.id);
-    router.push('/molecular-editor');
-  }, [activeSavedMolecule, router, showGalleryFeedback]);
+  const {
+    isSaveModalOpen,
+    onCloseSaveModal,
+    onDetachSavedMolecule,
+    onLoadSavedMolecule,
+    onOpenCurrentSavedMoleculeInEditor,
+    onOpenGalleryEditModal,
+    onOpenSaveModal,
+    setIsSaveModalOpen,
+  } = useSavedMoleculeWorkflowUi({
+    activeSavedMolecule,
+    applySavedMolecule,
+    closeImportModal,
+    collapseFloatingSaveShortcut,
+    resolvedActiveSavedMoleculeId,
+    setActiveSavedMoleculeId,
+    showGalleryFeedback,
+  });
 
   const {
     onDeleteCurrentSavedMolecule,
