@@ -3,9 +3,9 @@
 import { useCallback } from 'react';
 
 import { preserveViewportAcrossModelChange, resolveNextStandalonePoint } from '@/components/organisms/molecular-editor/moleculeCanvasViewport';
-import type { ResolvedImportedPubChemCompound } from '@/shared/api/pubchemApi';
+import useMoleculeEditorChangeCommitter from '@/components/organisms/molecular-editor/useMoleculeEditorChangeCommitter';
+import useMoleculeEditorImportActions from '@/components/organisms/molecular-editor/useMoleculeEditorImportActions';
 import type {
-  MoleculeChangeResult,
   MoleculeEditorStructureActions,
   UseMoleculeEditorActionsOptions,
 } from '@/components/organisms/molecular-editor/moleculeEditorActions.types';
@@ -16,7 +16,6 @@ import {
   dedupeBondConnections,
   rebalanceMoleculeLayout,
   removeAtom,
-  syncMoleculeIdCounter,
 } from '@/shared/utils/moleculeEditor';
 
 type UseMoleculeEditorStructureActionsOptions<Snapshot> = Pick<
@@ -83,59 +82,35 @@ export default function useMoleculeEditorStructureActions<Snapshot>({
   setSelectedAtomId,
   showGalleryFeedback,
 }: UseMoleculeEditorStructureActionsOptions<Snapshot>): MoleculeEditorStructureActions {
-  const commitMoleculeChange = useCallback(
-    (
-      previousMolecule: UseMoleculeEditorActionsOptions<Snapshot>['molecule'],
-      result: MoleculeChangeResult,
-      successMessage: string,
-      anchorPoint?: { x: number; y: number },
-    ) => {
-      clearPendingCanvasPlacementRef.current();
-      const nextMolecule = dedupeBondConnections(result.molecule);
-      const nextSelectedAtomId = normalizeSelectedAtomId(nextMolecule, result.selectedAtomId);
-      const previousSelectedAtomId = normalizeSelectedAtomId(molecule, selectedAtomId);
-      const didMoleculeChange = nextMolecule !== previousMolecule;
-      const didSelectionChange = nextSelectedAtomId !== previousSelectedAtomId;
+  const commitMoleculeChange = useMoleculeEditorChangeCommitter({
+    buildHistorySnapshot,
+    canvasFrameAspectRatio,
+    canvasViewport,
+    clearPendingCanvasPlacementRef,
+    molecule,
+    normalizeSelectedAtomId,
+    pushHistorySnapshot,
+    selectedAtomId,
+    setCanvasViewport,
+    setEditorNotice,
+    setMolecule,
+    setNomenclatureFallback,
+    setSelectedAtomId,
+  });
 
-      if (didMoleculeChange) {
-        pushHistorySnapshot(buildHistorySnapshot());
-      }
-
-      if (didMoleculeChange) {
-        const nextViewport = preserveViewportAcrossModelChange(
-          previousMolecule,
-          nextMolecule,
-          canvasViewport,
-          canvasFrameAspectRatio,
-          anchorPoint,
-        );
-
-        setCanvasViewport(nextViewport);
-        setMolecule(nextMolecule);
-        setNomenclatureFallback(null);
-      }
-
-      if (didMoleculeChange || didSelectionChange) {
-        setSelectedAtomId(nextSelectedAtomId);
-      }
-      setEditorNotice(result.error ?? successMessage);
-    },
-    [
-      buildHistorySnapshot,
-      canvasFrameAspectRatio,
-      canvasViewport,
-      clearPendingCanvasPlacementRef,
-      molecule,
-      normalizeSelectedAtomId,
-      pushHistorySnapshot,
-      selectedAtomId,
-      setCanvasViewport,
-      setEditorNotice,
-      setMolecule,
-      setNomenclatureFallback,
-      setSelectedAtomId,
-    ],
-  );
+  const onImportExternalMolecule = useMoleculeEditorImportActions({
+    applyEditorSnapshot,
+    buildHistorySnapshot,
+    cloneMoleculeModel,
+    defaultCanvasViewport,
+    pushHistorySnapshot,
+    setActiveSavedMoleculeId,
+    setIsImportModalOpen,
+    setMoleculeEducationalDescription,
+    setMoleculeName,
+    setNomenclatureFallback,
+    showGalleryFeedback,
+  });
 
   const onAddSelectedElement = useCallback(() => {
     if (activeElement === null) {
@@ -302,54 +277,6 @@ export default function useMoleculeEditorStructureActions<Snapshot>({
     setNomenclatureFallback,
     setSelectedAtomId,
   ]);
-
-  const onImportExternalMolecule = useCallback(
-    async (compound: ResolvedImportedPubChemCompound) => {
-      const importedMolecule = cloneMoleculeModel(compound.molecule);
-
-      syncMoleculeIdCounter(importedMolecule);
-      pushHistorySnapshot(buildHistorySnapshot());
-      applyEditorSnapshot(
-        {
-          molecule: importedMolecule,
-          selectedAtomId: null,
-          nomenclatureFallback: compound.iupacName ?? null,
-          activeView: 'editor',
-          bondOrder: 1,
-          canvasViewport: defaultCanvasViewport,
-        } as Snapshot,
-        `${compound.title} imported from PubChem.`,
-      );
-      setActiveSavedMoleculeId(null);
-      setNomenclatureFallback(compound.iupacName ?? null);
-      setMoleculeName(compound.title);
-      setMoleculeEducationalDescription('');
-      setIsImportModalOpen(false);
-      showGalleryFeedback(
-        'info',
-        compound.importMode === 'main' && compound.omittedFragmentCount > 0
-          ? `${compound.title} imported from PubChem. ${compound.omittedFragmentCount} detached fragment${
-              compound.omittedFragmentCount === 1 ? '' : 's'
-            } omitted so the main molecule stays editable.`
-          : compound.importMode === 'all' && compound.componentCount > 1
-            ? `${compound.title} imported from PubChem as a ${compound.componentCount}-component work.`
-            : `${compound.title} imported from PubChem. Save it to keep this draft.`,
-      );
-    },
-    [
-      applyEditorSnapshot,
-      buildHistorySnapshot,
-      cloneMoleculeModel,
-      defaultCanvasViewport,
-      pushHistorySnapshot,
-      setActiveSavedMoleculeId,
-      setIsImportModalOpen,
-      setMoleculeEducationalDescription,
-      setMoleculeName,
-      setNomenclatureFallback,
-      showGalleryFeedback,
-    ],
-  );
 
   return {
     handleAtomActivate,
