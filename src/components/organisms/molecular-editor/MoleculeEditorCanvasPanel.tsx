@@ -10,10 +10,10 @@ import type {
 
 import EditorCanvas from '@/components/organisms/molecular-editor/MoleculeEditorCanvas';
 import MoleculeEditorBottomNotice from '@/components/organisms/molecular-editor/MoleculeEditorBottomNotice';
+import MoleculeEditorCanvasChrome from '@/components/organisms/molecular-editor/MoleculeEditorCanvasChrome';
 import MoleculeEditorCanvasStage from '@/components/organisms/molecular-editor/MoleculeEditorCanvasStage';
 import MoleculeEditorToolRail from '@/components/organisms/molecular-editor/MoleculeEditorToolRail';
 import MoleculePaletteRail from '@/components/organisms/molecular-editor/MoleculePaletteRail';
-import MoleculePaletteSearchRail from '@/components/organisms/molecular-editor/MoleculePaletteSearchRail';
 import MoleculeSummaryPanel from '@/components/molecules/chemistry/MoleculeSummaryPanel';
 import type { SavedMoleculeEditorState } from '@/shared/types/molecule';
 import type { MoleculeModel } from '@/shared/utils/moleculeEditor';
@@ -121,9 +121,7 @@ export default function MoleculeEditorCanvasPanel({
 }: MoleculeEditorCanvasPanelProps) {
   return (
     <div className={canvasPanelClassName} style={canvasPanelStyle}>
-      <MoleculePaletteRail {...paletteRailProps} />
-
-      <MoleculePaletteSearchRail
+      <MoleculeEditorCanvasChrome
         isLandscapeCompactCanvas={isLandscapeCompactCanvas}
         isPaletteSearchOpen={isPaletteSearchOpen}
         onClearPaletteSearch={onClearPaletteSearch}
@@ -131,6 +129,7 @@ export default function MoleculeEditorCanvasPanel({
         onPaletteSearchChange={onPaletteSearchChange}
         onTogglePaletteSearch={onTogglePaletteSearch}
         paletteQuery={paletteQuery}
+        paletteRailProps={paletteRailProps}
         paletteSearchButtonClassName={paletteSearchButtonClassName}
         paletteSearchInnerStyle={paletteSearchInnerStyle}
         paletteSearchPanelStyle={paletteSearchPanelStyle}
@@ -140,9 +139,8 @@ export default function MoleculeEditorCanvasPanel({
         paletteSearchTriggerStyle={paletteSearchTriggerStyle}
         searchInputRef={searchInputRef}
         shouldShowActivePaletteFilter={shouldShowActivePaletteFilter}
+        toolRailProps={toolRailProps}
       />
-
-      <MoleculeEditorToolRail {...toolRailProps} />
 
       <MoleculeEditorCanvasStage
         activeView={activeView}
