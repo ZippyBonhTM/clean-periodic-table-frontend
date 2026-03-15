@@ -1,14 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
+import usePendingSavedMoleculeLoader from '@/components/organisms/molecular-editor/usePendingSavedMoleculeLoader';
 import { mapSavedMoleculesErrorMessage } from '@/shared/hooks/useSavedMolecules';
-import {
-  clearPendingSavedMoleculeId,
-  readPendingSavedMoleculeId,
-  writePendingSavedMoleculeId,
-} from '@/shared/storage/pendingSavedMoleculeStorage';
+import { writePendingSavedMoleculeId } from '@/shared/storage/pendingSavedMoleculeStorage';
 import type { SaveMoleculeInput, SavedMolecule } from '@/shared/types/molecule';
 
 type GalleryFeedbackTone = 'info' | 'success' | 'error';
@@ -60,9 +57,6 @@ export default function useSavedMoleculeWorkflow({
 }: UseSavedMoleculeWorkflowOptions) {
   const router = useRouter();
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-  const [hasCheckedPendingSavedMolecule, setHasCheckedPendingSavedMolecule] = useState(pageMode !== 'editor');
-  const [hasPendingSavedMolecule, setHasPendingSavedMolecule] = useState(false);
-  const pendingSavedMoleculeIdRef = useRef<string | null>(null);
 
   const resolvedActiveSavedMoleculeId = useMemo(() => {
     if (activeSavedMoleculeId === null) {
@@ -79,57 +73,13 @@ export default function useSavedMoleculeWorkflow({
     [normalizedSavedMolecules, resolvedActiveSavedMoleculeId],
   );
 
-  useEffect(() => {
-    if (pageMode !== 'editor') {
-      return;
-    }
-
-    if (pendingSavedMoleculeIdRef.current === null) {
-      pendingSavedMoleculeIdRef.current = readPendingSavedMoleculeId();
-    }
-
-    setHasPendingSavedMolecule(pendingSavedMoleculeIdRef.current !== null);
-    setHasCheckedPendingSavedMolecule(true);
-
-    const pendingSavedMoleculeId = pendingSavedMoleculeIdRef.current;
-
-    if (pendingSavedMoleculeId === null) {
-      return;
-    }
-
-    if (isSavedMoleculesLoading) {
-      return;
-    }
-
-    const pendingSavedMolecule = normalizedSavedMolecules.find((entry) => entry.id === pendingSavedMoleculeId);
-
-    if (pendingSavedMolecule === undefined) {
-      const timeoutId = window.setTimeout(() => {
-        clearPendingSavedMoleculeId();
-        pendingSavedMoleculeIdRef.current = null;
-        setHasPendingSavedMolecule(false);
-        showGalleryFeedback('error', 'Could not find the selected gallery molecule.');
-      }, 0);
-
-      return () => {
-        window.clearTimeout(timeoutId);
-      };
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      clearPendingSavedMoleculeId();
-      pendingSavedMoleculeIdRef.current = null;
-      setHasPendingSavedMolecule(false);
-      applySavedMolecule(
-        pendingSavedMolecule,
-        `${pendingSavedMolecule.name ?? pendingSavedMolecule.summary.formula} loaded from gallery.`,
-      );
-    }, 0);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [applySavedMolecule, isSavedMoleculesLoading, normalizedSavedMolecules, pageMode, showGalleryFeedback]);
+  const { hasCheckedPendingSavedMolecule, hasPendingSavedMolecule } = usePendingSavedMoleculeLoader({
+    applySavedMolecule,
+    isSavedMoleculesLoading,
+    normalizedSavedMolecules,
+    pageMode,
+    showGalleryFeedback,
+  });
 
   const onDetachSavedMolecule = useCallback(() => {
     setActiveSavedMoleculeId(null);
