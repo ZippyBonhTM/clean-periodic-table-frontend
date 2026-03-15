@@ -1,9 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import usePendingSavedMoleculeLoader from '@/components/organisms/molecular-editor/usePendingSavedMoleculeLoader';
+import useResolvedSavedMoleculeSelection from '@/components/organisms/molecular-editor/useResolvedSavedMoleculeSelection';
 import useSavedMoleculeMutations from '@/components/organisms/molecular-editor/useSavedMoleculeMutations';
 import { writePendingSavedMoleculeId } from '@/shared/storage/pendingSavedMoleculeStorage';
 import type { SaveMoleculeInput, SavedMolecule } from '@/shared/types/molecule';
@@ -58,20 +59,10 @@ export default function useSavedMoleculeWorkflow({
   const router = useRouter();
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
 
-  const resolvedActiveSavedMoleculeId = useMemo(() => {
-    if (activeSavedMoleculeId === null) {
-      return null;
-    }
-
-    return normalizedSavedMolecules.some((entry) => entry.id === activeSavedMoleculeId)
-      ? activeSavedMoleculeId
-      : null;
-  }, [activeSavedMoleculeId, normalizedSavedMolecules]);
-
-  const activeSavedMolecule = useMemo(
-    () => normalizedSavedMolecules.find((entry) => entry.id === resolvedActiveSavedMoleculeId) ?? null,
-    [normalizedSavedMolecules, resolvedActiveSavedMoleculeId],
-  );
+  const { activeSavedMolecule, resolvedActiveSavedMoleculeId } = useResolvedSavedMoleculeSelection({
+    activeSavedMoleculeId,
+    normalizedSavedMolecules,
+  });
 
   const { hasCheckedPendingSavedMolecule, hasPendingSavedMolecule } = usePendingSavedMoleculeLoader({
     applySavedMolecule,
