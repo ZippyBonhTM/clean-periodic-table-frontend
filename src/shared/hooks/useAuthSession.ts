@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { refreshAccessToken, validateAccessToken } from '@/shared/api/authApi';
+import { refreshAccessToken } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
-import { readJwtExpiryMs } from '@/shared/utils/jwt';
+import useAuthSessionRefreshTimer from '@/shared/hooks/useAuthSessionRefreshTimer';
+import useAuthSessionResolver from '@/shared/hooks/useAuthSessionResolver';
 
 type AuthSessionStatus = 'anonymous' | 'checking' | 'authenticated' | 'unverified';
 
@@ -28,8 +29,6 @@ type UseAuthSessionOutput = {
   revalidate: () => void;
 };
 
-const ACCESS_TOKEN_REFRESH_WINDOW_MS = 30_000;
-
 function mapVerificationErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.statusCode === 0) {
     return 'Could not verify your session due to network or CORS. Check service availability.';
@@ -44,10 +43,6 @@ function mapVerificationErrorMessage(error: unknown): string {
   }
 
   return 'Could not verify your session right now.';
-}
-
-function isUnauthorizedError(error: unknown): error is ApiError {
-  return error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403);
 }
 
 function useAuthSession({
@@ -99,212 +94,26 @@ function useAuthSession({
     setValidationVersion((previous) => previous + 1);
   }, []);
 
-  useEffect(() => {
-    let isCancelled = false;
+  useAuthSessionResolver({
+    allowAnonymousRefresh,
+    mapVerificationErrorMessage,
+    onTokenRefresh,
+    onUnauthorized,
+    refreshTokenOnce,
+    setIsRestoringAnonymousSession,
+    setSnapshot,
+    skipTokenValidation,
+    token,
+    validationVersion,
+  });
 
-    const resolveAnonymousSession = async () => {
-      if (!allowAnonymousRefresh) {
-        setIsRestoringAnonymousSession(false);
-        return;
-      }
-
-      setIsRestoringAnonymousSession(true);
-
-      try {
-        const refreshedToken = await refreshTokenOnce();
-
-        if (isCancelled) {
-          return;
-        }
-
-        setSnapshot({
-          token: refreshedToken,
-          status: 'authenticated',
-          message: null,
-        });
-      } catch {
-        // Keep anonymous when no refresh session exists.
-      } finally {
-        if (!isCancelled) {
-          setIsRestoringAnonymousSession(false);
-        }
-      }
-    };
-
-    const resolveSession = async (currentToken: string) => {
-      const expiryMs = readJwtExpiryMs(currentToken);
-      const shouldRefreshBeforeValidation =
-        expiryMs !== null && expiryMs - Date.now() <= ACCESS_TOKEN_REFRESH_WINDOW_MS;
-
-      if (shouldRefreshBeforeValidation) {
-        try {
-          const refreshedToken = await refreshTokenOnce();
-
-          if (isCancelled) {
-            return;
-          }
-
-          setSnapshot({
-            token: refreshedToken,
-            status: 'authenticated',
-            message: null,
-          });
-          return;
-        } catch (refreshError: unknown) {
-          if (isCancelled) {
-            return;
-          }
-
-          if (isUnauthorizedError(refreshError)) {
-            onUnauthorized();
-            return;
-          }
-
-          setSnapshot({
-            token: currentToken,
-            status: 'unverified',
-            message: mapVerificationErrorMessage(refreshError),
-          });
-          return;
-        }
-      }
-
-      if (skipTokenValidation) {
-        setSnapshot({
-          token: currentToken,
-          status: 'authenticated',
-          message: null,
-        });
-        return;
-      }
-
-      try {
-        await validateAccessToken(currentToken);
-
-        if (isCancelled) {
-          return;
-        }
-
-        setSnapshot({
-          token: currentToken,
-          status: 'authenticated',
-          message: null,
-        });
-        return;
-      } catch (validationError: unknown) {
-        if (isCancelled) {
-          return;
-        }
-
-        if (isUnauthorizedError(validationError)) {
-          try {
-            const refreshedToken = await refreshTokenOnce();
-
-            if (isCancelled) {
-              return;
-            }
-
-            setSnapshot({
-              token: refreshedToken,
-              status: 'authenticated',
-              message: null,
-            });
-            return;
-          } catch (refreshError: unknown) {
-            if (isCancelled) {
-              return;
-            }
-
-            if (!isUnauthorizedError(refreshError)) {
-              setSnapshot({
-                token: currentToken,
-                status: 'unverified',
-                message: mapVerificationErrorMessage(refreshError),
-              });
-              return;
-            }
-
-            onUnauthorized();
-            return;
-          }
-        }
-
-        setSnapshot({
-          token: currentToken,
-          status: 'unverified',
-          message: mapVerificationErrorMessage(validationError),
-        });
-      }
-    };
-
-    if (token === null) {
-      void resolveAnonymousSession();
-
-      return () => {
-        isCancelled = true;
-      };
-    }
-
-    setIsRestoringAnonymousSession(false);
-    void resolveSession(token);
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [allowAnonymousRefresh, onUnauthorized, refreshTokenOnce, skipTokenValidation, token, validationVersion]);
-
-  useEffect(() => {
-    if (token === null) {
-      return;
-    }
-
-    const expiryMs = readJwtExpiryMs(token);
-
-    if (expiryMs === null) {
-      return;
-    }
-
-    let isCancelled = false;
-    const refreshDelayMs = Math.max(0, expiryMs - Date.now() - ACCESS_TOKEN_REFRESH_WINDOW_MS);
-
-    const timeoutId = window.setTimeout(() => {
-      void (async () => {
-        try {
-          const refreshedToken = await refreshTokenOnce();
-
-          if (isCancelled) {
-            return;
-          }
-
-          setSnapshot({
-            token: refreshedToken,
-            status: 'authenticated',
-            message: null,
-          });
-        } catch (refreshError: unknown) {
-          if (isCancelled) {
-            return;
-          }
-
-          if (isUnauthorizedError(refreshError)) {
-            onUnauthorized();
-            return;
-          }
-
-          setSnapshot({
-            token,
-            status: 'unverified',
-            message: mapVerificationErrorMessage(refreshError),
-          });
-        }
-      })();
-    }, refreshDelayMs);
-
-    return () => {
-      isCancelled = true;
-      window.clearTimeout(timeoutId);
-    };
-  }, [onUnauthorized, refreshTokenOnce, token]);
+  useAuthSessionRefreshTimer({
+    mapVerificationErrorMessage,
+    onUnauthorized,
+    refreshTokenOnce,
+    setSnapshot,
+    token,
+  });
 
   useEffect(() => {
     if (resolvedStatus !== 'unverified') {
