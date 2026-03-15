@@ -1,43 +1,27 @@
 'use client';
 
-import { useCallback } from 'react';
-
-import {
-  cloneMoleculeModel,
-  normalizeSavedMoleculeRecord,
-  type SavedEditorDraft,
-} from '@/components/organisms/molecular-editor/moleculeEditorSession';
+import { resolveSavedMoleculeEditorStatus } from '@/components/organisms/molecular-editor/savedMoleculeEditorStatus';
+import type { ShowGalleryFeedback } from '@/components/organisms/molecular-editor/savedMoleculeWorkflow.types';
+import type {
+  SavedMoleculeEditorBridgeOptions,
+  SavedMoleculeMutationHandlers,
+  SavedMoleculePageMode,
+} from '@/components/organisms/molecular-editor/savedMoleculeWorkflowOptions.types';
+import useApplySavedMoleculeToEditor from '@/components/organisms/molecular-editor/useApplySavedMoleculeToEditor';
 import useSavedMoleculeWorkflow from '@/components/organisms/molecular-editor/useSavedMoleculeWorkflow';
 import type { SaveMoleculeInput, SavedMolecule } from '@/shared/types/molecule';
-import { syncMoleculeIdCounter } from '@/shared/utils/moleculeEditor';
 
-type ShowGalleryFeedback = (
-  tone: 'info' | 'success' | 'error',
-  message: string,
-  options?: {
-    persist?: boolean;
-  },
-) => void;
-
-type UseSavedMoleculeEditorWorkflowOptions = {
+type UseSavedMoleculeEditorWorkflowOptions = SavedMoleculeEditorBridgeOptions &
+  SavedMoleculeMutationHandlers & {
   activeSavedMoleculeId: string | null;
-  applyEditorSnapshot: (snapshot: SavedEditorDraft, notice: string) => void;
   buildSaveMoleculeInput: () => SaveMoleculeInput;
-  clearHistory: () => void;
   closeImportModal: () => void;
   collapseFloatingSaveShortcut: () => void;
   formula: string;
   isSavedMoleculesLoading: boolean;
   moleculeName: string;
   normalizedSavedMolecules: SavedMolecule[];
-  onCreateSavedMolecule: (input: SaveMoleculeInput) => Promise<SavedMolecule>;
-  onDeleteSavedMolecule: (moleculeId: string) => Promise<void>;
-  onUpdateSavedMolecule: (moleculeId: string, input: SaveMoleculeInput) => Promise<SavedMolecule>;
-  pageMode: 'editor' | 'gallery';
-  setActiveSavedMoleculeId: (moleculeId: string | null) => void;
-  setMoleculeEducationalDescription: (value: string) => void;
-  setMoleculeName: (value: string) => void;
-  setNomenclatureFallback: (value: string | null) => void;
+  pageMode: SavedMoleculePageMode;
   showGalleryFeedback: ShowGalleryFeedback;
   summaryAtomCount: number;
 };
@@ -64,41 +48,14 @@ export default function useSavedMoleculeEditorWorkflow({
   showGalleryFeedback,
   summaryAtomCount,
 }: UseSavedMoleculeEditorWorkflowOptions) {
-  const applySavedMolecule = useCallback(
-    (savedMolecule: SavedMolecule, notice: string) => {
-      const normalizedSavedMolecule = normalizeSavedMoleculeRecord(savedMolecule);
-
-      syncMoleculeIdCounter(normalizedSavedMolecule.molecule);
-      applyEditorSnapshot(
-        {
-          molecule: cloneMoleculeModel(normalizedSavedMolecule.molecule),
-          selectedAtomId: normalizedSavedMolecule.editorState.selectedAtomId,
-          nomenclatureFallback: null,
-          activeView: normalizedSavedMolecule.editorState.activeView,
-          bondOrder: normalizedSavedMolecule.editorState.bondOrder,
-          canvasViewport: {
-            offsetX: normalizedSavedMolecule.editorState.canvasViewport.offsetX,
-            offsetY: normalizedSavedMolecule.editorState.canvasViewport.offsetY,
-            scale: normalizedSavedMolecule.editorState.canvasViewport.scale,
-          },
-        },
-        notice,
-      );
-      clearHistory();
-      setActiveSavedMoleculeId(normalizedSavedMolecule.id);
-      setNomenclatureFallback(null);
-      setMoleculeName(normalizedSavedMolecule.name ?? '');
-      setMoleculeEducationalDescription(normalizedSavedMolecule.educationalDescription ?? '');
-    },
-    [
-      applyEditorSnapshot,
-      clearHistory,
-      setActiveSavedMoleculeId,
-      setMoleculeEducationalDescription,
-      setMoleculeName,
-      setNomenclatureFallback,
-    ],
-  );
+  const applySavedMolecule = useApplySavedMoleculeToEditor({
+    applyEditorSnapshot,
+    clearHistory,
+    setActiveSavedMoleculeId,
+    setMoleculeEducationalDescription,
+    setMoleculeName,
+    setNomenclatureFallback,
+  });
 
   const workflow = useSavedMoleculeWorkflow({
     activeSavedMoleculeId,
@@ -119,12 +76,13 @@ export default function useSavedMoleculeEditorWorkflow({
     summaryAtomCount,
   });
 
-  const hasCurrentSavedSelection = workflow.resolvedActiveSavedMoleculeId !== null;
-  const currentSaveLabel =
-    (moleculeName.trim().length > 0 ? moleculeName.trim() : null) ??
-    workflow.activeSavedMolecule?.name ??
-    workflow.activeSavedMolecule?.summary.formula ??
-    (summaryAtomCount === 0 ? 'Unsaved molecule' : formula);
+  const { currentSaveLabel, hasCurrentSavedSelection } = resolveSavedMoleculeEditorStatus({
+    activeSavedMolecule: workflow.activeSavedMolecule,
+    formula,
+    moleculeName,
+    resolvedActiveSavedMoleculeId: workflow.resolvedActiveSavedMoleculeId,
+    summaryAtomCount,
+  });
 
   return {
     ...workflow,
