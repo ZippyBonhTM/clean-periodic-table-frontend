@@ -4,32 +4,10 @@ import { createElement } from 'react';
 
 import type { ChemicalElement } from '@/shared/types/element';
 
+import ElementDetailsLinkButton from './ElementDetailsLinkButton';
 import { ImageUnavailableState, NativeElementImage } from './ElementDetailsNativeImage';
 import type { ExpandedImageState, ViewerMode } from './elementDetails.types';
 import { normalizeText } from './elementDetailsUtils';
-
-function LinkButton({ href, label }: { href: string | null | undefined; label: string }) {
-  const normalizedHref = normalizeText(href);
-
-  if (normalizedHref.length === 0) {
-    return (
-      <span className="text-xs font-semibold text-[var(--text-muted)]">
-        {label}: unavailable
-      </span>
-    );
-  }
-
-  return (
-    <a
-      href={normalizedHref}
-      target="_blank"
-      rel="noreferrer"
-      className="text-xs font-semibold text-orange-400 underline decoration-2 underline-offset-2 transition-colors hover:text-orange-300"
-    >
-      {label}
-    </a>
-  );
-}
 
 type ElementDetailsViewerPanelProps = {
   element: ChemicalElement;
@@ -125,7 +103,7 @@ export default function ElementDetailsViewerPanel({
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <LinkButton href={element.bohr_model_3d} label="Open 3D File in New Tab" />
+            <ElementDetailsLinkButton href={element.bohr_model_3d} label="Open 3D File in New Tab" />
             <span className="text-xs text-[var(--text-muted)]">
               Powered by Google model-viewer for lightweight rendering.
             </span>

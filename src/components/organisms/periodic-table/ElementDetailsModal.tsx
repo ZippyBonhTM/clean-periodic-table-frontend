@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useMemo, useState } from 'react';
+import { memo, useState } from 'react';
 
 import FloatingModal from '@/components/molecules/FloatingModal';
 import type { ChemicalElement } from '@/shared/types/element';
@@ -8,13 +8,11 @@ import type { ChemicalElement } from '@/shared/types/element';
 import ElementDetailsDataSection from './ElementDetailsDataSection';
 import ElementDetailsExpandedImageOverlay from './ElementDetailsExpandedImageOverlay';
 import ElementDetailsMediaSection from './ElementDetailsMediaSection';
+import ElementDetailsModalHeaderActions from './ElementDetailsModalHeaderActions';
 import type { DetailsViewMode, ViewerMode } from './elementDetails.types';
-import {
-  buildCardOptimizedRows,
-  buildElementRows,
-} from './elementDetailsUtils';
 import useElementDetailsExpandedImage from './useElementDetailsExpandedImage';
 import useElementDetailsMediaConfig from './useElementDetailsMediaConfig';
+import useElementDetailsRows from './useElementDetailsRows';
 
 type ElementDetailsModalProps = {
   element: ChemicalElement | null;
@@ -43,18 +41,7 @@ function ElementDetailsModal({
       element,
       viewerModeOverride,
     });
-
-  const dataRows = useMemo(() => {
-    if (element === null) {
-      return [];
-    }
-
-    return buildElementRows(element);
-  }, [element]);
-
-  const cardRows = useMemo(() => {
-    return buildCardOptimizedRows(dataRows);
-  }, [dataRows]);
+  const { cardRows, dataRows } = useElementDetailsRows({ element });
 
   if (element === null) {
     return (
@@ -83,36 +70,13 @@ function ElementDetailsModal({
         panelClassName="max-w-5xl self-start mt-1 sm:mt-3"
         bodyClassName="element-modal-scroll pr-1 pb-1"
         headerActions={
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                if (hasPreviousElement && onOpenPreviousElement !== undefined) {
-                  onCloseExpandedImage();
-                  onOpenPreviousElement();
-                }
-              }}
-              disabled={!hasPreviousElement}
-              aria-label="Previous element"
-              className="rounded-lg border border-[var(--border-subtle)] px-2.5 py-1.5 text-sm font-semibold text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)] disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              ←
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (hasNextElement && onOpenNextElement !== undefined) {
-                  onCloseExpandedImage();
-                  onOpenNextElement();
-                }
-              }}
-              disabled={!hasNextElement}
-              aria-label="Next element"
-              className="rounded-lg border border-[var(--border-subtle)] px-2.5 py-1.5 text-sm font-semibold text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)] disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              →
-            </button>
-          </div>
+          <ElementDetailsModalHeaderActions
+            hasNextElement={hasNextElement}
+            hasPreviousElement={hasPreviousElement}
+            onCloseExpandedImage={onCloseExpandedImage}
+            onOpenNextElement={onOpenNextElement}
+            onOpenPreviousElement={onOpenPreviousElement}
+          />
         }
       >
         <div className="space-y-5">
