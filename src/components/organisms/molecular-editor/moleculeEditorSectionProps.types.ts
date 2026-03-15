@@ -1,31 +1,16 @@
 'use client';
 
-import type { ComponentProps, CSSProperties, RefObject } from 'react';
+import type { CSSProperties, RefObject } from 'react';
 
-import type MoleculeEditorCanvasPanel from '@/components/organisms/molecular-editor/MoleculeEditorCanvasPanel';
-import type MoleculeEditorSection from '@/components/organisms/molecular-editor/MoleculeEditorSection';
-import type MoleculeEditorToolRail from '@/components/organisms/molecular-editor/MoleculeEditorToolRail';
-import type MoleculeEditorTopBar from '@/components/organisms/molecular-editor/MoleculeEditorTopBar';
-import type MoleculePaletteRail from '@/components/organisms/molecular-editor/MoleculePaletteRail';
-import type MoleculeSummaryPanel from '@/components/molecules/chemistry/MoleculeSummaryPanel';
-import type { SavedMoleculeEditorState } from '@/shared/types/molecule';
+import type { CanvasPanelProps } from '@/components/organisms/molecular-editor/moleculeEditorCanvasPanelProps.types';
+import type {
+  BondOrder,
+  CompositionRow,
+  EditorViewMode,
+  FormulaRow,
+  PaletteRailProps,
+} from '@/components/organisms/molecular-editor/moleculeEditorPanelShared.types';
 import type { MoleculeComponent, MoleculeModel } from '@/shared/utils/moleculeEditor';
-
-export type EditorViewMode = SavedMoleculeEditorState['activeView'];
-export type BondOrder = 1 | 2 | 3;
-
-export type CompositionRow = {
-  symbol: string;
-  name: string;
-  count: number;
-};
-
-export type FormulaRow = ComponentProps<typeof MoleculeSummaryPanel>['rows'][number];
-export type PaletteRailProps = ComponentProps<typeof MoleculePaletteRail>;
-export type TopBarProps = ComponentProps<typeof MoleculeEditorTopBar>;
-export type CanvasPanelProps = ComponentProps<typeof MoleculeEditorCanvasPanel>;
-export type ToolRailProps = ComponentProps<typeof MoleculeEditorToolRail>;
-export type MoleculeEditorSectionProps = ComponentProps<typeof MoleculeEditorSection>;
 
 export type UseMoleculeEditorSectionPropsOptions = {
   activeElementMaxBondSlots: number | null;
@@ -204,103 +189,4 @@ export type UseMoleculeEditorToolRailPropsOptions = Pick<
   | 'toolRailCollapsedWidthClassName'
   | 'toolRailExpandedWidthClassName'
   | 'toolRailStyle'
->;
-
-export type UseMoleculeEditorCanvasPanelPropsOptions = Pick<
-  UseMoleculeEditorSectionPropsOptions,
-  | 'activeView'
-  | 'bottomNoticeRef'
-  | 'canvasFrameClassName'
-  | 'canvasFrameRef'
-  | 'canvasPanelClassName'
-  | 'canvasPanelStyle'
-  | 'compactBottomNoticeClassName'
-  | 'compactBottomOverlayClassName'
-  | 'compactDisplayedEditorNotice'
-  | 'compositionRows'
-  | 'filteredElements'
-  | 'focusedComponentIndex'
-  | 'formulaDisplayValue'
-  | 'formulaPanelStyle'
-  | 'formulaStatsRows'
-  | 'goToNextPaletteElement'
-  | 'goToPreviousPaletteElement'
-  | 'hasActivePaletteFilter'
-  | 'interactiveViewBox'
-  | 'isFormulaPanelOpen'
-  | 'isLandscapeCompactCanvas'
-  | 'isPaletteMoving'
-  | 'isPalettePointerActive'
-  | 'isPaletteSearchOpen'
-  | 'isSimplifiedView'
-  | 'molecule'
-  | 'moleculeComponents'
-  | 'onAtomPointerDown'
-  | 'onCanvasPointerCancel'
-  | 'onCanvasPointerDown'
-  | 'onCanvasPointerMove'
-  | 'onCanvasPointerUp'
-  | 'onCanvasWheel'
-  | 'onClearPaletteSearch'
-  | 'onClosePaletteSearch'
-  | 'onItemRef'
-  | 'onPalettePointerCancel'
-  | 'onPalettePointerDown'
-  | 'onPalettePointerMove'
-  | 'onPalettePointerUp'
-  | 'onPaletteScroll'
-  | 'onPaletteSearchChange'
-  | 'onToggleFormulaPanel'
-  | 'onTogglePaletteSearch'
-  | 'overlayClassName'
-  | 'overlayRef'
-  | 'paletteEdgePadding'
-  | 'paletteQuery'
-  | 'paletteRowClassName'
-  | 'paletteSearchButtonClassName'
-  | 'paletteSearchInnerStyle'
-  | 'paletteSearchPanelStyle'
-  | 'paletteSearchRailRef'
-  | 'paletteSearchRailStyle'
-  | 'paletteSearchShellClassName'
-  | 'paletteSearchTriggerStyle'
-  | 'paletteViewportRef'
-  | 'paletteViewportWrapperClassName'
-  | 'resolvedCenterPaletteIndex'
-  | 'resolvedEditorNotice'
-  | 'resolvedExpandedPaletteIndex'
-  | 'searchInputRef'
-  | 'simplifiedViewStyle'
-  | 'svgRef'
-> & {
-  toolRailProps: ToolRailProps;
-};
-
-export type UseMoleculeFormulaPanelPropsOptions = Pick<
-  UseMoleculeEditorCanvasPanelPropsOptions,
-  'formulaPanelStyle' | 'formulaStatsRows' | 'isFormulaPanelOpen' | 'isLandscapeCompactCanvas' | 'onToggleFormulaPanel'
->;
-
-export type UseMoleculePaletteRailPropsOptions = Pick<
-  UseMoleculeEditorCanvasPanelPropsOptions,
-  | 'filteredElements'
-  | 'goToNextPaletteElement'
-  | 'goToPreviousPaletteElement'
-  | 'isLandscapeCompactCanvas'
-  | 'isPaletteMoving'
-  | 'isPalettePointerActive'
-  | 'onItemRef'
-  | 'onPalettePointerCancel'
-  | 'onPalettePointerDown'
-  | 'onPalettePointerMove'
-  | 'onPalettePointerUp'
-  | 'onPaletteScroll'
-  | 'overlayClassName'
-  | 'overlayRef'
-  | 'paletteEdgePadding'
-  | 'paletteRowClassName'
-  | 'paletteViewportRef'
-  | 'paletteViewportWrapperClassName'
-  | 'resolvedCenterPaletteIndex'
-  | 'resolvedExpandedPaletteIndex'
 >;

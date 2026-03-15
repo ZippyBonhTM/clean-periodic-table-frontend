@@ -2,7 +2,8 @@
 
 import { useMemo } from 'react';
 
-import type { TopBarProps, UseMoleculeEditorTopBarPropsOptions } from '@/components/organisms/molecular-editor/moleculeEditorSectionProps.types';
+import type { TopBarProps } from '@/components/organisms/molecular-editor/moleculeEditorPanelShared.types';
+import type { UseMoleculeEditorTopBarPropsOptions } from '@/components/organisms/molecular-editor/moleculeEditorSectionProps.types';
 
 export default function useMoleculeEditorTopBarProps({
   activeView,

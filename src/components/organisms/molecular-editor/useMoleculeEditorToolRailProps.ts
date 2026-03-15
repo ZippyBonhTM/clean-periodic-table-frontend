@@ -2,7 +2,8 @@
 
 import { useMemo } from 'react';
 
-import type { ToolRailProps, UseMoleculeEditorToolRailPropsOptions } from '@/components/organisms/molecular-editor/moleculeEditorSectionProps.types';
+import type { ToolRailProps } from '@/components/organisms/molecular-editor/moleculeEditorPanelShared.types';
+import type { UseMoleculeEditorToolRailPropsOptions } from '@/components/organisms/molecular-editor/moleculeEditorSectionProps.types';
 
 export default function useMoleculeEditorToolRailProps({
   activeElementMaxBondSlots,

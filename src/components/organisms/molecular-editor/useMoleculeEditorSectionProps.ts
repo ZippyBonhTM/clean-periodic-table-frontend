@@ -5,8 +5,8 @@ import { useMemo } from 'react';
 import useMoleculeEditorCanvasPanelProps from '@/components/organisms/molecular-editor/useMoleculeEditorCanvasPanelProps';
 import useMoleculeEditorToolRailProps from '@/components/organisms/molecular-editor/useMoleculeEditorToolRailProps';
 import useMoleculeEditorTopBarProps from '@/components/organisms/molecular-editor/useMoleculeEditorTopBarProps';
+import type { MoleculeEditorSectionProps } from '@/components/organisms/molecular-editor/moleculeEditorPanelShared.types';
 import type {
-  MoleculeEditorSectionProps,
   UseMoleculeEditorSectionPropsOptions,
 } from '@/components/organisms/molecular-editor/moleculeEditorSectionProps.types';
 

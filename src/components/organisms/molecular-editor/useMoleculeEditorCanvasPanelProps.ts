@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import type {
   CanvasPanelProps,
   UseMoleculeEditorCanvasPanelPropsOptions,
-} from '@/components/organisms/molecular-editor/moleculeEditorSectionProps.types';
+} from '@/components/organisms/molecular-editor/moleculeEditorCanvasPanelProps.types';
 import useMoleculeFormulaPanelProps from '@/components/organisms/molecular-editor/useMoleculeFormulaPanelProps';
 import useMoleculePaletteRailProps from '@/components/organisms/molecular-editor/useMoleculePaletteRailProps';
 

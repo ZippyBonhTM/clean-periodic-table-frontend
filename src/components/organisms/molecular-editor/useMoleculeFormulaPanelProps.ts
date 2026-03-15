@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 
-import type { UseMoleculeFormulaPanelPropsOptions } from '@/components/organisms/molecular-editor/moleculeEditorSectionProps.types';
+import type { UseMoleculeFormulaPanelPropsOptions } from '@/components/organisms/molecular-editor/moleculeEditorCanvasPanelProps.types';
 
 export default function useMoleculeFormulaPanelProps({
   formulaPanelStyle,

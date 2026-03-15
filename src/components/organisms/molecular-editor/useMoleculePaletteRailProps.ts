@@ -2,10 +2,10 @@
 
 import { useMemo } from 'react';
 
+import type { PaletteRailProps } from '@/components/organisms/molecular-editor/moleculeEditorPanelShared.types';
 import type {
-  PaletteRailProps,
   UseMoleculePaletteRailPropsOptions,
-} from '@/components/organisms/molecular-editor/moleculeEditorSectionProps.types';
+} from '@/components/organisms/molecular-editor/moleculeEditorCanvasPanelProps.types';
 
 export default function useMoleculePaletteRailProps({
   filteredElements,
