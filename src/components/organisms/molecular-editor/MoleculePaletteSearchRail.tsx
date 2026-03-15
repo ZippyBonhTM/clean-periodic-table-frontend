@@ -2,6 +2,8 @@
 
 import type { CSSProperties, RefObject } from 'react';
 
+import MoleculePaletteSearchField from '@/components/organisms/molecular-editor/MoleculePaletteSearchField';
+
 function SearchIcon() {
   return (
     <svg
@@ -16,24 +18,6 @@ function SearchIcon() {
     >
       <circle cx="7" cy="7" r="3.8" />
       <path d="m10.2 10.2 2.6 2.6" />
-    </svg>
-  );
-}
-
-function CloseChipIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="m4.5 4.5 7 7" />
-      <path d="m11.5 4.5-7 7" />
     </svg>
   );
 }
@@ -96,45 +80,16 @@ export default function MoleculePaletteSearchRail({
             </button>
           </div>
 
-          <div
-            className={`flex min-w-0 flex-1 flex-nowrap items-center gap-1 overflow-hidden pr-1.5 ${
-              isPaletteSearchOpen ? 'pointer-events-auto' : 'pointer-events-none'
-            }`}
-            aria-hidden={!isPaletteSearchOpen}
-          >
-            <input
-              ref={searchInputRef}
-              id="molecule-element-search"
-              name="molecule-element-search"
-              type="text"
-              value={paletteQuery}
-              onChange={(event) => {
-                onPaletteSearchChange(event.target.value);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Escape' || event.key === 'Enter') {
-                  onClosePaletteSearch();
-                }
-              }}
-              tabIndex={isPaletteSearchOpen ? undefined : -1}
-              placeholder="Search"
-              className={`w-full min-w-0 bg-transparent text-foreground outline-none placeholder:text-(--text-muted) ${
-                isLandscapeCompactCanvas ? 'text-[11px]' : 'text-[13px]'
-              }`}
-            />
-
-            {paletteQuery.trim().length > 0 ? (
-              <button
-                type="button"
-                onClick={onClearPaletteSearch}
-                className={`inline-flex shrink-0 items-center justify-center rounded-full text-(--text-muted) transition-colors hover:text-foreground ${paletteSearchButtonClassName}`}
-                aria-label="Clear element search"
-                title="Clear element search"
-              >
-                <CloseChipIcon />
-              </button>
-            ) : null}
-          </div>
+          <MoleculePaletteSearchField
+            isLandscapeCompactCanvas={isLandscapeCompactCanvas}
+            isPaletteSearchOpen={isPaletteSearchOpen}
+            onClearPaletteSearch={onClearPaletteSearch}
+            onClosePaletteSearch={onClosePaletteSearch}
+            onPaletteSearchChange={onPaletteSearchChange}
+            paletteQuery={paletteQuery}
+            paletteSearchButtonClassName={paletteSearchButtonClassName}
+            searchInputRef={searchInputRef}
+          />
         </div>
       </div>
     </div>
