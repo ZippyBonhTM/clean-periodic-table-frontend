@@ -10,8 +10,8 @@ import {
 } from '@/shared/api/moleculeApi';
 import { refreshAccessToken } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
+import { executeWithFreshToken, isUnauthorizedError } from '@/shared/hooks/authRequestUtils';
 import type { SaveMoleculeInput, SavedMolecule } from '@/shared/types/molecule';
-import { readJwtExpiryMs } from '@/shared/utils/jwt';
 
 type SavedMoleculesSnapshot = {
   token: string | null;
@@ -36,26 +36,10 @@ type UseSavedMoleculesOutput = {
   deleteMolecule: (moleculeId: string) => Promise<void>;
 };
 
-const ACCESS_TOKEN_REFRESH_WINDOW_MS = 30_000;
-
 function sortSavedMolecules(data: SavedMolecule[]): SavedMolecule[] {
   return [...data].sort((first, second) => {
     return new Date(second.updatedAt).getTime() - new Date(first.updatedAt).getTime();
   });
-}
-
-function shouldRefreshBeforeRequest(token: string): boolean {
-  const expiryMs = readJwtExpiryMs(token);
-
-  if (expiryMs === null) {
-    return false;
-  }
-
-  return expiryMs - Date.now() <= ACCESS_TOKEN_REFRESH_WINDOW_MS;
-}
-
-function isUnauthorizedError(error: unknown): error is ApiError {
-  return error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403);
 }
 
 function mapSavedMoleculesErrorMessage(error: unknown): string {
@@ -89,33 +73,6 @@ function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMo
     return refreshResponse.accessToken;
   }, [onTokenRefresh]);
 
-  const executeWithFreshToken = useCallback(
-    async <Result,>(
-      currentToken: string,
-      operation: (activeToken: string) => Promise<Result>,
-    ): Promise<{ activeToken: string; result: Result }> => {
-      let activeToken = currentToken;
-
-      if (shouldRefreshBeforeRequest(activeToken)) {
-        activeToken = await refreshTokenOnce();
-      }
-
-      try {
-        const result = await operation(activeToken);
-        return { activeToken, result };
-      } catch (caughtError: unknown) {
-        if (!isUnauthorizedError(caughtError)) {
-          throw caughtError;
-        }
-
-        const refreshedToken = await refreshTokenOnce();
-        const result = await operation(refreshedToken);
-        return { activeToken: refreshedToken, result };
-      }
-    },
-    [refreshTokenOnce],
-  );
-
   const reload = useCallback(() => {
     setReloadVersion((current) => current + 1);
   }, []);
@@ -134,7 +91,7 @@ function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMo
 
     const loadSavedMolecules = async () => {
       try {
-        const { activeToken, result } = await executeWithFreshToken(token, async (resolvedToken) => {
+        const { activeToken, result } = await executeWithFreshToken(token, refreshTokenOnce, async (resolvedToken) => {
           return await listSavedMolecules(resolvedToken);
         });
 
@@ -175,7 +132,7 @@ function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMo
     return () => {
       isCancelled = true;
     };
-  }, [executeWithFreshToken, onUnauthorized, reloadVersion, token]);
+  }, [onUnauthorized, refreshTokenOnce, reloadVersion, token]);
 
   const createMolecule = useCallback(
     async (input: SaveMoleculeInput): Promise<SavedMolecule> => {
@@ -186,7 +143,7 @@ function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMo
       setIsMutating(true);
 
       try {
-        const { activeToken, result } = await executeWithFreshToken(token, async (resolvedToken) => {
+        const { activeToken, result } = await executeWithFreshToken(token, refreshTokenOnce, async (resolvedToken) => {
           return await createSavedMolecule(resolvedToken, input);
         });
 
@@ -207,7 +164,7 @@ function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMo
         setIsMutating(false);
       }
     },
-    [executeWithFreshToken, onUnauthorized, token],
+    [onUnauthorized, refreshTokenOnce, token],
   );
 
   const updateMoleculeById = useCallback(
@@ -219,7 +176,7 @@ function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMo
       setIsMutating(true);
 
       try {
-        const { activeToken, result } = await executeWithFreshToken(token, async (resolvedToken) => {
+        const { activeToken, result } = await executeWithFreshToken(token, refreshTokenOnce, async (resolvedToken) => {
           return await updateSavedMolecule(resolvedToken, moleculeId, input);
         });
 
@@ -242,7 +199,7 @@ function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMo
         setIsMutating(false);
       }
     },
-    [executeWithFreshToken, onUnauthorized, token],
+    [onUnauthorized, refreshTokenOnce, token],
   );
 
   const deleteMoleculeById = useCallback(
@@ -254,7 +211,7 @@ function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMo
       setIsMutating(true);
 
       try {
-        const { activeToken } = await executeWithFreshToken(token, async (resolvedToken) => {
+        const { activeToken } = await executeWithFreshToken(token, refreshTokenOnce, async (resolvedToken) => {
           await deleteSavedMolecule(resolvedToken, moleculeId);
         });
 
@@ -273,7 +230,7 @@ function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMo
         setIsMutating(false);
       }
     },
-    [executeWithFreshToken, onUnauthorized, token],
+    [onUnauthorized, refreshTokenOnce, token],
   );
 
   const data = useMemo(() => {

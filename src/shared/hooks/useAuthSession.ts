@@ -4,6 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { refreshAccessToken, validateAccessToken } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
+import {
+  ACCESS_TOKEN_REFRESH_WINDOW_MS,
+  isUnauthorizedError,
+  shouldRefreshBeforeRequest,
+} from '@/shared/hooks/authRequestUtils';
 import { readJwtExpiryMs } from '@/shared/utils/jwt';
 
 type AuthSessionStatus = 'anonymous' | 'checking' | 'authenticated' | 'unverified';
@@ -28,8 +33,6 @@ type UseAuthSessionOutput = {
   revalidate: () => void;
 };
 
-const ACCESS_TOKEN_REFRESH_WINDOW_MS = 30_000;
-
 function mapVerificationErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.statusCode === 0) {
     return 'Could not verify your session due to network or CORS. Check service availability.';
@@ -44,10 +47,6 @@ function mapVerificationErrorMessage(error: unknown): string {
   }
 
   return 'Could not verify your session right now.';
-}
-
-function isUnauthorizedError(error: unknown): error is ApiError {
-  return error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403);
 }
 
 function useAuthSession({
@@ -132,9 +131,7 @@ function useAuthSession({
     };
 
     const resolveSession = async (currentToken: string) => {
-      const expiryMs = readJwtExpiryMs(currentToken);
-      const shouldRefreshBeforeValidation =
-        expiryMs !== null && expiryMs - Date.now() <= ACCESS_TOKEN_REFRESH_WINDOW_MS;
+      const shouldRefreshBeforeValidation = shouldRefreshBeforeRequest(currentToken);
 
       if (shouldRefreshBeforeValidation) {
         try {
