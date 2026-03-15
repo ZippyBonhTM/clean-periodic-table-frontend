@@ -1,23 +1,21 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 
 import Button from '@/components/atoms/Button';
 import TokenStatus from '@/components/molecules/TokenStatus';
 import type { TokenStatusType } from '@/components/molecules/TokenStatus';
 import UserAvatarPlaceholder from '@/components/molecules/UserAvatarPlaceholder';
-import { fetchProfile } from '@/shared/api/authApi';
 import useAuthToken from '@/shared/hooks/useAuthToken';
 import type { AppTheme } from '@/shared/hooks/useTheme';
-import { readJwtDisplayName } from '@/shared/utils/jwt';
-import type { AuthUserProfile } from '@/shared/types/auth';
 
 import AppHeaderAuthActions from './AppHeaderAuthActions';
 import AppHeaderDesktopNav from './AppHeaderDesktopNav';
 import AppHeaderRouteMenu from './AppHeaderRouteMenu';
 import AppHeaderUserMenu from './AppHeaderUserMenu';
-import type { AuthEntryMode, UserProfileRequestStatus } from './appHeader.types';
+import type { AuthEntryMode } from './appHeader.types';
+import useAppHeaderUserMenu from './useAppHeaderUserMenu';
 
 type AppHeaderProps = {
   hasToken: boolean;
@@ -29,8 +27,6 @@ type AppHeaderProps = {
   onRequestLogin?: () => void;
   onRequestRegister?: () => void;
 };
-
-const USER_MENU_DRAG_CLOSE_THRESHOLD = 70;
 
 function resolveAuthIndicatorTone(status: TokenStatusType): string {
   if (status === 'authenticated') {
@@ -103,48 +99,36 @@ function AppHeader({
   const pathname = usePathname();
   const { token, persistToken } = useAuthToken();
   const [isRouteMenuOpen, setIsRouteMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
-  const [userMenuDragOffset, setUserMenuDragOffset] = useState(0);
-  const [userProfileStatus, setUserProfileStatus] = useState<UserProfileRequestStatus>('idle');
-  const [userProfile, setUserProfile] = useState<AuthUserProfile | null>(null);
-  const [userProfileError, setUserProfileError] = useState<string | null>(null);
-  const userMenuDragPointerIdRef = useRef<number | null>(null);
-  const userMenuDragStartXRef = useRef<number | null>(null);
-  const userMenuDragOffsetRef = useRef(0);
-  const fetchedProfileTokenRef = useRef<string | null>(null);
 
   const themeToggleLabel = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
   const authIndicatorTone = resolveAuthIndicatorTone(authStatus);
-
-  const userDisplayName = useMemo(() => {
-    if (!hasToken || token === null) {
-      return 'Guest';
-    }
-
-    if (userProfile?.name.trim().length) {
-      return userProfile.name;
-    }
-
-    return readJwtDisplayName(token) ?? 'User';
-  }, [hasToken, token, userProfile?.name]);
-
-  const resetUserMenuDrag = useCallback(() => {
-    userMenuDragOffsetRef.current = 0;
-    userMenuDragStartXRef.current = null;
-    userMenuDragPointerIdRef.current = null;
-    setUserMenuDragOffset(0);
-  }, []);
+  const {
+    isUserMenuOpen,
+    isLogoutConfirmOpen,
+    userProfileStatus,
+    userProfile,
+    userProfileError,
+    userDisplayName,
+    userMenuPanelStyle,
+    openUserMenu,
+    closeUserMenu,
+    requestLogoutConfirm,
+    cancelLogoutConfirm,
+    confirmLogout,
+    resetUserMenuDrag,
+    onUserMenuHandlePointerDown,
+    onUserMenuHandlePointerMove,
+    finishUserMenuDrag,
+  } = useAppHeaderUserMenu({
+    hasToken,
+    token,
+    onPersistToken: persistToken,
+    onLogout,
+  });
 
   const closeRouteMenu = useCallback(() => {
     setIsRouteMenuOpen(false);
   }, []);
-
-  const closeUserMenu = useCallback(() => {
-    setIsUserMenuOpen(false);
-    setIsLogoutConfirmOpen(false);
-    resetUserMenuDrag();
-  }, [resetUserMenuDrag]);
 
   const closeAllMenus = useCallback(() => {
     closeRouteMenu();
@@ -184,65 +168,8 @@ function AppHeader({
     };
   }, [closeAllMenus, hasAnyMobileMenuOpen]);
 
-  useEffect(() => {
-    if (!isUserMenuOpen) {
-      return;
-    }
-
-    if (!hasToken || token === null) {
-      return;
-    }
-
-    if (fetchedProfileTokenRef.current === token) {
-      return;
-    }
-
-    fetchedProfileTokenRef.current = token;
-    let isCancelled = false;
-
-    void fetchProfile(token)
-      .then((profileResponse) => {
-        if (isCancelled) {
-          return;
-        }
-
-        const nextAccessToken = profileResponse.accessToken.trim();
-
-        if (nextAccessToken.length > 0) {
-          fetchedProfileTokenRef.current = nextAccessToken;
-
-          if (nextAccessToken !== token) {
-            persistToken(nextAccessToken);
-          }
-        }
-
-        setUserProfile(profileResponse.userProfile);
-        setUserProfileStatus('success');
-      })
-      .catch((caughtError: unknown) => {
-        if (isCancelled) {
-          return;
-        }
-
-        fetchedProfileTokenRef.current = null;
-        setUserProfile(null);
-        setUserProfileStatus('error');
-
-        if (caughtError instanceof Error && caughtError.message.trim().length > 0) {
-          setUserProfileError(caughtError.message);
-          return;
-        }
-
-        setUserProfileError('Could not load user profile right now.');
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [hasToken, isUserMenuOpen, persistToken, token]);
-
   const onOpenRouteMenu = () => {
-    setIsUserMenuOpen(false);
+    closeUserMenu();
     setIsRouteMenuOpen(true);
   };
 
@@ -252,12 +179,8 @@ function AppHeader({
     }
 
     setIsRouteMenuOpen(false);
-    resetUserMenuDrag();
-    setUserProfileStatus('loading');
-    setUserProfileError(null);
-    setIsLogoutConfirmOpen(false);
-    setIsUserMenuOpen(true);
-  }, [isUserMenuOpen, resetUserMenuDrag]);
+    openUserMenu();
+  }, [isUserMenuOpen, openUserMenu]);
 
   const onRequestLoginFromButton = () => {
     closeAllMenus();
@@ -267,68 +190,6 @@ function AppHeader({
   const onRequestRegisterFromButton = () => {
     closeAllMenus();
     onRequestRegister?.();
-  };
-
-  const onRequestLogoutConfirm = () => {
-    setIsLogoutConfirmOpen(true);
-  };
-
-  const onCancelLogoutConfirm = () => {
-    setIsLogoutConfirmOpen(false);
-  };
-
-  const onConfirmLogout = useCallback(() => {
-    if (onLogout === undefined) {
-      return;
-    }
-
-    setIsLogoutConfirmOpen(false);
-    closeUserMenu();
-    onLogout();
-  }, [closeUserMenu, onLogout]);
-
-  const onUserMenuHandlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
-    userMenuDragPointerIdRef.current = event.pointerId;
-    userMenuDragStartXRef.current = event.clientX;
-    userMenuDragOffsetRef.current = 0;
-    setUserMenuDragOffset(0);
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const onUserMenuHandlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (userMenuDragPointerIdRef.current !== event.pointerId || userMenuDragStartXRef.current === null) {
-      return;
-    }
-
-    const nextOffset = Math.max(0, event.clientX - userMenuDragStartXRef.current);
-    userMenuDragOffsetRef.current = nextOffset;
-    setUserMenuDragOffset(nextOffset);
-  };
-
-  const finishUserMenuDrag = (
-    event: React.PointerEvent<HTMLButtonElement>,
-    forceClose: boolean = false,
-  ) => {
-    if (userMenuDragPointerIdRef.current !== event.pointerId) {
-      return;
-    }
-
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-
-    const shouldClose = forceClose || userMenuDragOffsetRef.current >= USER_MENU_DRAG_CLOSE_THRESHOLD;
-
-    if (shouldClose) {
-      closeUserMenu();
-      return;
-    }
-
-    resetUserMenuDrag();
-  };
-
-  const userMenuPanelStyle: React.CSSProperties = {
-    transform: isUserMenuOpen ? `translateX(${userMenuDragOffset}px)` : 'translateX(100%)',
   };
 
   return (
@@ -459,9 +320,9 @@ function AppHeader({
         isLogoutConfirmOpen={isLogoutConfirmOpen}
         userMenuPanelStyle={userMenuPanelStyle}
         onClose={closeUserMenu}
-        onRequestLogoutConfirm={onRequestLogoutConfirm}
-        onCancelLogoutConfirm={onCancelLogoutConfirm}
-        onConfirmLogout={onConfirmLogout}
+        onRequestLogoutConfirm={requestLogoutConfirm}
+        onCancelLogoutConfirm={cancelLogoutConfirm}
+        onConfirmLogout={confirmLogout}
         onHandlePointerDown={onUserMenuHandlePointerDown}
         onHandlePointerMove={onUserMenuHandlePointerMove}
         onHandlePointerUp={(event) => finishUserMenuDrag(event)}
