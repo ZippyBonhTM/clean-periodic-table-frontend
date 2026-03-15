@@ -1,4 +1,5 @@
 export type AuthEntryMode = 'modal' | 'route';
+export type UserProfileRequestStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export type AppHeaderNavLink = {
   href: string;

@@ -16,7 +16,8 @@ import type { AuthUserProfile } from '@/shared/types/auth';
 import AppHeaderAuthActions from './AppHeaderAuthActions';
 import AppHeaderDesktopNav from './AppHeaderDesktopNav';
 import AppHeaderRouteMenu from './AppHeaderRouteMenu';
-import type { AuthEntryMode } from './appHeader.types';
+import AppHeaderUserMenu from './AppHeaderUserMenu';
+import type { AuthEntryMode, UserProfileRequestStatus } from './appHeader.types';
 
 type AppHeaderProps = {
   hasToken: boolean;
@@ -30,8 +31,6 @@ type AppHeaderProps = {
 };
 
 const USER_MENU_DRAG_CLOSE_THRESHOLD = 70;
-
-type UserProfileRequestStatus = 'idle' | 'loading' | 'success' | 'error';
 
 function resolveAuthIndicatorTone(status: TokenStatusType): string {
   if (status === 'authenticated') {
@@ -450,142 +449,25 @@ function AppHeader({
 
       <AppHeaderRouteMenu isOpen={isRouteMenuOpen} pathname={pathname} onClose={closeRouteMenu} />
 
-      <div
-        className={`fixed inset-0 z-160 transition-opacity duration-300 ${
-          isUserMenuOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-        }`}
-        aria-hidden={!isUserMenuOpen}
-      >
-        <button
-          type="button"
-          onClick={closeUserMenu}
-          className="absolute inset-0 bg-black/35"
-          aria-label="Close user menu backdrop"
-        />
-
-        <aside
-          className="absolute right-0 top-0 h-full w-[min(84vw,320px)] border-l border-(--border-subtle) bg-[rgba(9,17,34,0.34)] p-4 shadow-2xl backdrop-blur-xl transition-transform duration-300"
-          style={userMenuPanelStyle}
-          role="dialog"
-          aria-modal="true"
-          aria-label="User menu"
-        >
-          <button
-            type="button"
-            onClick={closeUserMenu}
-            onPointerDown={onUserMenuHandlePointerDown}
-            onPointerMove={onUserMenuHandlePointerMove}
-            onPointerUp={(event) => finishUserMenuDrag(event)}
-            onPointerCancel={(event) => finishUserMenuDrag(event)}
-            onLostPointerCapture={resetUserMenuDrag}
-            className="absolute left-0 top-0 h-full w-4 -translate-x-full border-r border-(--border-subtle)/55 bg-transparent"
-            aria-label="Drag or tap edge to close user menu"
-            title="Drag or tap edge to close user menu"
-          />
-
-          <div className="flex items-center justify-between gap-2">
-            <p
-              className="max-w-52.5 truncate text-sm font-semibold text-foreground"
-              title={userDisplayName}
-            >
-              {userDisplayName}
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="px-2"
-              onClick={closeUserMenu}
-              aria-label="Close user menu"
-            >
-              Close
-            </Button>
-          </div>
-
-          <p className="mt-1 text-xs text-(--text-muted)">User menu</p>
-
-          <section className="mt-4 rounded-xl border border-(--border-subtle) bg-(--surface-2)/55 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-(--text-muted)">
-              Profile
-            </p>
-
-            {!hasToken ? (
-              <p className="mt-2 text-xs text-(--text-muted)">Not authenticated.</p>
-            ) : userProfileStatus === 'loading' ? (
-              <p className="mt-2 text-xs text-(--text-muted)">Loading profile...</p>
-            ) : userProfileStatus === 'error' ? (
-              <p className="mt-2 text-xs text-rose-200">{userProfileError ?? 'Profile unavailable.'}</p>
-            ) : userProfile !== null ? (
-              <dl className="mt-2 space-y-1.5">
-                <div className="flex items-start justify-between gap-3">
-                  <dt className="text-[10px] uppercase tracking-widest text-(--text-muted)">Name</dt>
-                  <dd className="max-w-42.5 truncate text-xs font-semibold text-foreground" title={userProfile.name}>
-                    {userProfile.name}
-                  </dd>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <dt className="text-[10px] uppercase tracking-widest text-(--text-muted)">Email</dt>
-                  <dd className="max-w-42.5 truncate text-xs text-foreground" title={userProfile.email}>
-                    {userProfile.email}
-                  </dd>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <dt className="text-[10px] uppercase tracking-widest text-(--text-muted)">Role</dt>
-                  <dd className="text-xs font-semibold text-foreground">{userProfile.role}</dd>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <dt className="text-[10px] uppercase tracking-widest text-(--text-muted)">ID</dt>
-                  <dd className="max-w-42.5 break-all text-[11px] font-medium text-foreground">
-                    {userProfile.id}
-                  </dd>
-                </div>
-              </dl>
-            ) : (
-              <p className="mt-2 text-xs text-(--text-muted)">Profile unavailable.</p>
-            )}
-          </section>
-
-          <div className="mt-4">
-            {hasToken && onLogout !== undefined ? (
-              isLogoutConfirmOpen ? (
-                <div className="space-y-2 rounded-lg border border-rose-500/45 bg-rose-500/10 p-2">
-                  <p className="text-[11px] text-rose-100">Confirm logout?</p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      align="center"
-                      className="flex-1 px-2 text-[10px] uppercase tracking-[0.06em]"
-                      onClick={onCancelLogoutConfirm}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      align="center"
-                      className="flex-1 border border-rose-500/65 bg-rose-500/12 px-2 text-[10px] uppercase tracking-[0.06em] text-rose-200 hover:bg-rose-500/22"
-                      onClick={onConfirmLogout}
-                    >
-                      Logout
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <Button
-                  type="button"
-                  size="sm"
-                  align="center"
-                  className="w-full border border-rose-500/65 bg-rose-500/12 px-3 text-[10px] uppercase tracking-[0.08em] text-rose-200 hover:bg-rose-500/22"
-                  onClick={onRequestLogoutConfirm}
-                >
-                  Logout
-                </Button>
-              )
-            ) : null}
-          </div>
-        </aside>
-      </div>
+      <AppHeaderUserMenu
+        isOpen={isUserMenuOpen}
+        hasToken={hasToken}
+        userDisplayName={userDisplayName}
+        userProfileStatus={userProfileStatus}
+        userProfile={userProfile}
+        userProfileError={userProfileError}
+        isLogoutConfirmOpen={isLogoutConfirmOpen}
+        userMenuPanelStyle={userMenuPanelStyle}
+        onClose={closeUserMenu}
+        onRequestLogoutConfirm={onRequestLogoutConfirm}
+        onCancelLogoutConfirm={onCancelLogoutConfirm}
+        onConfirmLogout={onConfirmLogout}
+        onHandlePointerDown={onUserMenuHandlePointerDown}
+        onHandlePointerMove={onUserMenuHandlePointerMove}
+        onHandlePointerUp={(event) => finishUserMenuDrag(event)}
+        onHandlePointerCancel={(event) => finishUserMenuDrag(event)}
+        onHandleLostPointerCapture={resetUserMenuDrag}
+      />
     </>
   );
 }
