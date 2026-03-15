@@ -3,16 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
+import type { ShowGalleryFeedback } from '@/components/organisms/molecular-editor/savedMoleculeWorkflow.types';
 import { writePendingSavedMoleculeId } from '@/shared/storage/pendingSavedMoleculeStorage';
 import type { SavedMolecule } from '@/shared/types/molecule';
-
-type ShowGalleryFeedback = (
-  tone: 'info' | 'success' | 'error',
-  message: string,
-  options?: {
-    persist?: boolean;
-  },
-) => void;
 
 type UseSavedMoleculeWorkflowUiOptions = {
   activeSavedMolecule: SavedMolecule | null;

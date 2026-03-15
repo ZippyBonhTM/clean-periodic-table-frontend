@@ -2,19 +2,10 @@
 
 import usePendingSavedMoleculeLoader from '@/components/organisms/molecular-editor/usePendingSavedMoleculeLoader';
 import useResolvedSavedMoleculeSelection from '@/components/organisms/molecular-editor/useResolvedSavedMoleculeSelection';
+import type { ShowGalleryFeedback } from '@/components/organisms/molecular-editor/savedMoleculeWorkflow.types';
 import useSavedMoleculeMutations from '@/components/organisms/molecular-editor/useSavedMoleculeMutations';
 import useSavedMoleculeWorkflowUi from '@/components/organisms/molecular-editor/useSavedMoleculeWorkflowUi';
 import type { SaveMoleculeInput, SavedMolecule } from '@/shared/types/molecule';
-
-type GalleryFeedbackTone = 'info' | 'success' | 'error';
-
-type ShowGalleryFeedback = (
-  tone: GalleryFeedbackTone,
-  message: string,
-  options?: {
-    persist?: boolean;
-  },
-) => void;
 
 type UseSavedMoleculeWorkflowOptions = {
   activeSavedMoleculeId: string | null;

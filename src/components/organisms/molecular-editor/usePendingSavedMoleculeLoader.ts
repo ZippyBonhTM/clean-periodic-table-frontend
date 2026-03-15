@@ -2,19 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import type { ShowGalleryFeedback } from '@/components/organisms/molecular-editor/savedMoleculeWorkflow.types';
 import {
   clearPendingSavedMoleculeId,
   readPendingSavedMoleculeId,
 } from '@/shared/storage/pendingSavedMoleculeStorage';
 import type { SavedMolecule } from '@/shared/types/molecule';
-
-type ShowGalleryFeedback = (
-  tone: 'info' | 'success' | 'error',
-  message: string,
-  options?: {
-    persist?: boolean;
-  },
-) => void;
 
 type UsePendingSavedMoleculeLoaderOptions = {
   applySavedMolecule: (savedMolecule: SavedMolecule, notice: string) => void;

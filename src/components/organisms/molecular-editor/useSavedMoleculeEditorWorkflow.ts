@@ -1,17 +1,10 @@
 'use client';
 
 import type { SavedEditorDraft } from '@/components/organisms/molecular-editor/moleculeEditorSession';
+import type { ShowGalleryFeedback } from '@/components/organisms/molecular-editor/savedMoleculeWorkflow.types';
 import useApplySavedMoleculeToEditor from '@/components/organisms/molecular-editor/useApplySavedMoleculeToEditor';
 import useSavedMoleculeWorkflow from '@/components/organisms/molecular-editor/useSavedMoleculeWorkflow';
 import type { SaveMoleculeInput, SavedMolecule } from '@/shared/types/molecule';
-
-type ShowGalleryFeedback = (
-  tone: 'info' | 'success' | 'error',
-  message: string,
-  options?: {
-    persist?: boolean;
-  },
-) => void;
 
 type UseSavedMoleculeEditorWorkflowOptions = {
   activeSavedMoleculeId: string | null;
