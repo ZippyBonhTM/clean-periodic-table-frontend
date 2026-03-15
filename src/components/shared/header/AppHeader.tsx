@@ -1,20 +1,22 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback } from 'react';
 
 import Button from '@/components/atoms/Button';
-import LinkButton from '@/components/atoms/LinkButton';
 import TokenStatus from '@/components/molecules/TokenStatus';
 import type { TokenStatusType } from '@/components/molecules/TokenStatus';
 import UserAvatarPlaceholder from '@/components/molecules/UserAvatarPlaceholder';
-import { fetchProfile } from '@/shared/api/authApi';
 import useAuthToken from '@/shared/hooks/useAuthToken';
 import type { AppTheme } from '@/shared/hooks/useTheme';
-import { readJwtDisplayName } from '@/shared/utils/jwt';
-import type { AuthUserProfile } from '@/shared/types/auth';
 
-type AuthEntryMode = 'modal' | 'route';
+import AppHeaderAuthActions from './AppHeaderAuthActions';
+import AppHeaderDesktopNav from './AppHeaderDesktopNav';
+import AppHeaderRouteMenu from './AppHeaderRouteMenu';
+import AppHeaderUserMenu from './AppHeaderUserMenu';
+import type { AuthEntryMode } from './appHeader.types';
+import useAppHeaderMobileMenus from './useAppHeaderMobileMenus';
+import useAppHeaderUserMenu from './useAppHeaderUserMenu';
 
 type AppHeaderProps = {
   hasToken: boolean;
@@ -26,17 +28,6 @@ type AppHeaderProps = {
   onRequestLogin?: () => void;
   onRequestRegister?: () => void;
 };
-
-const NAV_LINKS = [
-  { href: '/periodic-table', label: 'Periodic Table' },
-  { href: '/search', label: 'Search' },
-  { href: '/molecular-editor', label: 'Molecular Editor', badge: 'BETA' },
-  { href: '/molecule-gallery', label: 'Molecule Gallery', badge: 'BETA' },
-];
-
-const USER_MENU_DRAG_CLOSE_THRESHOLD = 70;
-
-type UserProfileRequestStatus = 'idle' | 'loading' | 'success' | 'error';
 
 function resolveAuthIndicatorTone(status: TokenStatusType): string {
   if (status === 'authenticated') {
@@ -96,19 +87,6 @@ function ThemeGlyph({ theme }: { theme: AppTheme }) {
   );
 }
 
-function NavLinkLabel({ label, badge }: { label: string; badge?: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span>{label}</span>
-      {badge === undefined ? null : (
-        <span className="inline-flex items-center rounded-full border border-(--accent)/45 bg-(--accent)/12 px-1.5 py-px text-[8px] font-bold uppercase tracking-[0.18em] text-foreground">
-          {badge}
-        </span>
-      )}
-    </span>
-  );
-}
-
 function AppHeader({
   hasToken,
   authStatus,
@@ -121,162 +99,46 @@ function AppHeader({
 }: AppHeaderProps) {
   const pathname = usePathname();
   const { token, persistToken } = useAuthToken();
-  const [isRouteMenuOpen, setIsRouteMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
-  const [userMenuDragOffset, setUserMenuDragOffset] = useState(0);
-  const [userProfileStatus, setUserProfileStatus] = useState<UserProfileRequestStatus>('idle');
-  const [userProfile, setUserProfile] = useState<AuthUserProfile | null>(null);
-  const [userProfileError, setUserProfileError] = useState<string | null>(null);
-  const userMenuDragPointerIdRef = useRef<number | null>(null);
-  const userMenuDragStartXRef = useRef<number | null>(null);
-  const userMenuDragOffsetRef = useRef(0);
-  const fetchedProfileTokenRef = useRef<string | null>(null);
 
   const themeToggleLabel = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
   const authIndicatorTone = resolveAuthIndicatorTone(authStatus);
-
-  const userDisplayName = useMemo(() => {
-    if (!hasToken || token === null) {
-      return 'Guest';
-    }
-
-    if (userProfile?.name.trim().length) {
-      return userProfile.name;
-    }
-
-    return readJwtDisplayName(token) ?? 'User';
-  }, [hasToken, token, userProfile?.name]);
-
-  const resetUserMenuDrag = useCallback(() => {
-    userMenuDragOffsetRef.current = 0;
-    userMenuDragStartXRef.current = null;
-    userMenuDragPointerIdRef.current = null;
-    setUserMenuDragOffset(0);
-  }, []);
-
-  const closeRouteMenu = useCallback(() => {
-    setIsRouteMenuOpen(false);
-  }, []);
-
-  const closeUserMenu = useCallback(() => {
-    setIsUserMenuOpen(false);
-    setIsLogoutConfirmOpen(false);
-    resetUserMenuDrag();
-  }, [resetUserMenuDrag]);
-
-  const closeAllMenus = useCallback(() => {
-    closeRouteMenu();
-    closeUserMenu();
-  }, [closeRouteMenu, closeUserMenu]);
-
-  const hasAnyMobileMenuOpen = isRouteMenuOpen || isUserMenuOpen;
-
-  useEffect(() => {
-    if (!hasAnyMobileMenuOpen) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [hasAnyMobileMenuOpen]);
-
-  useEffect(() => {
-    if (!hasAnyMobileMenuOpen) {
-      return;
-    }
-
-    const onEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        closeAllMenus();
-      }
-    };
-
-    window.addEventListener('keydown', onEscape);
-
-    return () => {
-      window.removeEventListener('keydown', onEscape);
-    };
-  }, [closeAllMenus, hasAnyMobileMenuOpen]);
-
-  useEffect(() => {
-    if (!isUserMenuOpen) {
-      return;
-    }
-
-    if (!hasToken || token === null) {
-      return;
-    }
-
-    if (fetchedProfileTokenRef.current === token) {
-      return;
-    }
-
-    fetchedProfileTokenRef.current = token;
-    let isCancelled = false;
-
-    void fetchProfile(token)
-      .then((profileResponse) => {
-        if (isCancelled) {
-          return;
-        }
-
-        const nextAccessToken = profileResponse.accessToken.trim();
-
-        if (nextAccessToken.length > 0) {
-          fetchedProfileTokenRef.current = nextAccessToken;
-
-          if (nextAccessToken !== token) {
-            persistToken(nextAccessToken);
-          }
-        }
-
-        setUserProfile(profileResponse.userProfile);
-        setUserProfileStatus('success');
-      })
-      .catch((caughtError: unknown) => {
-        if (isCancelled) {
-          return;
-        }
-
-        fetchedProfileTokenRef.current = null;
-        setUserProfile(null);
-        setUserProfileStatus('error');
-
-        if (caughtError instanceof Error && caughtError.message.trim().length > 0) {
-          setUserProfileError(caughtError.message);
-          return;
-        }
-
-        setUserProfileError('Could not load user profile right now.');
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [hasToken, isUserMenuOpen, persistToken, token]);
-
-  const onOpenRouteMenu = () => {
-    setIsUserMenuOpen(false);
-    setIsRouteMenuOpen(true);
-  };
+  const {
+    isUserMenuOpen,
+    isLogoutConfirmOpen,
+    userProfileStatus,
+    userProfile,
+    userProfileError,
+    userDisplayName,
+    userMenuPanelStyle,
+    openUserMenu,
+    closeUserMenu,
+    requestLogoutConfirm,
+    cancelLogoutConfirm,
+    confirmLogout,
+    resetUserMenuDrag,
+    onUserMenuHandlePointerDown,
+    onUserMenuHandlePointerMove,
+    finishUserMenuDrag,
+  } = useAppHeaderUserMenu({
+    hasToken,
+    token,
+    onPersistToken: persistToken,
+    onLogout,
+  });
+  const { isRouteMenuOpen, closeRouteMenu, closeAllMenus, openRouteMenu } =
+    useAppHeaderMobileMenus({
+      isUserMenuOpen,
+      closeUserMenu,
+    });
 
   const onOpenUserMenu = useCallback(() => {
     if (isUserMenuOpen) {
       return;
     }
 
-    setIsRouteMenuOpen(false);
-    resetUserMenuDrag();
-    setUserProfileStatus('loading');
-    setUserProfileError(null);
-    setIsLogoutConfirmOpen(false);
-    setIsUserMenuOpen(true);
-  }, [isUserMenuOpen, resetUserMenuDrag]);
+    closeRouteMenu();
+    openUserMenu();
+  }, [closeRouteMenu, isUserMenuOpen, openUserMenu]);
 
   const onRequestLoginFromButton = () => {
     closeAllMenus();
@@ -286,68 +148,6 @@ function AppHeader({
   const onRequestRegisterFromButton = () => {
     closeAllMenus();
     onRequestRegister?.();
-  };
-
-  const onRequestLogoutConfirm = () => {
-    setIsLogoutConfirmOpen(true);
-  };
-
-  const onCancelLogoutConfirm = () => {
-    setIsLogoutConfirmOpen(false);
-  };
-
-  const onConfirmLogout = useCallback(() => {
-    if (onLogout === undefined) {
-      return;
-    }
-
-    setIsLogoutConfirmOpen(false);
-    closeUserMenu();
-    onLogout();
-  }, [closeUserMenu, onLogout]);
-
-  const onUserMenuHandlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
-    userMenuDragPointerIdRef.current = event.pointerId;
-    userMenuDragStartXRef.current = event.clientX;
-    userMenuDragOffsetRef.current = 0;
-    setUserMenuDragOffset(0);
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const onUserMenuHandlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (userMenuDragPointerIdRef.current !== event.pointerId || userMenuDragStartXRef.current === null) {
-      return;
-    }
-
-    const nextOffset = Math.max(0, event.clientX - userMenuDragStartXRef.current);
-    userMenuDragOffsetRef.current = nextOffset;
-    setUserMenuDragOffset(nextOffset);
-  };
-
-  const finishUserMenuDrag = (
-    event: React.PointerEvent<HTMLButtonElement>,
-    forceClose: boolean = false,
-  ) => {
-    if (userMenuDragPointerIdRef.current !== event.pointerId) {
-      return;
-    }
-
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-
-    const shouldClose = forceClose || userMenuDragOffsetRef.current >= USER_MENU_DRAG_CLOSE_THRESHOLD;
-
-    if (shouldClose) {
-      closeUserMenu();
-      return;
-    }
-
-    resetUserMenuDrag();
-  };
-
-  const userMenuPanelStyle: React.CSSProperties = {
-    transform: isUserMenuOpen ? `translateX(${userMenuDragOffset}px)` : 'translateX(100%)',
   };
 
   return (
@@ -393,69 +193,16 @@ function AppHeader({
             </div>
 
             <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
-              {!hasToken && authEntryMode === 'route' ? (
-                <>
-                  <LinkButton
-                    href="/login"
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                  >
-                    Login
-                  </LinkButton>
-                  <LinkButton
-                    href="/register"
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                  >
-                    Register
-                  </LinkButton>
-                </>
-              ) : !hasToken ? (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                    onClick={onRequestLogin}
-                  >
-                    Login
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                    onClick={onRequestRegister}
-                  >
-                    Register
-                  </Button>
-                </>
-              ) : null}
+              <AppHeaderAuthActions
+                hasToken={hasToken}
+                authEntryMode={authEntryMode}
+                onRequestLogin={onRequestLogin}
+                onRequestRegister={onRequestRegister}
+              />
             </div>
           </div>
-          
-          <nav className="flex flex-wrap items-center gap-2 md:col-start-1 md:row-start-2">
-            {NAV_LINKS.map((item) => {
-              const isActive = pathname === item.href || (pathname === '/' && item.href === '/search');
 
-              return (
-                <LinkButton
-                  key={item.href}
-                  href={item.href}
-                  variant={isActive ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="rounded-lg px-2.5 text-[11px]"
-                >
-                  <NavLinkLabel label={item.label} badge={item.badge} />
-                </LinkButton>
-              );
-            })}
-          </nav>
+          <AppHeaderDesktopNav pathname={pathname} />
         </div>
       </header>
 
@@ -469,7 +216,7 @@ function AppHeader({
               type="button"
               variant="ghost"
               size="sm"
-              onClick={onOpenRouteMenu}
+              onClick={openRouteMenu}
               className="size-9 rounded-xl px-0"
               aria-label="Open routes menu"
               title="Open routes menu"
@@ -508,249 +255,38 @@ function AppHeader({
                 <UserAvatarPlaceholder hasToken={hasToken} />
               </button>
 
-              {!hasToken && authEntryMode === 'route' ? (
-                <>
-                  <LinkButton
-                    href="/login"
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                  >
-                    Login
-                  </LinkButton>
-                  <LinkButton
-                    href="/register"
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                  >
-                    Register
-                  </LinkButton>
-                </>
-              ) : null}
-
-              {!hasToken && authEntryMode === 'modal' ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                    onClick={onRequestLoginFromButton}
-                  >
-                    Login
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                    onClick={onRequestRegisterFromButton}
-                  >
-                    Register
-                  </Button>
-                </>
-              ) : null}
+              <AppHeaderAuthActions
+                hasToken={hasToken}
+                authEntryMode={authEntryMode}
+                onRequestLogin={onRequestLoginFromButton}
+                onRequestRegister={onRequestRegisterFromButton}
+              />
             </div>
           </div>
         </header>
       </div>
 
-      <div
-        className={`fixed inset-0 z-150 transition-opacity duration-300 md:hidden ${
-          isRouteMenuOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-        }`}
-        aria-hidden={!isRouteMenuOpen}
-      >
-        <button
-          type="button"
-          onClick={closeRouteMenu}
-          className="absolute inset-0 bg-black/45"
-          aria-label="Close routes menu backdrop"
-        />
+      <AppHeaderRouteMenu isOpen={isRouteMenuOpen} pathname={pathname} onClose={closeRouteMenu} />
 
-        <aside
-          className={`absolute left-0 top-0 h-full w-[min(84vw,320px)] border-r border-(--border-subtle) bg-(--surface-1)/92 p-4 shadow-2xl backdrop-blur-sm transition-transform duration-300 ${
-            isRouteMenuOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Routes menu"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-(--text-muted)">Routes</p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="px-2"
-              onClick={closeRouteMenu}
-              aria-label="Close routes menu"
-            >
-              Close
-            </Button>
-          </div>
-
-          <nav className="mt-3 flex flex-col gap-2">
-            {NAV_LINKS.map((item) => {
-              const isActive = pathname === item.href || (pathname === '/' && item.href === '/search');
-
-              return (
-                <LinkButton
-                  key={`mobile-${item.href}`}
-                  href={item.href}
-                  variant={isActive ? 'secondary' : 'ghost'}
-                  size="sm"
-                  align="left"
-                  className="px-3 text-[11px]"
-                >
-                  <NavLinkLabel label={item.label} badge={item.badge} />
-                </LinkButton>
-              );
-            })}
-          </nav>
-
-        </aside>
-      </div>
-
-      <div
-        className={`fixed inset-0 z-160 transition-opacity duration-300 ${
-          isUserMenuOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-        }`}
-        aria-hidden={!isUserMenuOpen}
-      >
-        <button
-          type="button"
-          onClick={closeUserMenu}
-          className="absolute inset-0 bg-black/35"
-          aria-label="Close user menu backdrop"
-        />
-
-        <aside
-          className="absolute right-0 top-0 h-full w-[min(84vw,320px)] border-l border-(--border-subtle) bg-[rgba(9,17,34,0.34)] p-4 shadow-2xl backdrop-blur-xl transition-transform duration-300"
-          style={userMenuPanelStyle}
-          role="dialog"
-          aria-modal="true"
-          aria-label="User menu"
-        >
-          <button
-            type="button"
-            onClick={closeUserMenu}
-            onPointerDown={onUserMenuHandlePointerDown}
-            onPointerMove={onUserMenuHandlePointerMove}
-            onPointerUp={(event) => finishUserMenuDrag(event)}
-            onPointerCancel={(event) => finishUserMenuDrag(event)}
-            onLostPointerCapture={resetUserMenuDrag}
-            className="absolute left-0 top-0 h-full w-4 -translate-x-full border-r border-(--border-subtle)/55 bg-transparent"
-            aria-label="Drag or tap edge to close user menu"
-            title="Drag or tap edge to close user menu"
-          />
-
-          <div className="flex items-center justify-between gap-2">
-            <p
-              className="max-w-52.5 truncate text-sm font-semibold text-foreground"
-              title={userDisplayName}
-            >
-              {userDisplayName}
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="px-2"
-              onClick={closeUserMenu}
-              aria-label="Close user menu"
-            >
-              Close
-            </Button>
-          </div>
-
-          <p className="mt-1 text-xs text-(--text-muted)">User menu</p>
-
-          <section className="mt-4 rounded-xl border border-(--border-subtle) bg-(--surface-2)/55 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-(--text-muted)">Profile</p>
-
-            {!hasToken ? (
-              <p className="mt-2 text-xs text-(--text-muted)">Not authenticated.</p>
-            ) : userProfileStatus === 'loading' ? (
-              <p className="mt-2 text-xs text-(--text-muted)">Loading profile...</p>
-            ) : userProfileStatus === 'error' ? (
-              <p className="mt-2 text-xs text-rose-200">{userProfileError ?? 'Profile unavailable.'}</p>
-            ) : userProfile !== null ? (
-              <dl className="mt-2 space-y-1.5">
-                <div className="flex items-start justify-between gap-3">
-                  <dt className="text-[10px] uppercase tracking-widest text-(--text-muted)">Name</dt>
-                  <dd className="max-w-42.5 truncate text-xs font-semibold text-foreground" title={userProfile.name}>
-                    {userProfile.name}
-                  </dd>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <dt className="text-[10px] uppercase tracking-widest text-(--text-muted)">Email</dt>
-                  <dd className="max-w-42.5 truncate text-xs text-foreground" title={userProfile.email}>
-                    {userProfile.email}
-                  </dd>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <dt className="text-[10px] uppercase tracking-widest text-(--text-muted)">Role</dt>
-                  <dd className="text-xs font-semibold text-foreground">{userProfile.role}</dd>
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <dt className="text-[10px] uppercase tracking-widest text-(--text-muted)">ID</dt>
-                  <dd className="max-w-42.5 break-all text-[11px] font-medium text-foreground">
-                    {userProfile.id}
-                  </dd>
-                </div>
-              </dl>
-            ) : (
-              <p className="mt-2 text-xs text-(--text-muted)">Profile unavailable.</p>
-            )}
-          </section>
-
-          <div className="mt-4">
-            {hasToken && onLogout !== undefined ? (
-              isLogoutConfirmOpen ? (
-                <div className="space-y-2 rounded-lg border border-rose-500/45 bg-rose-500/10 p-2">
-                  <p className="text-[11px] text-rose-100">Confirm logout?</p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      align="center"
-                      className="flex-1 px-2 text-[10px] uppercase tracking-[0.06em]"
-                      onClick={onCancelLogoutConfirm}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      align="center"
-                      className="flex-1 border border-rose-500/65 bg-rose-500/12 px-2 text-[10px] uppercase tracking-[0.06em] text-rose-200 hover:bg-rose-500/22"
-                      onClick={onConfirmLogout}
-                    >
-                      Logout
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <Button
-                  type="button"
-                  size="sm"
-                  align="center"
-                  className="w-full border border-rose-500/65 bg-rose-500/12 px-3 text-[10px] uppercase tracking-[0.08em] text-rose-200 hover:bg-rose-500/22"
-                  onClick={onRequestLogoutConfirm}
-                >
-                  Logout
-                </Button>
-              )
-            ) : null}
-          </div>
-        </aside>
-      </div>
+      <AppHeaderUserMenu
+        isOpen={isUserMenuOpen}
+        hasToken={hasToken}
+        userDisplayName={userDisplayName}
+        userProfileStatus={userProfileStatus}
+        userProfile={userProfile}
+        userProfileError={userProfileError}
+        isLogoutConfirmOpen={isLogoutConfirmOpen}
+        userMenuPanelStyle={userMenuPanelStyle}
+        onClose={closeUserMenu}
+        onRequestLogoutConfirm={requestLogoutConfirm}
+        onCancelLogoutConfirm={cancelLogoutConfirm}
+        onConfirmLogout={confirmLogout}
+        onHandlePointerDown={onUserMenuHandlePointerDown}
+        onHandlePointerMove={onUserMenuHandlePointerMove}
+        onHandlePointerUp={(event) => finishUserMenuDrag(event)}
+        onHandlePointerCancel={(event) => finishUserMenuDrag(event)}
+        onHandleLostPointerCapture={resetUserMenuDrag}
+      />
     </>
   );
 }
