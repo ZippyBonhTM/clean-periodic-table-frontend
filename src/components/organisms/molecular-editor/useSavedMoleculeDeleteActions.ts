@@ -3,12 +3,12 @@
 import { useCallback } from 'react';
 
 import type { ShowGalleryFeedback } from '@/components/organisms/molecular-editor/savedMoleculeWorkflow.types';
+import type { SavedMoleculeDeleteHandler } from '@/components/organisms/molecular-editor/savedMoleculeWorkflowOptions.types';
 import { mapSavedMoleculesErrorMessage } from '@/shared/hooks/useSavedMolecules';
 import type { SavedMolecule } from '@/shared/types/molecule';
 
-type UseSavedMoleculeDeleteActionsOptions = {
+type UseSavedMoleculeDeleteActionsOptions = SavedMoleculeDeleteHandler & {
   activeSavedMolecule: SavedMolecule | null;
-  onDeleteSavedMolecule: (moleculeId: string) => Promise<void>;
   resolvedActiveSavedMoleculeId: string | null;
   setActiveSavedMoleculeId: (moleculeId: string | null) => void;
   setIsSaveModalOpen: (isOpen: boolean) => void;

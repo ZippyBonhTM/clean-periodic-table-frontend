@@ -3,20 +3,15 @@
 import { useCallback } from 'react';
 
 import type { ShowGalleryFeedback } from '@/components/organisms/molecular-editor/savedMoleculeWorkflow.types';
+import type {
+  SavedMoleculeMutationState,
+  SavedMoleculeUpsertHandlers,
+} from '@/components/organisms/molecular-editor/savedMoleculeWorkflowOptions.types';
 import { mapSavedMoleculesErrorMessage } from '@/shared/hooks/useSavedMolecules';
-import type { SaveMoleculeInput, SavedMolecule } from '@/shared/types/molecule';
 
-type UseSavedMoleculeUpsertActionsOptions = {
-  buildSaveMoleculeInput: () => SaveMoleculeInput;
-  onCreateSavedMolecule: (input: SaveMoleculeInput) => Promise<SavedMolecule>;
-  onUpdateSavedMolecule: (moleculeId: string, input: SaveMoleculeInput) => Promise<SavedMolecule>;
-  resolvedActiveSavedMoleculeId: string | null;
-  setActiveSavedMoleculeId: (moleculeId: string | null) => void;
-  setIsSaveModalOpen: (isOpen: boolean) => void;
-  setMoleculeEducationalDescription: (value: string) => void;
-  setMoleculeName: (value: string) => void;
+type UseSavedMoleculeUpsertActionsOptions = SavedMoleculeUpsertHandlers &
+  SavedMoleculeMutationState & {
   showGalleryFeedback: ShowGalleryFeedback;
-  summaryAtomCount: number;
 };
 
 export default function useSavedMoleculeUpsertActions({

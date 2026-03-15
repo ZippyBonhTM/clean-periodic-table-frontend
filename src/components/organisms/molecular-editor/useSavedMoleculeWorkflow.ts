@@ -3,11 +3,17 @@
 import usePendingSavedMoleculeLoader from '@/components/organisms/molecular-editor/usePendingSavedMoleculeLoader';
 import useResolvedSavedMoleculeSelection from '@/components/organisms/molecular-editor/useResolvedSavedMoleculeSelection';
 import type { ShowGalleryFeedback } from '@/components/organisms/molecular-editor/savedMoleculeWorkflow.types';
+import type {
+  SavedMoleculeMetadataSetters,
+  SavedMoleculeMutationHandlers,
+  SavedMoleculePageMode,
+} from '@/components/organisms/molecular-editor/savedMoleculeWorkflowOptions.types';
 import useSavedMoleculeMutations from '@/components/organisms/molecular-editor/useSavedMoleculeMutations';
 import useSavedMoleculeWorkflowUi from '@/components/organisms/molecular-editor/useSavedMoleculeWorkflowUi';
 import type { SaveMoleculeInput, SavedMolecule } from '@/shared/types/molecule';
 
-type UseSavedMoleculeWorkflowOptions = {
+type UseSavedMoleculeWorkflowOptions = SavedMoleculeMutationHandlers &
+  SavedMoleculeMetadataSetters & {
   activeSavedMoleculeId: string | null;
   applySavedMolecule: (savedMolecule: SavedMolecule, notice: string) => void;
   buildSaveMoleculeInput: () => SaveMoleculeInput;
@@ -15,13 +21,7 @@ type UseSavedMoleculeWorkflowOptions = {
   collapseFloatingSaveShortcut: () => void;
   isSavedMoleculesLoading: boolean;
   normalizedSavedMolecules: SavedMolecule[];
-  onCreateSavedMolecule: (input: SaveMoleculeInput) => Promise<SavedMolecule>;
-  onDeleteSavedMolecule: (moleculeId: string) => Promise<void>;
-  onUpdateSavedMolecule: (moleculeId: string, input: SaveMoleculeInput) => Promise<SavedMolecule>;
-  pageMode: 'editor' | 'gallery';
-  setActiveSavedMoleculeId: (moleculeId: string | null) => void;
-  setMoleculeEducationalDescription: (value: string) => void;
-  setMoleculeName: (value: string) => void;
+  pageMode: SavedMoleculePageMode;
   showGalleryFeedback: ShowGalleryFeedback;
   summaryAtomCount: number;
 };

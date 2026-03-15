@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type { ShowGalleryFeedback } from '@/components/organisms/molecular-editor/savedMoleculeWorkflow.types';
+import type { SavedMoleculePageMode } from '@/components/organisms/molecular-editor/savedMoleculeWorkflowOptions.types';
 import {
   clearPendingSavedMoleculeId,
   readPendingSavedMoleculeId,
@@ -13,7 +14,7 @@ type UsePendingSavedMoleculeLoaderOptions = {
   applySavedMolecule: (savedMolecule: SavedMolecule, notice: string) => void;
   isSavedMoleculesLoading: boolean;
   normalizedSavedMolecules: SavedMolecule[];
-  pageMode: 'editor' | 'gallery';
+  pageMode: SavedMoleculePageMode;
   showGalleryFeedback: ShowGalleryFeedback;
 };
 

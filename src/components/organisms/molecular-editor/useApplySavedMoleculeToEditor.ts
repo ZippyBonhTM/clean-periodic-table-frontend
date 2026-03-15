@@ -5,19 +5,10 @@ import { useCallback } from 'react';
 import {
   cloneMoleculeModel,
   normalizeSavedMoleculeRecord,
-  type SavedEditorDraft,
 } from '@/components/organisms/molecular-editor/moleculeEditorSession';
+import type { SavedMoleculeEditorBridgeOptions } from '@/components/organisms/molecular-editor/savedMoleculeWorkflowOptions.types';
 import type { SavedMolecule } from '@/shared/types/molecule';
 import { syncMoleculeIdCounter } from '@/shared/utils/moleculeEditor';
-
-type UseApplySavedMoleculeToEditorOptions = {
-  applyEditorSnapshot: (snapshot: SavedEditorDraft, notice: string) => void;
-  clearHistory: () => void;
-  setActiveSavedMoleculeId: (moleculeId: string | null) => void;
-  setMoleculeEducationalDescription: (value: string) => void;
-  setMoleculeName: (value: string) => void;
-  setNomenclatureFallback: (value: string | null) => void;
-};
 
 export default function useApplySavedMoleculeToEditor({
   applyEditorSnapshot,
@@ -26,7 +17,7 @@ export default function useApplySavedMoleculeToEditor({
   setMoleculeEducationalDescription,
   setMoleculeName,
   setNomenclatureFallback,
-}: UseApplySavedMoleculeToEditorOptions) {
+}: SavedMoleculeEditorBridgeOptions) {
   return useCallback(
     (savedMolecule: SavedMolecule, notice: string) => {
       const normalizedSavedMolecule = normalizeSavedMoleculeRecord(savedMolecule);

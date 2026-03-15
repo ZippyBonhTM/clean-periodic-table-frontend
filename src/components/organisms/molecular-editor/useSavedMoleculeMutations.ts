@@ -1,23 +1,20 @@
 'use client';
 
 import type { ShowGalleryFeedback } from '@/components/organisms/molecular-editor/savedMoleculeWorkflow.types';
+import type {
+  SavedMoleculeMetadataSetters,
+  SavedMoleculeMutationHandlers,
+  SavedMoleculeMutationState,
+} from '@/components/organisms/molecular-editor/savedMoleculeWorkflowOptions.types';
 import useSavedMoleculeDeleteActions from '@/components/organisms/molecular-editor/useSavedMoleculeDeleteActions';
 import useSavedMoleculeUpsertActions from '@/components/organisms/molecular-editor/useSavedMoleculeUpsertActions';
-import type { SaveMoleculeInput, SavedMolecule } from '@/shared/types/molecule';
+import type { SavedMolecule } from '@/shared/types/molecule';
 
-type UseSavedMoleculeMutationsOptions = {
+type UseSavedMoleculeMutationsOptions = SavedMoleculeMutationHandlers &
+  SavedMoleculeMetadataSetters &
+  SavedMoleculeMutationState & {
   activeSavedMolecule: SavedMolecule | null;
-  buildSaveMoleculeInput: () => SaveMoleculeInput;
-  onCreateSavedMolecule: (input: SaveMoleculeInput) => Promise<SavedMolecule>;
-  onDeleteSavedMolecule: (moleculeId: string) => Promise<void>;
-  onUpdateSavedMolecule: (moleculeId: string, input: SaveMoleculeInput) => Promise<SavedMolecule>;
-  resolvedActiveSavedMoleculeId: string | null;
-  setActiveSavedMoleculeId: (moleculeId: string | null) => void;
-  setIsSaveModalOpen: (isOpen: boolean) => void;
-  setMoleculeEducationalDescription: (value: string) => void;
-  setMoleculeName: (value: string) => void;
   showGalleryFeedback: ShowGalleryFeedback;
-  summaryAtomCount: number;
 };
 
 export default function useSavedMoleculeMutations({
