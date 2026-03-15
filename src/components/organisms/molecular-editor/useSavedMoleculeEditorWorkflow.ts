@@ -1,6 +1,7 @@
 'use client';
 
 import type { SavedEditorDraft } from '@/components/organisms/molecular-editor/moleculeEditorSession';
+import { resolveSavedMoleculeEditorStatus } from '@/components/organisms/molecular-editor/savedMoleculeEditorStatus';
 import type { ShowGalleryFeedback } from '@/components/organisms/molecular-editor/savedMoleculeWorkflow.types';
 import useApplySavedMoleculeToEditor from '@/components/organisms/molecular-editor/useApplySavedMoleculeToEditor';
 import useSavedMoleculeWorkflow from '@/components/organisms/molecular-editor/useSavedMoleculeWorkflow';
@@ -79,12 +80,13 @@ export default function useSavedMoleculeEditorWorkflow({
     summaryAtomCount,
   });
 
-  const hasCurrentSavedSelection = workflow.resolvedActiveSavedMoleculeId !== null;
-  const currentSaveLabel =
-    (moleculeName.trim().length > 0 ? moleculeName.trim() : null) ??
-    workflow.activeSavedMolecule?.name ??
-    workflow.activeSavedMolecule?.summary.formula ??
-    (summaryAtomCount === 0 ? 'Unsaved molecule' : formula);
+  const { currentSaveLabel, hasCurrentSavedSelection } = resolveSavedMoleculeEditorStatus({
+    activeSavedMolecule: workflow.activeSavedMolecule,
+    formula,
+    moleculeName,
+    resolvedActiveSavedMoleculeId: workflow.resolvedActiveSavedMoleculeId,
+    summaryAtomCount,
+  });
 
   return {
     ...workflow,
