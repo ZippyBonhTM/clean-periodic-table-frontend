@@ -1,0 +1,86 @@
+'use client';
+
+type MoleculeEditorZoomControlsProps = {
+  isLandscapeCompactCanvas: boolean;
+  isSimplifiedView: boolean;
+  onResetCanvasView: () => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  responsiveLayoutWidth: number;
+  zoomControlsClassName: string;
+  zoomControlsVisibilityClassName: string;
+  zoomPercent: number;
+};
+
+export default function MoleculeEditorZoomControls({
+  isLandscapeCompactCanvas,
+  isSimplifiedView,
+  onResetCanvasView,
+  onZoomIn,
+  onZoomOut,
+  responsiveLayoutWidth,
+  zoomControlsClassName,
+  zoomControlsVisibilityClassName,
+  zoomPercent,
+}: MoleculeEditorZoomControlsProps) {
+  return (
+    <div className={`${zoomControlsClassName} ${zoomControlsVisibilityClassName}`} aria-hidden={isSimplifiedView}>
+      <button
+        type="button"
+        onClick={onZoomOut}
+        className={`inline-flex items-center justify-center rounded-lg px-1 font-black text-foreground transition-colors hover:border-(--accent) hover:text-foreground ${
+          isLandscapeCompactCanvas
+            ? 'h-6 min-w-6 text-[13px]'
+            : responsiveLayoutWidth < 430
+              ? 'h-6 min-w-5.5 text-[12px]'
+              : 'h-7 min-w-7 text-sm'
+        }`}
+        aria-label="Zoom out"
+        title="Zoom out"
+      >
+        -
+      </button>
+      <button
+        type="button"
+        onClick={onResetCanvasView}
+        className={`inline-flex items-center justify-center rounded-lg px-1 font-semibold text-(--text-muted) transition-colors hover:border-(--accent) hover:text-foreground ${
+          isLandscapeCompactCanvas
+            ? 'h-6 min-w-8 text-[9px]'
+            : responsiveLayoutWidth < 430
+              ? 'h-6 min-w-8 text-[8px]'
+              : 'h-7 min-w-10 text-[10px]'
+        }`}
+        aria-label="Reset zoom"
+        title="Reset zoom"
+      >
+        {zoomPercent}%
+      </button>
+      <button
+        type="button"
+        onClick={onZoomIn}
+        className={`inline-flex items-center justify-center rounded-lg px-1 font-black text-foreground transition-colors hover:border-(--accent) hover:text-foreground ${
+          isLandscapeCompactCanvas
+            ? 'h-6 min-w-6 text-[13px]'
+            : responsiveLayoutWidth < 430
+              ? 'h-6 min-w-5.5 text-[12px]'
+              : 'h-7 min-w-7 text-sm'
+        }`}
+        aria-label="Zoom in"
+        title="Zoom in"
+      >
+        +
+      </button>
+      {isLandscapeCompactCanvas ? null : (
+        <button
+          type="button"
+          onClick={onResetCanvasView}
+          className={`inline-flex items-center justify-center rounded-lg px-1 font-semibold uppercase text-(--text-muted) transition-colors hover:border-(--accent) hover:text-foreground ${
+            responsiveLayoutWidth < 430 ? 'h-6 text-[8px]' : 'h-7 text-[10px]'
+          }`}
+        >
+          FIT
+        </button>
+      )}
+    </div>
+  );
+}

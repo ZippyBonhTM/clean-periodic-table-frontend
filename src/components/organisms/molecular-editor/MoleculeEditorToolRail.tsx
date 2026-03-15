@@ -4,17 +4,8 @@ import type { CSSProperties } from 'react';
 
 import MoleculeEditorBondOrderSection from '@/components/organisms/molecular-editor/MoleculeEditorBondOrderSection';
 import MoleculeEditorFloatingSaveShortcut from '@/components/organisms/molecular-editor/MoleculeEditorFloatingSaveShortcut';
-import MoleculeEditorToolRailButton from '@/components/organisms/molecular-editor/MoleculeEditorToolRailButton';
-import {
-  AddAtomIcon,
-  ClearSelectionIcon,
-  RailToggleIcon,
-  RedoIcon,
-  RemoveAtomIcon,
-  ResetEditorIcon,
-  SaveGalleryIcon,
-  UndoIcon,
-} from '@/components/organisms/molecular-editor/moleculeEditorToolRailIcons';
+import MoleculeEditorToolRailActions from '@/components/organisms/molecular-editor/MoleculeEditorToolRailActions';
+import MoleculeEditorToolRailHeader from '@/components/organisms/molecular-editor/MoleculeEditorToolRailHeader';
 import type { BondOrder } from '@/shared/utils/moleculeEditor';
 
 type MoleculeEditorToolRailProps = {
@@ -99,24 +90,11 @@ export default function MoleculeEditorToolRail({
             effectiveToolRailCollapsed ? toolRailCollapsedWidthClassName : toolRailExpandedWidthClassName
           }`}
         >
-          <div
-            className={`flex min-h-12 items-center border-b border-(--border-subtle)/70 p-2 ${effectiveToolRailCollapsed ? 'justify-center' : 'justify-between gap-2'}`}
-          >
-            {showExpandedToolRailContent ? (
-              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
-                Tools
-              </p>
-            ) : null}
-            <button
-              type="button"
-              onClick={onToggleCollapsed}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-(--border-subtle) bg-(--surface-2)/70 text-(--text-muted) transition-colors hover:border-(--accent) hover:text-foreground"
-              aria-label={effectiveToolRailCollapsed ? 'Expand tool rail' : 'Collapse tool rail'}
-              title={effectiveToolRailCollapsed ? 'Expand tool rail' : 'Collapse tool rail'}
-            >
-              <RailToggleIcon collapsed={effectiveToolRailCollapsed} />
-            </button>
-          </div>
+          <MoleculeEditorToolRailHeader
+            effectiveToolRailCollapsed={effectiveToolRailCollapsed}
+            onToggleCollapsed={onToggleCollapsed}
+            showExpandedToolRailContent={showExpandedToolRailContent}
+          />
 
           <div className={toolRailBodyClassName}>
             <MoleculeEditorBondOrderSection
@@ -132,61 +110,24 @@ export default function MoleculeEditorToolRail({
               showExpandedContent={showExpandedToolRailContent}
             />
 
-            <div className={effectiveToolRailCollapsed ? collapsedToolRailSectionClassName : expandedToolRailSectionClassName}>
-              <MoleculeEditorToolRailButton
-                icon={<SaveGalleryIcon />}
-                label="Save as New"
-                title="Open gallery save dialog"
-                collapsed={effectiveToolRailCollapsed}
-                active={isSaveModalOpen}
-                disabled={summaryAtomCount === 0}
-                onClick={onOpenSaveModal}
-              />
-              <MoleculeEditorToolRailButton
-                icon={<UndoIcon />}
-                label="Undo"
-                title="Undo change (Ctrl/Cmd+Z)"
-                collapsed={effectiveToolRailCollapsed}
-                disabled={!canUndo}
-                onClick={onUndo}
-              />
-              <MoleculeEditorToolRailButton
-                icon={<RedoIcon />}
-                label="Redo"
-                title="Redo change (Ctrl/Cmd+Shift+Z)"
-                collapsed={effectiveToolRailCollapsed}
-                disabled={!canRedo}
-                onClick={onRedo}
-              />
-              <MoleculeEditorToolRailButton
-                icon={<AddAtomIcon />}
-                label="Add selected element"
-                collapsed={effectiveToolRailCollapsed}
-                disabled={activeElementSymbol === null}
-                onClick={onAddSelectedElement}
-              />
-              <MoleculeEditorToolRailButton
-                icon={<RemoveAtomIcon />}
-                label="Remove selected atom"
-                collapsed={effectiveToolRailCollapsed}
-                disabled={selectedAtomId === null}
-                onClick={onRemoveSelectedAtom}
-              />
-              <MoleculeEditorToolRailButton
-                icon={<ClearSelectionIcon />}
-                label="Clear selection"
-                collapsed={effectiveToolRailCollapsed}
-                disabled={selectedAtomId === null}
-                onClick={onClearSelection}
-              />
-              <MoleculeEditorToolRailButton
-                icon={<ResetEditorIcon />}
-                label="Reset editor"
-                collapsed={effectiveToolRailCollapsed}
-                danger
-                onClick={onResetMolecule}
-              />
-            </div>
+            <MoleculeEditorToolRailActions
+              activeElementSymbol={activeElementSymbol}
+              canRedo={canRedo}
+              canUndo={canUndo}
+              collapsedSectionClassName={collapsedToolRailSectionClassName}
+              effectiveToolRailCollapsed={effectiveToolRailCollapsed}
+              expandedSectionClassName={expandedToolRailSectionClassName}
+              isSaveModalOpen={isSaveModalOpen}
+              onAddSelectedElement={onAddSelectedElement}
+              onClearSelection={onClearSelection}
+              onOpenSaveModal={onOpenSaveModal}
+              onRedo={onRedo}
+              onRemoveSelectedAtom={onRemoveSelectedAtom}
+              onResetMolecule={onResetMolecule}
+              onUndo={onUndo}
+              selectedAtomId={selectedAtomId}
+              summaryAtomCount={summaryAtomCount}
+            />
           </div>
         </aside>
       ) : null}
