@@ -2,40 +2,17 @@
 
 import { useCallback, useState } from 'react';
 
-import {
-  createSavedMolecule,
-  deleteSavedMolecule,
-  updateSavedMolecule,
-} from '@/shared/api/moleculeApi';
 import { refreshAccessToken } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
-import { executeWithFreshToken, isUnauthorizedError } from '@/shared/hooks/authRequestUtils';
 import useSavedMoleculesLoader from '@/shared/hooks/useSavedMoleculesLoader';
+import useSavedMoleculesMutations from '@/shared/hooks/useSavedMoleculesMutations';
 import useSavedMoleculesSnapshot from '@/shared/hooks/useSavedMoleculesSnapshot';
-import type { SaveMoleculeInput, SavedMolecule } from '@/shared/types/molecule';
-
-type SavedMoleculesSnapshot = {
-  token: string | null;
-  data: SavedMolecule[];
-  error: string | null;
-};
-
-type UseSavedMoleculesInput = {
-  token: string | null;
-  onTokenRefresh: (token: string) => void;
-  onUnauthorized: () => void;
-};
-
-type UseSavedMoleculesOutput = {
-  data: SavedMolecule[];
-  isLoading: boolean;
-  isMutating: boolean;
-  error: string | null;
-  reload: () => void;
-  createMolecule: (input: SaveMoleculeInput) => Promise<SavedMolecule>;
-  updateMolecule: (moleculeId: string, input: SaveMoleculeInput) => Promise<SavedMolecule>;
-  deleteMolecule: (moleculeId: string) => Promise<void>;
-};
+import type {
+  SavedMoleculesSnapshot,
+  UseSavedMoleculesInput,
+  UseSavedMoleculesOutput,
+} from '@/shared/hooks/savedMolecules.types';
+import type { SavedMolecule } from '@/shared/types/molecule';
 
 function sortSavedMolecules(data: SavedMolecule[]): SavedMolecule[] {
   return [...data].sort((first, second) => {
@@ -65,7 +42,6 @@ function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMo
     data: [],
     error: null,
   });
-  const [isMutating, setIsMutating] = useState(false);
   const [reloadVersion, setReloadVersion] = useState(0);
 
   const refreshTokenOnce = useCallback(async () => {
@@ -88,104 +64,13 @@ function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMo
     token,
   });
 
-  const createMolecule = useCallback(
-    async (input: SaveMoleculeInput): Promise<SavedMolecule> => {
-      if (token === null) {
-        throw new Error('Authentication is required to save molecules.');
-      }
-
-      setIsMutating(true);
-
-      try {
-        const { activeToken, result } = await executeWithFreshToken(token, refreshTokenOnce, async (resolvedToken) => {
-          return await createSavedMolecule(resolvedToken, input);
-        });
-
-        setSnapshot((currentSnapshot) => ({
-          token: activeToken,
-          data: sortSavedMolecules([result, ...currentSnapshot.data.filter((entry) => entry.id !== result.id)]),
-          error: null,
-        }));
-
-        return result;
-      } catch (caughtError: unknown) {
-        if (isUnauthorizedError(caughtError)) {
-          onUnauthorized();
-        }
-
-        throw caughtError;
-      } finally {
-        setIsMutating(false);
-      }
-    },
-    [onUnauthorized, refreshTokenOnce, token],
-  );
-
-  const updateMoleculeById = useCallback(
-    async (moleculeId: string, input: SaveMoleculeInput): Promise<SavedMolecule> => {
-      if (token === null) {
-        throw new Error('Authentication is required to update molecules.');
-      }
-
-      setIsMutating(true);
-
-      try {
-        const { activeToken, result } = await executeWithFreshToken(token, refreshTokenOnce, async (resolvedToken) => {
-          return await updateSavedMolecule(resolvedToken, moleculeId, input);
-        });
-
-        setSnapshot((currentSnapshot) => ({
-          token: activeToken,
-          data: sortSavedMolecules(
-            currentSnapshot.data.map((entry) => (entry.id === result.id ? result : entry)),
-          ),
-          error: null,
-        }));
-
-        return result;
-      } catch (caughtError: unknown) {
-        if (isUnauthorizedError(caughtError)) {
-          onUnauthorized();
-        }
-
-        throw caughtError;
-      } finally {
-        setIsMutating(false);
-      }
-    },
-    [onUnauthorized, refreshTokenOnce, token],
-  );
-
-  const deleteMoleculeById = useCallback(
-    async (moleculeId: string): Promise<void> => {
-      if (token === null) {
-        throw new Error('Authentication is required to delete molecules.');
-      }
-
-      setIsMutating(true);
-
-      try {
-        const { activeToken } = await executeWithFreshToken(token, refreshTokenOnce, async (resolvedToken) => {
-          await deleteSavedMolecule(resolvedToken, moleculeId);
-        });
-
-        setSnapshot((currentSnapshot) => ({
-          token: activeToken,
-          data: currentSnapshot.data.filter((entry) => entry.id !== moleculeId),
-          error: null,
-        }));
-      } catch (caughtError: unknown) {
-        if (isUnauthorizedError(caughtError)) {
-          onUnauthorized();
-        }
-
-        throw caughtError;
-      } finally {
-        setIsMutating(false);
-      }
-    },
-    [onUnauthorized, refreshTokenOnce, token],
-  );
+  const { createMolecule, deleteMolecule, isMutating: isMoleculeMutating, updateMolecule } = useSavedMoleculesMutations({
+    onUnauthorized,
+    refreshTokenOnce,
+    setSnapshot,
+    sortSavedMolecules,
+    token,
+  });
 
   const { data, error, isLoading } = useSavedMoleculesSnapshot({
     snapshot,
@@ -195,12 +80,12 @@ function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMo
   return {
     data,
     isLoading,
-    isMutating,
+    isMutating: isMoleculeMutating,
     error,
     reload,
     createMolecule,
-    updateMolecule: updateMoleculeById,
-    deleteMolecule: deleteMoleculeById,
+    updateMolecule,
+    deleteMolecule,
   };
 }
 
