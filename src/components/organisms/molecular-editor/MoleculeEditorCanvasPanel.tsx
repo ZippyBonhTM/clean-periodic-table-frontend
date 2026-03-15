@@ -10,10 +10,10 @@ import type {
 
 import EditorCanvas from '@/components/organisms/molecular-editor/MoleculeEditorCanvas';
 import MoleculeEditorBottomNotice from '@/components/organisms/molecular-editor/MoleculeEditorBottomNotice';
+import MoleculeEditorCanvasStage from '@/components/organisms/molecular-editor/MoleculeEditorCanvasStage';
 import MoleculeEditorToolRail from '@/components/organisms/molecular-editor/MoleculeEditorToolRail';
 import MoleculePaletteRail from '@/components/organisms/molecular-editor/MoleculePaletteRail';
 import MoleculePaletteSearchRail from '@/components/organisms/molecular-editor/MoleculePaletteSearchRail';
-import MoleculeSimplifiedCanvasView from '@/components/organisms/molecular-editor/MoleculeSimplifiedCanvasView';
 import MoleculeSummaryPanel from '@/components/molecules/chemistry/MoleculeSummaryPanel';
 import type { SavedMoleculeEditorState } from '@/shared/types/molecule';
 import type { MoleculeModel } from '@/shared/utils/moleculeEditor';
@@ -144,31 +144,28 @@ export default function MoleculeEditorCanvasPanel({
 
       <MoleculeEditorToolRail {...toolRailProps} />
 
-      <div ref={canvasFrameRef} className={canvasFrameClassName}>
-        {isSimplifiedView ? (
-          <MoleculeSimplifiedCanvasView
-            compositionRows={compositionRows}
-            focusedComponentIndex={focusedComponentIndex}
-            formulaDisplayValue={formulaDisplayValue}
-            moleculeComponentsCount={moleculeComponentsCount}
-            simplifiedViewStyle={simplifiedViewStyle}
-          />
-        ) : (
-          <EditorCanvas
-            model={molecule}
-            mode={activeView}
-            viewBox={interactiveViewBox}
-            selectedAtomId={toolRailProps.selectedAtomId}
-            svgRef={svgRef}
-            onCanvasPointerDown={onCanvasPointerDown}
-            onCanvasPointerMove={onCanvasPointerMove}
-            onCanvasPointerUp={onCanvasPointerUp}
-            onCanvasPointerCancel={onCanvasPointerCancel}
-            onCanvasWheel={onCanvasWheel}
-            onAtomPointerDown={onAtomPointerDown}
-          />
-        )}
-      </div>
+      <MoleculeEditorCanvasStage
+        activeView={activeView}
+        canvasFrameClassName={canvasFrameClassName}
+        canvasFrameRef={canvasFrameRef}
+        compositionRows={compositionRows}
+        focusedComponentIndex={focusedComponentIndex}
+        formulaDisplayValue={formulaDisplayValue}
+        formulaPanelProps={formulaPanelProps}
+        interactiveViewBox={interactiveViewBox}
+        isSimplifiedView={isSimplifiedView}
+        molecule={molecule}
+        moleculeComponentsCount={moleculeComponentsCount}
+        onAtomPointerDown={onAtomPointerDown}
+        onCanvasPointerCancel={onCanvasPointerCancel}
+        onCanvasPointerDown={onCanvasPointerDown}
+        onCanvasPointerMove={onCanvasPointerMove}
+        onCanvasPointerUp={onCanvasPointerUp}
+        onCanvasWheel={onCanvasWheel}
+        selectedAtomId={toolRailProps.selectedAtomId}
+        simplifiedViewStyle={simplifiedViewStyle}
+        svgRef={svgRef}
+      />
 
       <MoleculeEditorBottomNotice
         bottomNoticeRef={bottomNoticeRef}
@@ -179,7 +176,6 @@ export default function MoleculeEditorCanvasPanel({
         resolvedEditorNotice={resolvedEditorNotice}
       />
 
-      {isSimplifiedView ? null : <MoleculeSummaryPanel {...formulaPanelProps} />}
     </div>
   );
 }
