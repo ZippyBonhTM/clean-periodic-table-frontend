@@ -4,7 +4,6 @@ import { usePathname } from 'next/navigation';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Button from '@/components/atoms/Button';
-import LinkButton from '@/components/atoms/LinkButton';
 import TokenStatus from '@/components/molecules/TokenStatus';
 import type { TokenStatusType } from '@/components/molecules/TokenStatus';
 import UserAvatarPlaceholder from '@/components/molecules/UserAvatarPlaceholder';
@@ -14,6 +13,7 @@ import type { AppTheme } from '@/shared/hooks/useTheme';
 import { readJwtDisplayName } from '@/shared/utils/jwt';
 import type { AuthUserProfile } from '@/shared/types/auth';
 
+import AppHeaderAuthActions from './AppHeaderAuthActions';
 import AppHeaderDesktopNav from './AppHeaderDesktopNav';
 import AppHeaderRouteMenu from './AppHeaderRouteMenu';
 import type { AuthEntryMode } from './appHeader.types';
@@ -375,49 +375,12 @@ function AppHeader({
             </div>
 
             <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
-              {!hasToken && authEntryMode === 'route' ? (
-                <>
-                  <LinkButton
-                    href="/login"
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                  >
-                    Login
-                  </LinkButton>
-                  <LinkButton
-                    href="/register"
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                  >
-                    Register
-                  </LinkButton>
-                </>
-              ) : !hasToken ? (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                    onClick={onRequestLogin}
-                  >
-                    Login
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                    onClick={onRequestRegister}
-                  >
-                    Register
-                  </Button>
-                </>
-              ) : null}
+              <AppHeaderAuthActions
+                hasToken={hasToken}
+                authEntryMode={authEntryMode}
+                onRequestLogin={onRequestLogin}
+                onRequestRegister={onRequestRegister}
+              />
             </div>
           </div>
 
@@ -474,53 +437,12 @@ function AppHeader({
                 <UserAvatarPlaceholder hasToken={hasToken} />
               </button>
 
-              {!hasToken && authEntryMode === 'route' ? (
-                <>
-                  <LinkButton
-                    href="/login"
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                  >
-                    Login
-                  </LinkButton>
-                  <LinkButton
-                    href="/register"
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                  >
-                    Register
-                  </LinkButton>
-                </>
-              ) : null}
-
-              {!hasToken && authEntryMode === 'modal' ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                    onClick={onRequestLoginFromButton}
-                  >
-                    Login
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    uppercase
-                    className="px-2.5 text-[10px]"
-                    onClick={onRequestRegisterFromButton}
-                  >
-                    Register
-                  </Button>
-                </>
-              ) : null}
+              <AppHeaderAuthActions
+                hasToken={hasToken}
+                authEntryMode={authEntryMode}
+                onRequestLogin={onRequestLoginFromButton}
+                onRequestRegister={onRequestRegisterFromButton}
+              />
             </div>
           </div>
         </header>
