@@ -1,16 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import {
   createSavedMolecule,
   deleteSavedMolecule,
-  listSavedMolecules,
   updateSavedMolecule,
 } from '@/shared/api/moleculeApi';
 import { refreshAccessToken } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
 import { executeWithFreshToken, isUnauthorizedError } from '@/shared/hooks/authRequestUtils';
+import useSavedMoleculesLoader from '@/shared/hooks/useSavedMoleculesLoader';
+import useSavedMoleculesSnapshot from '@/shared/hooks/useSavedMoleculesSnapshot';
 import type { SaveMoleculeInput, SavedMolecule } from '@/shared/types/molecule';
 
 type SavedMoleculesSnapshot = {
@@ -77,62 +78,15 @@ function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMo
     setReloadVersion((current) => current + 1);
   }, []);
 
-  useEffect(() => {
-    if (token === null) {
-      setSnapshot({
-        token: null,
-        data: [],
-        error: null,
-      });
-      return;
-    }
-
-    let isCancelled = false;
-
-    const loadSavedMolecules = async () => {
-      try {
-        const { activeToken, result } = await executeWithFreshToken(token, refreshTokenOnce, async (resolvedToken) => {
-          return await listSavedMolecules(resolvedToken);
-        });
-
-        if (isCancelled) {
-          return;
-        }
-
-        setSnapshot({
-          token: activeToken,
-          data: sortSavedMolecules(result),
-          error: null,
-        });
-      } catch (caughtError: unknown) {
-        if (isCancelled) {
-          return;
-        }
-
-        if (isUnauthorizedError(caughtError)) {
-          onUnauthorized();
-          setSnapshot({
-            token,
-            data: [],
-            error: 'Your session expired. Please login again.',
-          });
-          return;
-        }
-
-        setSnapshot({
-          token,
-          data: [],
-          error: mapSavedMoleculesErrorMessage(caughtError),
-        });
-      }
-    };
-
-    void loadSavedMolecules();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [onUnauthorized, refreshTokenOnce, reloadVersion, token]);
+  useSavedMoleculesLoader({
+    mapSavedMoleculesErrorMessage,
+    onUnauthorized,
+    refreshTokenOnce,
+    reloadVersion,
+    setSnapshot,
+    sortSavedMolecules,
+    token,
+  });
 
   const createMolecule = useCallback(
     async (input: SaveMoleculeInput): Promise<SavedMolecule> => {
@@ -233,33 +187,10 @@ function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMo
     [onUnauthorized, refreshTokenOnce, token],
   );
 
-  const data = useMemo(() => {
-    if (token === null) {
-      return [];
-    }
-
-    if (snapshot.token === token) {
-      return snapshot.data;
-    }
-
-    return snapshot.data;
-  }, [snapshot.data, snapshot.token, token]);
-
-  const error = useMemo(() => {
-    if (token === null) {
-      return null;
-    }
-
-    return snapshot.token === token ? snapshot.error : null;
-  }, [snapshot.error, snapshot.token, token]);
-
-  const isLoading = useMemo(() => {
-    if (token === null) {
-      return false;
-    }
-
-    return snapshot.token !== token && snapshot.data.length === 0;
-  }, [snapshot.data.length, snapshot.token, token]);
+  const { data, error, isLoading } = useSavedMoleculesSnapshot({
+    snapshot,
+    token,
+  });
 
   return {
     data,
