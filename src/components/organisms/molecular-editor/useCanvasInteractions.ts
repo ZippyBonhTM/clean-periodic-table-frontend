@@ -1,75 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import type { PointerEvent as ReactPointerEvent, RefObject } from 'react';
 
+import {
+  DRAG_THRESHOLD_PX,
+  toSvgDelta,
+  toSvgPoint,
+  type CanvasInteraction,
+  type CanvasViewportLike,
+  type EditorViewMode,
+} from '@/components/organisms/molecular-editor/moleculeCanvasInteractionUtils';
+import useCanvasPlacementQueue from '@/components/organisms/molecular-editor/useCanvasPlacementQueue';
 import { findAtom, type MoleculeModel } from '@/shared/utils/moleculeEditor';
-
-type EditorViewMode = 'editor' | 'structural' | 'simplified' | 'stick';
-
-type CanvasViewportLike = {
-  offsetX: number;
-  offsetY: number;
-  scale: number;
-};
-
-type CanvasInteraction =
-  | {
-      type: 'idle';
-    }
-  | {
-      type: 'canvas-press';
-      pointerId: number;
-      startClientX: number;
-      startClientY: number;
-      startPoint: {
-        x: number;
-        y: number;
-      };
-      startOffsetX: number;
-      startOffsetY: number;
-      canPan: boolean;
-      moved: boolean;
-    }
-  | {
-      type: 'atom-press';
-      pointerId: number;
-      atomId: string;
-      startClientX: number;
-      startClientY: number;
-      startOffsetX: number;
-      startOffsetY: number;
-      mode: 'select' | 'pan';
-      moved: boolean;
-    };
-
-const DRAG_THRESHOLD_PX = 6;
-const CANVAS_DOUBLE_PRESS_DELAY_MS = 320;
-const CANVAS_DOUBLE_PRESS_DISTANCE_PX = 18;
-
-function toSvgPoint(svg: SVGSVGElement, clientX: number, clientY: number) {
-  const rect = svg.getBoundingClientRect();
-  const viewBox = svg.viewBox.baseVal;
-
-  return {
-    x: viewBox.x + ((clientX - rect.left) / rect.width) * viewBox.width,
-    y: viewBox.y + ((clientY - rect.top) / rect.height) * viewBox.height,
-  };
-}
-
-function toSvgDelta(
-  svg: SVGSVGElement,
-  viewBox: { width: number; height: number },
-  deltaClientX: number,
-  deltaClientY: number,
-) {
-  const rect = svg.getBoundingClientRect();
-
-  return {
-    x: (deltaClientX / rect.width) * viewBox.width,
-    y: (deltaClientY / rect.height) * viewBox.height,
-  };
-}
 
 type UseCanvasInteractionsOptions = {
   activeView: EditorViewMode;
@@ -97,105 +40,22 @@ export default function useCanvasInteractions({
   onAtomActivate,
 }: UseCanvasInteractionsOptions) {
   const interactionRef = useRef<CanvasInteraction>({ type: 'idle' });
-  const selectedAtomIdRef = useRef<string | null>(null);
-  const pendingCanvasPlacementRef = useRef<{
-    timestamp: number;
-    clientX: number;
-    clientY: number;
-    pointerType: string;
-  } | null>(null);
-  const pendingCanvasSelectionClearTimeoutRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    selectedAtomIdRef.current = selectedAtomId;
-  }, [selectedAtomId]);
-
-  const clearPendingCanvasSelectionClearTimeout = useCallback(() => {
-    if (pendingCanvasSelectionClearTimeoutRef.current !== null) {
-      window.clearTimeout(pendingCanvasSelectionClearTimeoutRef.current);
-      pendingCanvasSelectionClearTimeoutRef.current = null;
-    }
-  }, []);
-
-  const clearPendingCanvasPlacement = useCallback(() => {
-    pendingCanvasPlacementRef.current = null;
-    clearPendingCanvasSelectionClearTimeout();
-  }, [clearPendingCanvasSelectionClearTimeout]);
-
-  useEffect(() => {
-    return () => {
-      clearPendingCanvasSelectionClearTimeout();
-    };
-  }, [clearPendingCanvasSelectionClearTimeout]);
+  const {
+    clearPendingCanvasPlacement,
+    clearPendingCanvasSelectionClearTimeout,
+    pendingCanvasPlacementRef,
+    queueCanvasPlacement,
+  } = useCanvasPlacementQueue({
+    onCanvasPlacement,
+    selectedAtomId,
+    setEditorNotice,
+    setSelectedAtomId,
+  });
 
   const clearTransientEditorState = useCallback(() => {
     clearPendingCanvasPlacement();
     interactionRef.current = { type: 'idle' };
   }, [clearPendingCanvasPlacement]);
-
-  const queueCanvasPlacement = useCallback(
-    (point: { x: number; y: number }, pointerType: string, clientX: number, clientY: number) => {
-      const now = performance.now();
-      const pendingPlacement = pendingCanvasPlacementRef.current;
-      const isRepeatedPlacement =
-        pendingPlacement !== null &&
-        pendingPlacement.pointerType === pointerType &&
-        now - pendingPlacement.timestamp <= CANVAS_DOUBLE_PRESS_DELAY_MS &&
-        Math.hypot(clientX - pendingPlacement.clientX, clientY - pendingPlacement.clientY) <=
-          CANVAS_DOUBLE_PRESS_DISTANCE_PX;
-
-      if (isRepeatedPlacement) {
-        clearPendingCanvasPlacement();
-        onCanvasPlacement(point);
-        return;
-      }
-
-      clearPendingCanvasSelectionClearTimeout();
-      pendingCanvasPlacementRef.current = {
-        timestamp: now,
-        clientX,
-        clientY,
-        pointerType,
-      };
-
-      if (selectedAtomId !== null) {
-        const atomIdToClear = selectedAtomId;
-
-        pendingCanvasSelectionClearTimeoutRef.current = window.setTimeout(() => {
-          pendingCanvasSelectionClearTimeoutRef.current = null;
-          pendingCanvasPlacementRef.current = null;
-
-          if (selectedAtomIdRef.current !== atomIdToClear) {
-            return;
-          }
-
-          setSelectedAtomId(null);
-          setEditorNotice('Selection cleared.');
-        }, CANVAS_DOUBLE_PRESS_DELAY_MS);
-
-        setEditorNotice(
-          pointerType === 'touch'
-            ? 'Double-tap again to attach the active element, or wait to clear the selection.'
-            : 'Double-click again to attach the active element, or wait to clear the selection.',
-        );
-        return;
-      }
-
-      setEditorNotice(
-        pointerType === 'touch'
-          ? 'Double-tap the canvas to place the active element.'
-          : 'Double-click the canvas to place the active element.',
-      );
-    },
-    [
-      clearPendingCanvasPlacement,
-      clearPendingCanvasSelectionClearTimeout,
-      onCanvasPlacement,
-      selectedAtomId,
-      setEditorNotice,
-      setSelectedAtomId,
-    ],
-  );
 
   const onCanvasPointerDown = useCallback(
     (event: ReactPointerEvent<SVGSVGElement>) => {
@@ -207,7 +67,7 @@ export default function useCanvasInteractions({
         return;
       }
 
-      if (selectedAtomIdRef.current !== null && pendingCanvasPlacementRef.current !== null) {
+      if (selectedAtomId !== null && pendingCanvasPlacementRef.current !== null) {
         clearPendingCanvasSelectionClearTimeout();
       }
 
@@ -225,7 +85,7 @@ export default function useCanvasInteractions({
         moved: false,
       };
     },
-    [activeView, canvasViewport.offsetX, canvasViewport.offsetY, clearPendingCanvasSelectionClearTimeout],
+    [activeView, canvasViewport.offsetX, canvasViewport.offsetY, clearPendingCanvasSelectionClearTimeout, pendingCanvasPlacementRef, selectedAtomId],
   );
 
   const onCanvasPointerMove = useCallback(
