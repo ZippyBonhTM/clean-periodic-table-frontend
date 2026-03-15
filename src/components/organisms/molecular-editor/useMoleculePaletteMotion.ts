@@ -1,13 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { MutableRefObject, PointerEvent as ReactPointerEvent, RefObject } from 'react';
 
-const DRAG_THRESHOLD_PX = 6;
-const PALETTE_MOMENTUM_DECAY = 0.9;
-const PALETTE_MOMENTUM_MIN_SPEED = 0.08;
-const PALETTE_MOMENTUM_IDLE_RELEASE_MS = 90;
-const PALETTE_TILE_LONG_PRESS_MS = 260;
+import {
+  createEmptyPaletteInteraction,
+  DRAG_THRESHOLD_PX,
+  PALETTE_MOMENTUM_IDLE_RELEASE_MS,
+  PALETTE_MOMENTUM_MIN_SPEED,
+  PALETTE_TILE_LONG_PRESS_MS,
+  resolvePressedPaletteIndex,
+  type PaletteInteractionState,
+} from '@/components/organisms/molecular-editor/moleculePaletteMotion.utils';
+import useMoleculePaletteMomentum from '@/components/organisms/molecular-editor/useMoleculePaletteMomentum';
 
 type UseMoleculePaletteMotionOptions = {
   centerPaletteElement: (index: number, behavior?: ScrollBehavior) => void;
@@ -37,43 +42,23 @@ export default function useMoleculePaletteMotion({
   const [isPaletteMoving, setIsPaletteMoving] = useState(false);
   const [isPalettePointerActive, setIsPalettePointerActive] = useState(false);
 
-  const paletteInteractionRef = useRef({
-    pointerId: -1,
-    startClientX: 0,
-    startedAt: 0,
-    lastClientX: 0,
-    lastTimestamp: 0,
-    velocity: 0,
-    moved: false,
-    pressedIndex: null as number | null,
+  const paletteInteractionRef = useRef<PaletteInteractionState>(createEmptyPaletteInteraction());
+
+  const { cancelPaletteMomentum, schedulePaletteSnap, startPaletteMomentum } = useMoleculePaletteMomentum({
+    centerPaletteElement,
+    centerPaletteIndexRef,
+    clampPaletteIndex,
+    filteredElementCount,
+    resolveNearestPaletteIndex,
+    resolvePaletteGestureStep,
+    settlePaletteSelection,
+    settlePaletteToCurrentCenter,
+    setIsPaletteMoving,
+    syncCenterPaletteIndex,
   });
-  const paletteMomentumFrameRef = useRef<number | null>(null);
-  const paletteSnapTimeoutRef = useRef<number | null>(null);
-
-  const cancelPaletteMomentum = useCallback(() => {
-    if (paletteMomentumFrameRef.current !== null) {
-      cancelAnimationFrame(paletteMomentumFrameRef.current);
-      paletteMomentumFrameRef.current = null;
-    }
-
-    if (paletteSnapTimeoutRef.current !== null) {
-      window.clearTimeout(paletteSnapTimeoutRef.current);
-      paletteSnapTimeoutRef.current = null;
-    }
-
-  }, []);
 
   const resetPaletteInteraction = useCallback(() => {
-    paletteInteractionRef.current = {
-      pointerId: -1,
-      startClientX: 0,
-      startedAt: 0,
-      lastClientX: 0,
-      lastTimestamp: 0,
-      velocity: 0,
-      moved: false,
-      pressedIndex: null,
-    };
+    paletteInteractionRef.current = createEmptyPaletteInteraction();
   }, []);
 
   const resetPaletteMotion = useCallback(() => {
@@ -82,68 +67,6 @@ export default function useMoleculePaletteMotion({
     setIsPaletteMoving(false);
     setIsPalettePointerActive(false);
   }, [cancelPaletteMomentum, resetPaletteInteraction]);
-
-  const startPaletteMomentum = useCallback(
-    (initialVelocity: number) => {
-      if (filteredElementCount === 0) {
-        setIsPaletteMoving(false);
-        return;
-      }
-
-      let velocity = initialVelocity;
-      let carry = 0;
-
-      if (Math.abs(velocity) < PALETTE_MOMENTUM_MIN_SPEED) {
-        settlePaletteToCurrentCenter('auto');
-        return;
-      }
-
-      cancelPaletteMomentum();
-      let lastTimestamp = performance.now();
-      const gestureStep = resolvePaletteGestureStep();
-
-      const step = (timestamp: number) => {
-        const deltaTime = Math.min(32, Math.max(8, timestamp - lastTimestamp));
-        lastTimestamp = timestamp;
-        carry += velocity * (deltaTime / 16);
-        velocity *= Math.pow(PALETTE_MOMENTUM_DECAY, deltaTime / 16);
-
-        const stepCount = Math.floor(Math.abs(carry) / gestureStep);
-
-        if (stepCount > 0) {
-          const stepDirection = carry < 0 ? -1 : 1;
-          const nextIndex = clampPaletteIndex(centerPaletteIndexRef.current + stepDirection * stepCount);
-
-          if (nextIndex !== centerPaletteIndexRef.current) {
-            syncCenterPaletteIndex(nextIndex);
-            centerPaletteElement(nextIndex, 'auto');
-          }
-
-          carry -= Math.sign(carry) * stepCount * gestureStep;
-        }
-
-        if (Math.abs(velocity) < PALETTE_MOMENTUM_MIN_SPEED) {
-          cancelPaletteMomentum();
-          settlePaletteToCurrentCenter('auto');
-          return;
-        }
-
-        paletteMomentumFrameRef.current = requestAnimationFrame(step);
-      };
-
-      paletteMomentumFrameRef.current = requestAnimationFrame(step);
-    },
-    [
-      cancelPaletteMomentum,
-      centerPaletteElement,
-      centerPaletteIndexRef,
-      clampPaletteIndex,
-      filteredElementCount,
-      resolvePaletteGestureStep,
-      settlePaletteToCurrentCenter,
-      syncCenterPaletteIndex,
-    ],
-  );
 
   const goToPreviousPaletteElement = useCallback(() => {
     if (filteredElementCount === 0) {
@@ -169,14 +92,6 @@ export default function useMoleculePaletteMotion({
     settlePaletteSelection(nextIndex);
   }, [centerPaletteIndexRef, clampPaletteIndex, filteredElementCount, settlePaletteSelection]);
 
-  const snapPaletteToNearest = useCallback(
-    (behavior: ScrollBehavior = 'smooth') => {
-      const nextIndex = resolveNearestPaletteIndex();
-      settlePaletteSelection(nextIndex, behavior);
-    },
-    [resolveNearestPaletteIndex, settlePaletteSelection],
-  );
-
   const onPaletteScroll = useCallback(() => {
     if (isPalettePointerActive || isPaletteMoving) {
       return;
@@ -184,15 +99,8 @@ export default function useMoleculePaletteMotion({
 
     const nextIndex = resolveNearestPaletteIndex();
     syncCenterPaletteIndex(nextIndex);
-
-    if (paletteSnapTimeoutRef.current !== null) {
-      window.clearTimeout(paletteSnapTimeoutRef.current);
-    }
-
-    paletteSnapTimeoutRef.current = window.setTimeout(() => {
-      snapPaletteToNearest();
-    }, 120);
-  }, [isPaletteMoving, isPalettePointerActive, resolveNearestPaletteIndex, snapPaletteToNearest, syncCenterPaletteIndex]);
+    schedulePaletteSnap();
+  }, [isPaletteMoving, isPalettePointerActive, resolveNearestPaletteIndex, schedulePaletteSnap, syncCenterPaletteIndex]);
 
   const onPalettePointerDown = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -211,9 +119,6 @@ export default function useMoleculePaletteMotion({
       setIsPaletteMoving(true);
       setIsPalettePointerActive(true);
       viewport.setPointerCapture(event.pointerId);
-      const pressedIndexAttr =
-        event.target instanceof Element ? event.target.closest<HTMLElement>('[data-palette-index]')?.dataset.paletteIndex : undefined;
-      const pressedIndex = pressedIndexAttr === undefined ? null : Number.parseInt(pressedIndexAttr, 10);
       paletteInteractionRef.current = {
         pointerId: event.pointerId,
         startClientX: event.clientX,
@@ -222,7 +127,7 @@ export default function useMoleculePaletteMotion({
         lastTimestamp: performance.now(),
         velocity: 0,
         moved: false,
-        pressedIndex: Number.isNaN(pressedIndex ?? Number.NaN) ? null : pressedIndex,
+        pressedIndex: resolvePressedPaletteIndex(event.target),
       };
     },
     [cancelPaletteMomentum, paletteViewportRef],
@@ -345,12 +250,6 @@ export default function useMoleculePaletteMotion({
     },
     [paletteViewportRef, resetPaletteInteraction, settlePaletteToCurrentCenter],
   );
-
-  useEffect(() => {
-    return () => {
-      cancelPaletteMomentum();
-    };
-  }, [cancelPaletteMomentum]);
 
   return {
     goToNextPaletteElement,
