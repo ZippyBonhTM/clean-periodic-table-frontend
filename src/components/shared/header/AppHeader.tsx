@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback } from 'react';
 
 import Button from '@/components/atoms/Button';
 import TokenStatus from '@/components/molecules/TokenStatus';
@@ -15,6 +15,7 @@ import AppHeaderDesktopNav from './AppHeaderDesktopNav';
 import AppHeaderRouteMenu from './AppHeaderRouteMenu';
 import AppHeaderUserMenu from './AppHeaderUserMenu';
 import type { AuthEntryMode } from './appHeader.types';
+import useAppHeaderMobileMenus from './useAppHeaderMobileMenus';
 import useAppHeaderUserMenu from './useAppHeaderUserMenu';
 
 type AppHeaderProps = {
@@ -98,7 +99,6 @@ function AppHeader({
 }: AppHeaderProps) {
   const pathname = usePathname();
   const { token, persistToken } = useAuthToken();
-  const [isRouteMenuOpen, setIsRouteMenuOpen] = useState(false);
 
   const themeToggleLabel = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
   const authIndicatorTone = resolveAuthIndicatorTone(authStatus);
@@ -125,62 +125,20 @@ function AppHeader({
     onPersistToken: persistToken,
     onLogout,
   });
-
-  const closeRouteMenu = useCallback(() => {
-    setIsRouteMenuOpen(false);
-  }, []);
-
-  const closeAllMenus = useCallback(() => {
-    closeRouteMenu();
-    closeUserMenu();
-  }, [closeRouteMenu, closeUserMenu]);
-
-  const hasAnyMobileMenuOpen = isRouteMenuOpen || isUserMenuOpen;
-
-  useEffect(() => {
-    if (!hasAnyMobileMenuOpen) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [hasAnyMobileMenuOpen]);
-
-  useEffect(() => {
-    if (!hasAnyMobileMenuOpen) {
-      return;
-    }
-
-    const onEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        closeAllMenus();
-      }
-    };
-
-    window.addEventListener('keydown', onEscape);
-
-    return () => {
-      window.removeEventListener('keydown', onEscape);
-    };
-  }, [closeAllMenus, hasAnyMobileMenuOpen]);
-
-  const onOpenRouteMenu = () => {
-    closeUserMenu();
-    setIsRouteMenuOpen(true);
-  };
+  const { isRouteMenuOpen, closeRouteMenu, closeAllMenus, openRouteMenu } =
+    useAppHeaderMobileMenus({
+      isUserMenuOpen,
+      closeUserMenu,
+    });
 
   const onOpenUserMenu = useCallback(() => {
     if (isUserMenuOpen) {
       return;
     }
 
-    setIsRouteMenuOpen(false);
+    closeRouteMenu();
     openUserMenu();
-  }, [isUserMenuOpen, openUserMenu]);
+  }, [closeRouteMenu, isUserMenuOpen, openUserMenu]);
 
   const onRequestLoginFromButton = () => {
     closeAllMenus();
@@ -258,7 +216,7 @@ function AppHeader({
               type="button"
               variant="ghost"
               size="sm"
-              onClick={onOpenRouteMenu}
+              onClick={openRouteMenu}
               className="size-9 rounded-xl px-0"
               aria-label="Open routes menu"
               title="Open routes menu"
