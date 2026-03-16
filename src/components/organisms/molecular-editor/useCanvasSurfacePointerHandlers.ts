@@ -4,13 +4,13 @@ import { useCallback } from 'react';
 import type { PointerEvent as ReactPointerEvent, RefObject } from 'react';
 
 import {
-  DRAG_THRESHOLD_PX,
-  toSvgDelta,
   toSvgPoint,
   type CanvasInteraction,
   type CanvasViewportLike,
   type EditorViewMode,
 } from '@/components/organisms/molecular-editor/moleculeCanvasInteractionUtils';
+import useCanvasSurfaceMoveHandler from '@/components/organisms/molecular-editor/useCanvasSurfaceMoveHandler';
+import useCanvasSurfaceReleaseHandlers from '@/components/organisms/molecular-editor/useCanvasSurfaceReleaseHandlers';
 
 type UseCanvasSurfacePointerHandlersOptions = {
   activeView: EditorViewMode;
@@ -88,123 +88,18 @@ export default function useCanvasSurfacePointerHandlers({
     ],
   );
 
-  const onCanvasPointerMove = useCallback(
-    (event: ReactPointerEvent<SVGSVGElement>) => {
-      const interaction = interactionRef.current;
+  const { onCanvasPointerMove } = useCanvasSurfaceMoveHandler({
+    interactionRef,
+    setCanvasViewport,
+    svgRef,
+  });
 
-      if (interaction.type === 'idle' || interaction.pointerId !== event.pointerId) {
-        return;
-      }
-
-      const svg = svgRef.current;
-
-      if (svg === null) {
-        return;
-      }
-
-      const deltaClientX = event.clientX - interaction.startClientX;
-      const deltaClientY = event.clientY - interaction.startClientY;
-      const distance = Math.hypot(deltaClientX, deltaClientY);
-
-      if (interaction.type === 'canvas-press') {
-        if (!interaction.canPan) {
-          if (distance >= DRAG_THRESHOLD_PX && !interaction.moved) {
-            interactionRef.current = {
-              ...interaction,
-              moved: true,
-            };
-          }
-
-          return;
-        }
-
-        if (distance < DRAG_THRESHOLD_PX && !interaction.moved) {
-          return;
-        }
-
-        event.preventDefault();
-
-        const delta = toSvgDelta(svg, svg.viewBox.baseVal, deltaClientX, deltaClientY);
-        interactionRef.current = {
-          ...interaction,
-          moved: true,
-        };
-
-        setCanvasViewport((current) => ({
-          ...current,
-          offsetX: interaction.startOffsetX - delta.x,
-          offsetY: interaction.startOffsetY - delta.y,
-        }));
-        return;
-      }
-
-      if (distance < DRAG_THRESHOLD_PX && !interaction.moved) {
-        return;
-      }
-
-      const nextMode = interaction.mode === 'pan' || distance >= DRAG_THRESHOLD_PX ? 'pan' : interaction.mode;
-
-      if (nextMode !== 'pan') {
-        return;
-      }
-
-      event.preventDefault();
-      interactionRef.current = {
-        ...interaction,
-        mode: 'pan',
-        moved: true,
-      };
-      const delta = toSvgDelta(svg, svg.viewBox.baseVal, deltaClientX, deltaClientY);
-
-      setCanvasViewport((current) => ({
-        ...current,
-        offsetX: interaction.startOffsetX - delta.x,
-        offsetY: interaction.startOffsetY - delta.y,
-      }));
-    },
-    [interactionRef, setCanvasViewport, svgRef],
-  );
-
-  const onCanvasPointerUp = useCallback(
-    (event: ReactPointerEvent<SVGSVGElement>) => {
-      const interaction = interactionRef.current;
-
-      if (interaction.type === 'idle' || interaction.pointerId !== event.pointerId) {
-        return;
-      }
-
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-      }
-
-      interactionRef.current = { type: 'idle' };
-
-      if (interaction.type === 'canvas-press') {
-        if (!interaction.moved) {
-          queueCanvasPlacement(interaction.startPoint, event.pointerType, event.clientX, event.clientY);
-        }
-
-        return;
-      }
-
-      if (!interaction.moved && interaction.mode === 'select') {
-        onAtomActivate(interaction.atomId);
-      }
-    },
-    [interactionRef, onAtomActivate, queueCanvasPlacement],
-  );
-
-  const onCanvasPointerCancel = useCallback(
-    (event: ReactPointerEvent<SVGSVGElement>) => {
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-      }
-
-      clearPendingCanvasPlacement();
-      interactionRef.current = { type: 'idle' };
-    },
-    [clearPendingCanvasPlacement, interactionRef],
-  );
+  const { onCanvasPointerCancel, onCanvasPointerUp } = useCanvasSurfaceReleaseHandlers({
+    clearPendingCanvasPlacement,
+    interactionRef,
+    onAtomActivate,
+    queueCanvasPlacement,
+  });
 
   return {
     onCanvasPointerCancel,
