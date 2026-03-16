@@ -1,18 +1,17 @@
 'use client';
 
+import { useCallback } from 'react';
+
 import type {
   MoleculeEditorStructureActions,
   UseMoleculeEditorActionsOptions,
 } from '@/components/organisms/molecular-editor/moleculeEditorActions.types';
-import useMoleculeEditorRemoveAtomAction from '@/components/organisms/molecular-editor/useMoleculeEditorRemoveAtomAction';
-import useMoleculeEditorResetAction from '@/components/organisms/molecular-editor/useMoleculeEditorResetAction';
 
-type UseMoleculeEditorModelStateActionsOptions<Snapshot> = Pick<
+type UseMoleculeEditorResetActionOptions<Snapshot> = Pick<
   UseMoleculeEditorActionsOptions<Snapshot>,
   | 'activeView'
   | 'bondOrder'
   | 'buildHistorySnapshot'
-  | 'canvasFrameAspectRatio'
   | 'canvasViewport'
   | 'clearTransientEditorStateRef'
   | 'defaultCanvasViewport'
@@ -30,11 +29,10 @@ type UseMoleculeEditorModelStateActionsOptions<Snapshot> = Pick<
   | 'setSelectedAtomId'
 >;
 
-export default function useMoleculeEditorModelStateActions<Snapshot>({
+export default function useMoleculeEditorResetAction<Snapshot>({
   activeView,
   bondOrder,
   buildHistorySnapshot,
-  canvasFrameAspectRatio,
   canvasViewport,
   clearTransientEditorStateRef,
   defaultCanvasViewport,
@@ -50,32 +48,46 @@ export default function useMoleculeEditorModelStateActions<Snapshot>({
   setMolecule,
   setNomenclatureFallback,
   setSelectedAtomId,
-}: UseMoleculeEditorModelStateActionsOptions<Snapshot>): Pick<
+}: UseMoleculeEditorResetActionOptions<Snapshot>): Pick<
   MoleculeEditorStructureActions,
-  'onRemoveSelectedAtom' | 'onResetMolecule'
+  'onResetMolecule'
 > {
-  const { onRemoveSelectedAtom } = useMoleculeEditorRemoveAtomAction({
-    buildHistorySnapshot,
-    canvasFrameAspectRatio,
-    canvasViewport,
-    molecule,
-    pushHistorySnapshot,
-    selectedAtomId,
-    setCanvasViewport,
-    setEditorNotice,
-    setMolecule,
-    setSelectedAtomId,
-  });
+  const onResetMolecule = useCallback(() => {
+    const isAlreadyPristine =
+      molecule.atoms.length === 0 &&
+      selectedAtomId === null &&
+      activeView === 'editor' &&
+      bondOrder === 1 &&
+      canvasViewport.offsetX === defaultCanvasViewport.offsetX &&
+      canvasViewport.offsetY === defaultCanvasViewport.offsetY &&
+      canvasViewport.scale === defaultCanvasViewport.scale;
 
-  const { onResetMolecule } = useMoleculeEditorResetAction({
+    if (isAlreadyPristine) {
+      setEditorNotice('Editor already reset.');
+      return;
+    }
+
+    pushHistorySnapshot(buildHistorySnapshot());
+    clearTransientEditorStateRef.current();
+    setMolecule(emptyMolecule);
+    setSelectedAtomId(null);
+    setFocusedComponentIndex(0);
+    setNomenclatureFallback(null);
+    setActiveView('editor');
+    setBondOrder(1);
+    setCanvasViewport(defaultCanvasViewport);
+    setEditorNotice('Editor reset.');
+  }, [
     activeView,
     bondOrder,
     buildHistorySnapshot,
-    canvasViewport,
+    canvasViewport.offsetX,
+    canvasViewport.offsetY,
+    canvasViewport.scale,
     clearTransientEditorStateRef,
     defaultCanvasViewport,
     emptyMolecule,
-    molecule,
+    molecule.atoms.length,
     pushHistorySnapshot,
     selectedAtomId,
     setActiveView,
@@ -86,10 +98,9 @@ export default function useMoleculeEditorModelStateActions<Snapshot>({
     setMolecule,
     setNomenclatureFallback,
     setSelectedAtomId,
-  });
+  ]);
 
   return {
-    onRemoveSelectedAtom,
     onResetMolecule,
   };
 }
