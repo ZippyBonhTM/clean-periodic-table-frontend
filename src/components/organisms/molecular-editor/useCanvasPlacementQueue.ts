@@ -1,6 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useRef } from 'react';
+
+import {
+  resolveCanvasPlacementNotice,
+  resolveCanvasSelectionClearNotice,
+} from '@/components/organisms/molecular-editor/moleculeCanvasPlacementMessages';
+import useCanvasSelectionClearTimeout from '@/components/organisms/molecular-editor/useCanvasSelectionClearTimeout';
 
 const CANVAS_DOUBLE_PRESS_DELAY_MS = 320;
 const CANVAS_DOUBLE_PRESS_DISTANCE_PX = 18;
@@ -18,35 +24,27 @@ export default function useCanvasPlacementQueue({
   setEditorNotice,
   setSelectedAtomId,
 }: UseCanvasPlacementQueueOptions) {
-  const selectedAtomIdRef = useRef<string | null>(null);
   const pendingCanvasPlacementRef = useRef<{
     timestamp: number;
     clientX: number;
     clientY: number;
     pointerType: string;
   } | null>(null);
-  const pendingCanvasSelectionClearTimeoutRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    selectedAtomIdRef.current = selectedAtomId;
-  }, [selectedAtomId]);
-
-  const clearPendingCanvasSelectionClearTimeout = useCallback(() => {
-    if (pendingCanvasSelectionClearTimeoutRef.current !== null) {
-      window.clearTimeout(pendingCanvasSelectionClearTimeoutRef.current);
-      pendingCanvasSelectionClearTimeoutRef.current = null;
-    }
-  }, []);
+  const {
+    clearPendingCanvasSelectionClearTimeout,
+    scheduleCanvasSelectionClear,
+  } = useCanvasSelectionClearTimeout({
+    onSelectionClearTimeout: () => {
+      pendingCanvasPlacementRef.current = null;
+    },
+    selectedAtomId,
+    setEditorNotice,
+    setSelectedAtomId,
+  });
 
   const clearPendingCanvasPlacement = useCallback(() => {
     pendingCanvasPlacementRef.current = null;
     clearPendingCanvasSelectionClearTimeout();
-  }, [clearPendingCanvasSelectionClearTimeout]);
-
-  useEffect(() => {
-    return () => {
-      clearPendingCanvasSelectionClearTimeout();
-    };
   }, [clearPendingCanvasSelectionClearTimeout]);
 
   const queueCanvasPlacement = useCallback(
@@ -75,41 +73,20 @@ export default function useCanvasPlacementQueue({
       };
 
       if (selectedAtomId !== null) {
-        const atomIdToClear = selectedAtomId;
-
-        pendingCanvasSelectionClearTimeoutRef.current = window.setTimeout(() => {
-          pendingCanvasSelectionClearTimeoutRef.current = null;
-          pendingCanvasPlacementRef.current = null;
-
-          if (selectedAtomIdRef.current !== atomIdToClear) {
-            return;
-          }
-
-          setSelectedAtomId(null);
-          setEditorNotice('Selection cleared.');
-        }, CANVAS_DOUBLE_PRESS_DELAY_MS);
-
-        setEditorNotice(
-          pointerType === 'touch'
-            ? 'Double-tap again to attach the active element, or wait to clear the selection.'
-            : 'Double-click again to attach the active element, or wait to clear the selection.',
-        );
+        scheduleCanvasSelectionClear(selectedAtomId);
+        setEditorNotice(resolveCanvasSelectionClearNotice(pointerType));
         return;
       }
 
-      setEditorNotice(
-        pointerType === 'touch'
-          ? 'Double-tap the canvas to place the active element.'
-          : 'Double-click the canvas to place the active element.',
-      );
+      setEditorNotice(resolveCanvasPlacementNotice(pointerType));
     },
     [
       clearPendingCanvasPlacement,
       clearPendingCanvasSelectionClearTimeout,
       onCanvasPlacement,
+      scheduleCanvasSelectionClear,
       selectedAtomId,
       setEditorNotice,
-      setSelectedAtomId,
     ],
   );
 
