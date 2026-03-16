@@ -3,7 +3,11 @@
 import { useCallback } from 'react';
 
 import { preserveViewportAcrossModelChange } from '@/components/organisms/molecular-editor/moleculeCanvasViewport';
-import type { MoleculeChangeResult, UseMoleculeEditorActionsOptions } from '@/components/organisms/molecular-editor/moleculeEditorActions.types';
+import type {
+  MoleculeChangeResult,
+  MoleculeEditorChangeCommitter,
+  UseMoleculeEditorActionsOptions,
+} from '@/components/organisms/molecular-editor/moleculeEditorActions.types';
 import { dedupeBondConnections } from '@/shared/utils/moleculeEditor';
 
 type UseMoleculeEditorChangeCommitterOptions<Snapshot> = Pick<
@@ -37,7 +41,7 @@ export default function useMoleculeEditorChangeCommitter<Snapshot>({
   setMolecule,
   setNomenclatureFallback,
   setSelectedAtomId,
-}: UseMoleculeEditorChangeCommitterOptions<Snapshot>) {
+}: UseMoleculeEditorChangeCommitterOptions<Snapshot>): MoleculeEditorChangeCommitter<Snapshot> {
   return useCallback(
     (
       previousMolecule: UseMoleculeEditorActionsOptions<Snapshot>['molecule'],

@@ -1,16 +1,14 @@
 'use client';
 
-import { useCallback } from 'react';
-
 import useMoleculeEditorChangeCommitter from '@/components/organisms/molecular-editor/useMoleculeEditorChangeCommitter';
 import useMoleculeEditorImportActions from '@/components/organisms/molecular-editor/useMoleculeEditorImportActions';
 import useMoleculeEditorModelStateActions from '@/components/organisms/molecular-editor/useMoleculeEditorModelStateActions';
 import useMoleculeEditorPlacementActions from '@/components/organisms/molecular-editor/useMoleculeEditorPlacementActions';
+import useMoleculeEditorSelectionActions from '@/components/organisms/molecular-editor/useMoleculeEditorSelectionActions';
 import type {
   MoleculeEditorStructureActions,
   UseMoleculeEditorActionsOptions,
 } from '@/components/organisms/molecular-editor/moleculeEditorActions.types';
-import { connectAtoms } from '@/shared/utils/moleculeEditor';
 
 type UseMoleculeEditorStructureActionsOptions<Snapshot> = Pick<
   UseMoleculeEditorActionsOptions<Snapshot>,
@@ -138,33 +136,15 @@ export default function useMoleculeEditorStructureActions<Snapshot>({
     setEditorNotice,
   });
 
-  const handleAtomActivate = useCallback(
-    (atomId: string) => {
-      clearPendingCanvasPlacementRef.current();
-
-      if (selectedAtomId === null) {
-        setSelectedAtomId(atomId);
-        setEditorNotice('Atom selected. Tap another atom to create a bond, or use the tools to attach the active element.');
-        return;
-      }
-
-      if (selectedAtomId === atomId) {
-        setSelectedAtomId(null);
-        setEditorNotice('Selection cleared.');
-        return;
-      }
-
-      const result = connectAtoms(molecule, selectedAtomId, atomId, bondOrder);
-      commitMoleculeChange(molecule, result, `Bond updated to order ${bondOrder}.`);
-    },
-    [bondOrder, clearPendingCanvasPlacementRef, commitMoleculeChange, molecule, selectedAtomId, setEditorNotice, setSelectedAtomId],
-  );
-
-  const onClearSelection = useCallback(() => {
-    clearPendingCanvasPlacementRef.current();
-    setSelectedAtomId(null);
-    setEditorNotice('Selection cleared.');
-  }, [clearPendingCanvasPlacementRef, setEditorNotice, setSelectedAtomId]);
+  const { handleAtomActivate, onClearSelection } = useMoleculeEditorSelectionActions({
+    bondOrder,
+    clearPendingCanvasPlacementRef,
+    commitMoleculeChange,
+    molecule,
+    selectedAtomId,
+    setEditorNotice,
+    setSelectedAtomId,
+  });
 
   return {
     handleAtomActivate,

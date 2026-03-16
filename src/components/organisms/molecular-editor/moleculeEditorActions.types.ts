@@ -28,6 +28,13 @@ export type MoleculeChangeResult = {
   error?: string;
 };
 
+export type MoleculeEditorChangeCommitter<Snapshot> = (
+  previousMolecule: UseMoleculeEditorActionsOptions<Snapshot>['molecule'],
+  result: MoleculeChangeResult,
+  successMessage: string,
+  anchorPoint?: { x: number; y: number },
+) => void;
+
 export type UseMoleculeEditorActionsOptions<Snapshot> = {
   activeElement: ChemicalElement | null;
   activeView: EditorViewMode;

@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 
 import { resolveNextStandalonePoint } from '@/components/organisms/molecular-editor/moleculeCanvasViewport';
 import type {
+  MoleculeEditorChangeCommitter,
   MoleculeEditorStructureActions,
   UseMoleculeEditorActionsOptions,
 } from '@/components/organisms/molecular-editor/moleculeEditorActions.types';
@@ -21,16 +22,7 @@ type UseMoleculeEditorPlacementActionsOptions<Snapshot> = Pick<
   | 'selectedAtomId'
   | 'setEditorNotice'
 > & {
-  commitMoleculeChange: (
-    previousMolecule: UseMoleculeEditorActionsOptions<Snapshot>['molecule'],
-    result: {
-      molecule: UseMoleculeEditorActionsOptions<Snapshot>['molecule'];
-      selectedAtomId: string | null;
-      error?: string;
-    },
-    successMessage: string,
-    anchorPoint?: { x: number; y: number },
-  ) => void;
+  commitMoleculeChange: MoleculeEditorChangeCommitter<Snapshot>;
 };
 
 export default function useMoleculeEditorPlacementActions<Snapshot>({
