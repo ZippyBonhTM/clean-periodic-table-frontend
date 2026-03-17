@@ -7,8 +7,10 @@ import Panel from '@/components/atoms/Panel';
 import AppShell from '@/components/templates/AppShell';
 import ChemistryBalanceAnalysisPanel from '@/components/templates/ChemistryBalanceAnalysisPanel';
 import ChemistryBalanceComparisonPanel from '@/components/templates/ChemistryBalanceComparisonPanel';
+import ChemistryBalanceEnginePanel from '@/components/templates/ChemistryBalanceEnginePanel';
 import ChemistryBalanceExamplesPanel from '@/components/templates/ChemistryBalanceExamplesPanel';
 import ChemistryBalanceHistoryPanel from '@/components/templates/ChemistryBalanceHistoryPanel';
+import useChemistryBalanceRemoteAnalysis from '@/components/templates/useChemistryBalanceRemoteAnalysis';
 import useEquationBalanceHistory from '@/components/templates/useEquationBalanceHistory';
 import { logoutSession } from '@/shared/api/authApi';
 import { balanceChemicalEquationText } from '@/shared/chemistry/analysis';
@@ -39,6 +41,7 @@ export default function ChemistryBalanceWorkspace() {
   const [equationInput, setEquationInput] = useState('H2 + O2 -> H2O');
   const [submittedEquation, setSubmittedEquation] = useState('H2 + O2 -> H2O');
   const [submissionVersion, setSubmissionVersion] = useState(0);
+  const [isRemoteEngineEnabled, setIsRemoteEngineEnabled] = useState(false);
 
   const result = useMemo(
     () =>
@@ -104,11 +107,25 @@ export default function ChemistryBalanceWorkspace() {
     result,
     submissionVersion,
   );
+  const { remoteAnalysis, resetRemoteAnalysis, runRemoteAnalysis } =
+    useChemistryBalanceRemoteAnalysis({
+      token: hasValidSession ? token : null,
+      rules: {
+        elementMetadataBySymbol,
+      },
+    });
 
   const applyEquationInput = (nextEquation: string) => {
     setEquationInput(nextEquation);
     setSubmittedEquation(nextEquation);
     setSubmissionVersion((currentVersion) => currentVersion + 1);
+
+    if (isRemoteEngineEnabled) {
+      void runRemoteAnalysis(nextEquation);
+      return;
+    }
+
+    resetRemoteAnalysis();
   };
 
   return (
@@ -158,6 +175,13 @@ export default function ChemistryBalanceWorkspace() {
               onClick={() => {
                 setSubmittedEquation(equationInput);
                 setSubmissionVersion((currentVersion) => currentVersion + 1);
+
+                if (isRemoteEngineEnabled) {
+                  void runRemoteAnalysis(equationInput);
+                  return;
+                }
+
+                resetRemoteAnalysis();
               }}
             >
               Balance locally
@@ -167,6 +191,7 @@ export default function ChemistryBalanceWorkspace() {
               onClick={() => {
                 setEquationInput('');
                 setSubmittedEquation('');
+                resetRemoteAnalysis();
               }}
             >
               Clear
@@ -257,6 +282,22 @@ export default function ChemistryBalanceWorkspace() {
               value={result.ok ? result.value : null}
             />
             <ChemistryBalanceAnalysisPanel analysis={analysis} metadataStatus={metadataStatus} />
+            <ChemistryBalanceEnginePanel
+              enabled={isRemoteEngineEnabled}
+              onToggle={(enabled) => {
+                setIsRemoteEngineEnabled(enabled);
+
+                if (!enabled) {
+                  resetRemoteAnalysis();
+                  return;
+                }
+
+                if (submissionVersion > 0) {
+                  void runRemoteAnalysis(submittedEquation);
+                }
+              }}
+              remoteAnalysis={remoteAnalysis}
+            />
             <ChemistryBalanceHistoryPanel
               entries={historyEntries}
               onSelect={applyEquationInput}
