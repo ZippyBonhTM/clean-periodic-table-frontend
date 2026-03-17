@@ -13,3 +13,4 @@ export type {
   ParseChemicalFormulaResult,
   ParseChemicalFormulaSuccess,
 } from '@/shared/chemistry/formula/formulaParser.types';
+export { parseChemicalFormula } from '@/shared/chemistry/formula/formulaParser';
