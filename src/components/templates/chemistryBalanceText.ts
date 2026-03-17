@@ -105,6 +105,7 @@ export const chemistryBalanceText = {
     clear: 'Clear history',
     empty:
       'Recent equations will appear here after you balance them locally.',
+    localFailureSummary: 'The equation could not be balanced locally.',
     locale: 'en-US',
   },
   examples: {
