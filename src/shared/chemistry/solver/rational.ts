@@ -41,6 +41,35 @@ export function createRational(numerator: number, denominator = 1): Rational {
   return normalizeRational({ numerator, denominator });
 }
 
+export function negateRational(rational: Rational): Rational {
+  return createRational(-rational.numerator, rational.denominator);
+}
+
+export function addRationals(left: Rational, right: Rational): Rational {
+  return createRational(
+    left.numerator * right.denominator + right.numerator * left.denominator,
+    left.denominator * right.denominator,
+  );
+}
+
+export function subtractRationals(left: Rational, right: Rational): Rational {
+  return addRationals(left, negateRational(right));
+}
+
+export function multiplyRationals(left: Rational, right: Rational): Rational {
+  return createRational(
+    left.numerator * right.numerator,
+    left.denominator * right.denominator,
+  );
+}
+
+export function divideRationals(left: Rational, right: Rational): Rational {
+  return createRational(
+    left.numerator * right.denominator,
+    left.denominator * right.numerator,
+  );
+}
+
 export function isZeroRational(rational: Rational): boolean {
   return rational.numerator === 0;
 }

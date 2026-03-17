@@ -9,6 +9,15 @@ export type SolverMatrix = SolverVector[];
 
 export type StoichiometricCoefficientVector = number[];
 
+export type ReducedRowEchelonForm = {
+  matrix: SolverMatrix;
+  pivotColumns: number[];
+  freeColumns: number[];
+  rowCount: number;
+  columnCount: number;
+  rank: number;
+};
+
 export type NormalizeCoefficientsIssueCode =
   | 'empty-vector'
   | 'zero-vector'
@@ -34,3 +43,33 @@ export type NormalizeCoefficientsFailure = {
 export type NormalizeCoefficientsResult =
   | NormalizeCoefficientsSuccess
   | NormalizeCoefficientsFailure;
+
+export type SolveHomogeneousSystemIssueCode =
+  | 'empty-matrix'
+  | 'ragged-matrix'
+  | 'non-finite-entry'
+  | 'zero-denominator';
+
+export type SolveHomogeneousSystemIssue = {
+  code: SolveHomogeneousSystemIssueCode;
+  message: string;
+};
+
+export type SolveHomogeneousSystemValue = {
+  rref: ReducedRowEchelonForm;
+  basis: SolverVector[];
+};
+
+export type SolveHomogeneousSystemSuccess = {
+  ok: true;
+  value: SolveHomogeneousSystemValue;
+};
+
+export type SolveHomogeneousSystemFailure = {
+  ok: false;
+  issues: SolveHomogeneousSystemIssue[];
+};
+
+export type SolveHomogeneousSystemResult =
+  | SolveHomogeneousSystemSuccess
+  | SolveHomogeneousSystemFailure;
