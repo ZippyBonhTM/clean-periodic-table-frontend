@@ -6,6 +6,7 @@ import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import AppShell from '@/components/templates/AppShell';
 import ChemistryBalanceAnalysisPanel from '@/components/templates/ChemistryBalanceAnalysisPanel';
+import ChemistryBalanceAnalysisComparisonPanel from '@/components/templates/ChemistryBalanceAnalysisComparisonPanel';
 import ChemistryBalanceComparisonPanel from '@/components/templates/ChemistryBalanceComparisonPanel';
 import ChemistryBalanceEnginePanel from '@/components/templates/ChemistryBalanceEnginePanel';
 import ChemistryBalanceExamplesPanel from '@/components/templates/ChemistryBalanceExamplesPanel';
@@ -308,6 +309,10 @@ export default function ChemistryBalanceWorkspace() {
                   void runRemoteAnalysis(submittedEquation);
                 }
               }}
+              remoteAnalysis={remoteAnalysis}
+            />
+            <ChemistryBalanceAnalysisComparisonPanel
+              localAnalysis={analysis}
               remoteAnalysis={remoteAnalysis}
             />
             <ChemistryBalanceHistoryPanel

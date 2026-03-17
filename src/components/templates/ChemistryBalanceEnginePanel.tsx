@@ -2,36 +2,14 @@
 
 import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
-import type { ChemicalEngineReactionAnalysis } from '@/shared/chemistry/engine';
-
-type RemoteAnalysisState =
-  | {
-      status: 'idle';
-    }
-  | {
-      status: 'loading';
-      input: string;
-    }
-  | {
-      status: 'available';
-      input: string;
-      value: ChemicalEngineReactionAnalysis;
-    }
-  | {
-      status: 'failed';
-      input: string;
-      error: {
-        code: string;
-        message: string;
-      };
-    };
+import type { ChemistryBalanceRemoteAnalysisState } from '@/components/templates/chemistryBalanceRemoteAnalysis.types';
 
 type ChemistryBalanceEnginePanelProps = {
   enabled: boolean;
   onToggle: (enabled: boolean) => void;
   canRetry: boolean;
   onRetry: () => void;
-  remoteAnalysis: RemoteAnalysisState;
+  remoteAnalysis: ChemistryBalanceRemoteAnalysisState;
 };
 
 function ChemistryBalanceEnginePanel({

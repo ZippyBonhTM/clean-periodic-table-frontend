@@ -2,32 +2,10 @@
 
 import { useCallback, useRef, useState } from 'react';
 
+import type { ChemistryBalanceRemoteAnalysisState } from '@/components/templates/chemistryBalanceRemoteAnalysis.types';
 import { createChemicalEngineReactionAnalyzer } from '@/shared/api/chemicalEngineApi';
 import { analyzeChemicalEquationText } from '@/shared/chemistry/analysis';
 import type { AnalyzeBalancedReactionOptions } from '@/shared/chemistry/rules';
-import type {
-  ChemicalEngineAnalyzeReactionFailure,
-  ChemicalEngineReactionAnalysis,
-} from '@/shared/chemistry/engine';
-
-type RemoteAnalysisState =
-  | {
-      status: 'idle';
-    }
-  | {
-      status: 'loading';
-      input: string;
-    }
-  | {
-      status: 'available';
-      input: string;
-      value: ChemicalEngineReactionAnalysis;
-    }
-  | {
-      status: 'failed';
-      input: string;
-      error: ChemicalEngineAnalyzeReactionFailure;
-    };
 
 type UseChemistryBalanceRemoteAnalysisOptions = {
   token: string | null;
@@ -44,7 +22,7 @@ const BALANCE_FLOW_OPTIONS = {
 function buildUnknownRemoteFailure(
   input: string,
   error: unknown,
-): Extract<RemoteAnalysisState, { status: 'failed' }> {
+): Extract<ChemistryBalanceRemoteAnalysisState, { status: 'failed' }> {
   return {
     status: 'failed',
     input,
@@ -67,7 +45,7 @@ export default function useChemistryBalanceRemoteAnalysis({
   token,
   rules,
 }: UseChemistryBalanceRemoteAnalysisOptions) {
-  const [state, setState] = useState<RemoteAnalysisState>({
+  const [state, setState] = useState<ChemistryBalanceRemoteAnalysisState>({
     status: 'idle',
   });
   const requestIdRef = useRef(0);
