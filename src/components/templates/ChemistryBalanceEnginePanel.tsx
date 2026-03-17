@@ -1,5 +1,6 @@
 'use client';
 
+import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import type { ChemicalEngineReactionAnalysis } from '@/shared/chemistry/engine';
 
@@ -28,12 +29,16 @@ type RemoteAnalysisState =
 type ChemistryBalanceEnginePanelProps = {
   enabled: boolean;
   onToggle: (enabled: boolean) => void;
+  canRetry: boolean;
+  onRetry: () => void;
   remoteAnalysis: RemoteAnalysisState;
 };
 
 function ChemistryBalanceEnginePanel({
   enabled,
   onToggle,
+  canRetry,
+  onRetry,
   remoteAnalysis,
 }: ChemistryBalanceEnginePanelProps) {
   return (
@@ -62,6 +67,19 @@ function ChemistryBalanceEnginePanel({
           Remote
         </label>
       </div>
+
+      {enabled ? (
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="md"
+            disabled={!canRetry || remoteAnalysis.status === 'loading'}
+            onClick={onRetry}
+          >
+            Retry remote check
+          </Button>
+        </div>
+      ) : null}
 
       {!enabled ? (
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
