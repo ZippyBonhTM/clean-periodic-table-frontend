@@ -20,7 +20,10 @@ export type BalancedChemicalReaction = Omit<ChemicalReaction, 'reactants' | 'pro
 export type BalanceReactionIssueCode =
   | ChemicalReactionIssue['code']
   | 'already-balanced'
+  | 'non-unique-solution'
   | 'non-integer-solution'
+  | 'sign-indeterminate-solution'
+  | 'zero-coefficient-solution'
   | 'unsatisfiable-system';
 
 export type BalanceReactionIssue = {

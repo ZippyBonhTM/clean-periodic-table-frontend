@@ -15,3 +15,5 @@ export type {
   BalanceReactionIssueCode,
   ChemicalReactionBalancer,
 } from '@/shared/chemistry/reaction/reactionBalance.types';
+export { balanceChemicalReaction } from '@/shared/chemistry/reaction/reactionBalancer';
+export { buildReactionStoichiometricMatrix } from '@/shared/chemistry/reaction/reactionStoichiometricMatrix';
