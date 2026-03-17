@@ -14,3 +14,4 @@ export type {
   ParseChemicalEquationResult,
   ParseChemicalEquationSuccess,
 } from '@/shared/chemistry/equation/equationParser.types';
+export { parseChemicalEquation } from '@/shared/chemistry/equation/equationParser';
