@@ -6,6 +6,7 @@ import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import AppShell from '@/components/templates/AppShell';
 import ChemistryBalanceAnalysisPanel from '@/components/templates/ChemistryBalanceAnalysisPanel';
+import ChemistryBalanceExamplesPanel from '@/components/templates/ChemistryBalanceExamplesPanel';
 import ChemistryBalanceHistoryPanel from '@/components/templates/ChemistryBalanceHistoryPanel';
 import useEquationBalanceHistory from '@/components/templates/useEquationBalanceHistory';
 import { logoutSession } from '@/shared/api/authApi';
@@ -14,12 +15,6 @@ import { analyzeBalancedReaction } from '@/shared/chemistry/rules';
 import useAuthSession from '@/shared/hooks/useAuthSession';
 import useAuthToken from '@/shared/hooks/useAuthToken';
 import useElements from '@/shared/hooks/useElements';
-
-const EXAMPLES = [
-  'H2 + O2 -> H2O',
-  'Fe + O2 -> Fe2O3',
-  'Na+ + Cl- -> NaCl',
-];
 
 export default function ChemistryBalanceWorkspace() {
   const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
@@ -109,6 +104,12 @@ export default function ChemistryBalanceWorkspace() {
     submissionVersion,
   );
 
+  const applyEquationInput = (nextEquation: string) => {
+    setEquationInput(nextEquation);
+    setSubmittedEquation(nextEquation);
+    setSubmissionVersion((currentVersion) => currentVersion + 1);
+  };
+
   return (
     <AppShell
       hasToken={hasValidSession}
@@ -149,23 +150,6 @@ export default function ChemistryBalanceWorkspace() {
               rows={4}
               className="min-h-28 w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-4 py-3 text-sm text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)] sm:text-base"
             />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {EXAMPLES.map((example) => (
-              <button
-                key={example}
-                type="button"
-                onClick={() => {
-                  setEquationInput(example);
-                  setSubmittedEquation(example);
-                  setSubmissionVersion((currentVersion) => currentVersion + 1);
-                }}
-                className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
-              >
-                {example}
-              </button>
-            ))}
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -267,14 +251,11 @@ export default function ChemistryBalanceWorkspace() {
           </Panel>
 
           <div className="space-y-5">
+            <ChemistryBalanceExamplesPanel onSelect={applyEquationInput} />
             <ChemistryBalanceAnalysisPanel analysis={analysis} metadataStatus={metadataStatus} />
             <ChemistryBalanceHistoryPanel
               entries={historyEntries}
-              onSelect={(input) => {
-                setEquationInput(input);
-                setSubmittedEquation(input);
-                setSubmissionVersion((currentVersion) => currentVersion + 1);
-              }}
+              onSelect={applyEquationInput}
               onClear={clearHistory}
             />
 
