@@ -1,33 +1,23 @@
 'use client';
 
-import { memo, useEffect, useMemo } from 'react';
+import { memo, useMemo } from 'react';
 
 import MoleculeGallerySection from '@/components/organisms/molecular-editor/MoleculeGallerySection';
 import MoleculeEditorOverlays from '@/components/organisms/molecular-editor/MoleculeEditorOverlays';
 import MoleculeEditorSection from '@/components/organisms/molecular-editor/MoleculeEditorSection';
-import useMoleculeEditorActions from '@/components/organisms/molecular-editor/useMoleculeEditorActions';
 import {
   BOND_ORDER_OPTIONS,
-  DEFAULT_CANVAS_VIEWPORT,
   DEFAULT_EDITOR_NOTICE,
-  EMPTY_MOLECULE,
-  isTextEditingElement,
   VIEW_OPTIONS,
 } from '@/components/organisms/molecular-editor/moleculeEditorConfig';
 import useMoleculeEditorLayout from '@/components/organisms/molecular-editor/useMoleculeEditorLayout';
 import useMoleculeEditorOverlayProps from '@/components/organisms/molecular-editor/useMoleculeEditorOverlayProps';
 import {
-  cloneMoleculeModel,
-  normalizeSnapshotSelectedAtomId,
-  type SavedEditorDraft,
-} from '@/components/organisms/molecular-editor/moleculeEditorSession';
-import {
   resolveInteractiveViewBox,
 } from '@/components/organisms/molecular-editor/moleculeCanvasViewport';
-import useCanvasInteractions from '@/components/organisms/molecular-editor/useCanvasInteractions';
 import useMoleculePaletteController from '@/components/organisms/molecular-editor/useMoleculePaletteController';
 import useMoleculeEditorSession from '@/components/organisms/molecular-editor/useMoleculeEditorSession';
-import useMoleculeEditorShortcuts from '@/components/organisms/molecular-editor/useMoleculeEditorShortcuts';
+import useMolecularEditorRuntime from '@/components/organisms/molecular-editor/useMolecularEditorRuntime';
 import useMoleculeEditorState from '@/components/organisms/molecular-editor/useMoleculeEditorState';
 import useMoleculeEditorSectionProps from '@/components/organisms/molecular-editor/useMoleculeEditorSectionProps';
 import useMoleculeGallerySectionProps from '@/components/organisms/molecular-editor/useMoleculeGallerySectionProps';
@@ -290,9 +280,12 @@ function MolecularEditor({
   const zoomPercent = Math.round(canvasViewport.scale * 100);
 
   const {
-    handleAtomActivate,
-    handleCanvasPlacement,
     onAddSelectedElement,
+    onAtomPointerDown,
+    onCanvasPointerCancel,
+    onCanvasPointerDown,
+    onCanvasPointerMove,
+    onCanvasPointerUp,
     onCanvasWheel,
     onClearSelection,
     onFocusComponent,
@@ -302,7 +295,7 @@ function MolecularEditor({
     onResetMolecule,
     onZoomIn,
     onZoomOut,
-  } = useMoleculeEditorActions<SavedEditorDraft>({
+  } = useMolecularEditorRuntime({
     activeElement,
     activeView,
     applyEditorSnapshot,
@@ -313,15 +306,12 @@ function MolecularEditor({
     canvasViewport,
     clearPendingCanvasPlacementRef,
     clearTransientEditorStateRef,
-    cloneMoleculeModel,
-    defaultCanvasViewport: DEFAULT_CANVAS_VIEWPORT,
-    emptyMolecule: EMPTY_MOLECULE,
     isImportModalOpen,
     isSaveModalOpen,
-    isTextEditingElement,
     molecule,
     moleculeComponents,
-    normalizeSelectedAtomId: normalizeSnapshotSelectedAtomId,
+    onRedo,
+    onUndo,
     pageMode,
     pushHistorySnapshot,
     selectedAtomId,
@@ -338,45 +328,7 @@ function MolecularEditor({
     setNomenclatureFallback,
     setSelectedAtomId,
     showGalleryFeedback,
-  });
-
-  const {
-    clearPendingCanvasPlacement,
-    clearTransientEditorState,
-    onAtomPointerDown,
-    onCanvasPointerCancel,
-    onCanvasPointerDown,
-    onCanvasPointerMove,
-    onCanvasPointerUp,
-  } = useCanvasInteractions({
-    activeView,
-    canvasViewport,
-    molecule,
-    selectedAtomId,
-    setCanvasViewport,
-    setEditorNotice,
-    setSelectedAtomId,
     svgRef,
-    onCanvasPlacement: handleCanvasPlacement,
-    onAtomActivate: handleAtomActivate,
-  });
-
-  useEffect(() => {
-    clearPendingCanvasPlacementRef.current = clearPendingCanvasPlacement;
-    clearTransientEditorStateRef.current = clearTransientEditorState;
-  }, [
-    clearPendingCanvasPlacement,
-    clearPendingCanvasPlacementRef,
-    clearTransientEditorState,
-    clearTransientEditorStateRef,
-  ]);
-
-  useMoleculeEditorShortcuts({
-    isImportModalOpen,
-    isSaveModalOpen,
-    isTextEditingElement,
-    onRedo,
-    onUndo,
   });
 
   const isEditorPage = pageMode === 'editor';
