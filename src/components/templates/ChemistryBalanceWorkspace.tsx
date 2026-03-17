@@ -1,0 +1,204 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+
+import Button from '@/components/atoms/Button';
+import Panel from '@/components/atoms/Panel';
+import AppShell from '@/components/templates/AppShell';
+import { balanceChemicalEquationText } from '@/shared/chemistry/analysis';
+
+const EXAMPLES = [
+  'H2 + O2 -> H2O',
+  'Fe + O2 -> Fe2O3',
+  'Na+ + Cl- -> NaCl',
+];
+
+export default function ChemistryBalanceWorkspace() {
+  const [equationInput, setEquationInput] = useState('H2 + O2 -> H2O');
+  const [submittedEquation, setSubmittedEquation] = useState('H2 + O2 -> H2O');
+
+  const result = useMemo(
+    () =>
+      balanceChemicalEquationText(submittedEquation, {
+        format: {
+          includePhase: true,
+          hideCoefficientOne: true,
+        },
+      }),
+    [submittedEquation],
+  );
+
+  return (
+    <AppShell hasToken={false} authStatus="anonymous" showFooter={false}>
+      <section className="space-y-5">
+        <Panel className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              Client-First Chemistry
+            </p>
+            <h1 className="text-2xl font-black text-[var(--text-strong)] sm:text-3xl">
+              Balance Equation
+            </h1>
+            <p className="max-w-3xl text-sm leading-6 text-[var(--text-muted)] sm:text-base">
+              This page uses the local chemistry pipeline only: equation parsing, reaction creation,
+              matrix balancing, and deterministic formatting.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <label
+              htmlFor="equation-input"
+              className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]"
+            >
+              Equation
+            </label>
+            <textarea
+              id="equation-input"
+              value={equationInput}
+              onChange={(event) => setEquationInput(event.target.value)}
+              placeholder="H2 + O2 -> H2O"
+              rows={4}
+              className="min-h-28 w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-4 py-3 text-sm text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)] sm:text-base"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {EXAMPLES.map((example) => (
+              <button
+                key={example}
+                type="button"
+                onClick={() => {
+                  setEquationInput(example);
+                  setSubmittedEquation(example);
+                }}
+                className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
+              >
+                {example}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={() => setSubmittedEquation(equationInput)}>Balance locally</Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setEquationInput('');
+                setSubmittedEquation('');
+              }}
+            >
+              Clear
+            </Button>
+          </div>
+        </Panel>
+
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+          <Panel className="space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  Result
+                </p>
+                <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
+                  Balanced Output
+                </h2>
+              </div>
+              <span
+                className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
+                  result.ok
+                    ? 'border-[rgba(16,185,129,0.45)] bg-[rgba(16,185,129,0.14)] text-[var(--text-strong)]'
+                    : 'border-[rgba(245,158,11,0.45)] bg-[rgba(245,158,11,0.14)] text-[var(--text-strong)]'
+                }`}
+              >
+                {result.ok ? 'Balanced' : result.stage}
+              </span>
+            </div>
+
+            {result.ok ? (
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-soft)] px-4 py-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                    Formatted
+                  </p>
+                  <p className="mt-2 break-words text-lg font-black text-[var(--text-strong)] sm:text-xl">
+                    {result.value.formatted}
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                      Terms
+                    </p>
+                    <p className="mt-1 text-lg font-black text-[var(--text-strong)]">
+                      {result.value.equation.termCount}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                      Elements
+                    </p>
+                    <p className="mt-1 text-lg font-black text-[var(--text-strong)]">
+                      {result.value.reaction.elementSymbols.length}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                      Vector
+                    </p>
+                    <p className="mt-1 text-lg font-black text-[var(--text-strong)]">
+                      [{result.value.balancedReaction.coefficientVector.join(', ')}]
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.08)] px-4 py-4">
+                <p className="text-sm font-semibold text-[var(--text-strong)]">
+                  The equation could not be balanced at the local <code>{result.stage}</code> stage.
+                </p>
+                <ul className="space-y-2 text-sm leading-6 text-[var(--text-muted)]">
+                  {result.issues.map((issue, index) => (
+                    <li key={`${issue.stage}-${issue.code}-${index}`} className="rounded-xl bg-black/5 px-3 py-2">
+                      <span className="font-semibold text-[var(--text-strong)]">{issue.code}</span>
+                      : {issue.message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </Panel>
+
+          <Panel className="space-y-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                Pipeline
+              </p>
+              <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
+                Local Stages
+              </h2>
+            </div>
+            <ol className="space-y-3 text-sm leading-6 text-[var(--text-muted)]">
+              <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
+                <span className="font-semibold text-[var(--text-strong)]">1. Equation parse</span>
+                : separates arrow, terms, coefficients, phases, and structural notation.
+              </li>
+              <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
+                <span className="font-semibold text-[var(--text-strong)]">2. Reaction creation</span>
+                : converts terms into structured participants with parsed formulas.
+              </li>
+              <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
+                <span className="font-semibold text-[var(--text-strong)]">3. Matrix balancing</span>
+                : builds the stoichiometric matrix, solves the null-space, and normalizes coefficients.
+              </li>
+              <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
+                <span className="font-semibold text-[var(--text-strong)]">4. Deterministic formatting</span>
+                : returns a stable text result for display.
+              </li>
+            </ol>
+          </Panel>
+        </div>
+      </section>
+    </AppShell>
+  );
+}
