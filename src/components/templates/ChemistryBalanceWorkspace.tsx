@@ -6,11 +6,11 @@ import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import AppShell from '@/components/templates/AppShell';
 import ChemistryBalanceAnalysisPanel from '@/components/templates/ChemistryBalanceAnalysisPanel';
-import ChemistryBalanceAnalysisComparisonPanel from '@/components/templates/ChemistryBalanceAnalysisComparisonPanel';
 import ChemistryBalanceComparisonPanel from '@/components/templates/ChemistryBalanceComparisonPanel';
 import ChemistryBalanceEnginePanel from '@/components/templates/ChemistryBalanceEnginePanel';
 import ChemistryBalanceExamplesPanel from '@/components/templates/ChemistryBalanceExamplesPanel';
 import ChemistryBalanceHistoryPanel from '@/components/templates/ChemistryBalanceHistoryPanel';
+import ChemistryBalancePipelineSummaryPanel from '@/components/templates/ChemistryBalancePipelineSummaryPanel';
 import useChemistryBalanceRemoteAnalysis from '@/components/templates/useChemistryBalanceRemoteAnalysis';
 import useEquationBalanceHistory from '@/components/templates/useEquationBalanceHistory';
 import useEquationBalanceRemotePreference from '@/components/templates/useEquationBalanceRemotePreference';
@@ -288,10 +288,16 @@ export default function ChemistryBalanceWorkspace() {
           </Panel>
 
           <div className="space-y-5">
-            <ChemistryBalanceExamplesPanel onSelect={applyEquationInput} />
-            <ChemistryBalanceComparisonPanel
-              value={result.ok ? result.value : null}
+            <ChemistryBalancePipelineSummaryPanel
+              input={submittedEquation}
+              result={result}
+              analysis={analysis}
+              metadataStatus={metadataStatus}
+              remoteEnabled={isRemoteEngineEnabled}
+              remoteAnalysis={remoteAnalysis}
             />
+            <ChemistryBalanceExamplesPanel onSelect={applyEquationInput} />
+            <ChemistryBalanceComparisonPanel value={result.ok ? result.value : null} />
             <ChemistryBalanceAnalysisPanel analysis={analysis} metadataStatus={metadataStatus} />
             <ChemistryBalanceEnginePanel
               enabled={isRemoteEngineEnabled}
@@ -311,48 +317,11 @@ export default function ChemistryBalanceWorkspace() {
               }}
               remoteAnalysis={remoteAnalysis}
             />
-            <ChemistryBalanceAnalysisComparisonPanel
-              localAnalysis={analysis}
-              remoteAnalysis={remoteAnalysis}
-            />
             <ChemistryBalanceHistoryPanel
               entries={historyEntries}
               onSelect={applyEquationInput}
               onClear={clearHistory}
             />
-
-            <Panel className="space-y-4">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                  Pipeline
-                </p>
-                <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-                  Local Stages
-                </h2>
-              </div>
-              <ol className="space-y-3 text-sm leading-6 text-[var(--text-muted)]">
-                <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
-                  <span className="font-semibold text-[var(--text-strong)]">1. Equation parse</span>
-                  : separates arrow, terms, coefficients, phases, and structural notation.
-                </li>
-                <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
-                  <span className="font-semibold text-[var(--text-strong)]">2. Reaction creation</span>
-                  : converts terms into structured participants with parsed formulas.
-                </li>
-                <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
-                  <span className="font-semibold text-[var(--text-strong)]">3. Matrix balancing</span>
-                  : builds the stoichiometric matrix, solves the null-space, and normalizes coefficients.
-                </li>
-                <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
-                  <span className="font-semibold text-[var(--text-strong)]">4. Heuristic analysis</span>
-                  : applies lightweight local rules and optionally enriches them with Element DB metadata.
-                </li>
-                <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
-                  <span className="font-semibold text-[var(--text-strong)]">5. Deterministic formatting</span>
-                  : returns a stable text result for display.
-                </li>
-              </ol>
-            </Panel>
           </div>
         </div>
       </section>
