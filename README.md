@@ -34,6 +34,10 @@ Frontend runs on `http://localhost:3000` by default.
 - Vercel guide (recommended): `DEPLOY_VERCEL.md`
 - Railway guide (optional): `DEPLOY_RAILWAY.md`
 
+## Docs
+
+- Chemical system architecture: `docs/chemical-system-architecture.md`
+
 ## Structure
 
 - `src/components/atoms`
