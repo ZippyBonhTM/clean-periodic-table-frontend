@@ -6,6 +6,7 @@ import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import AppShell from '@/components/templates/AppShell';
 import ChemistryBalanceAnalysisPanel from '@/components/templates/ChemistryBalanceAnalysisPanel';
+import ChemistryBalanceComparisonPanel from '@/components/templates/ChemistryBalanceComparisonPanel';
 import ChemistryBalanceExamplesPanel from '@/components/templates/ChemistryBalanceExamplesPanel';
 import ChemistryBalanceHistoryPanel from '@/components/templates/ChemistryBalanceHistoryPanel';
 import useEquationBalanceHistory from '@/components/templates/useEquationBalanceHistory';
@@ -252,6 +253,9 @@ export default function ChemistryBalanceWorkspace() {
 
           <div className="space-y-5">
             <ChemistryBalanceExamplesPanel onSelect={applyEquationInput} />
+            <ChemistryBalanceComparisonPanel
+              value={result.ok ? result.value : null}
+            />
             <ChemistryBalanceAnalysisPanel analysis={analysis} metadataStatus={metadataStatus} />
             <ChemistryBalanceHistoryPanel
               entries={historyEntries}
