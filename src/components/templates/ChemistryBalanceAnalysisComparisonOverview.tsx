@@ -1,11 +1,11 @@
 'use client';
 
 import {
-  chemistryBalanceText,
   formatChemistryBalanceComparisonType,
 } from '@/components/templates/chemistryBalanceText';
 import type { ChemistryBalanceRemoteAnalysisState } from '@/components/templates/chemistryBalanceRemoteAnalysis.types';
 import type { BalancedReactionAnalysis } from '@/shared/chemistry/rules';
+import useChemistryBalanceText from '@/components/templates/useChemistryBalanceText';
 import {
   type AlignmentStatus,
   buildClassificationDeltaLabel,
@@ -25,48 +25,54 @@ function ChemistryBalanceAnalysisComparisonOverview({
   remoteAnalysis,
   classificationAlignment,
 }: ChemistryBalanceAnalysisComparisonOverviewProps) {
+  const { text } = useChemistryBalanceText();
+
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-          {chemistryBalanceText.analysisComparison.localLabel}
+          {text.analysisComparison.localLabel}
         </p>
         <p className="mt-1 text-base font-black text-[var(--text-strong)]">
-          {formatChemistryBalanceComparisonType(localAnalysis.reactionType)}
+          {formatChemistryBalanceComparisonType(text, localAnalysis.reactionType)}
         </p>
-        <p className="mt-2 text-sm text-[var(--text-muted)]">Score {localAnalysis.score}/100</p>
+        <p className="mt-2 text-sm text-[var(--text-muted)]">
+          {text.analysis.scoreLabel} {localAnalysis.score}/100
+        </p>
         <p className="text-sm text-[var(--text-muted)]">
-          {chemistryBalanceText.analysisComparison.plausibleLabel}:{' '}
+          {text.analysisComparison.plausibleLabel}:{' '}
           {localAnalysis.likelyPlausible
-            ? chemistryBalanceText.common.yes
-            : chemistryBalanceText.analysis.needsReview}
+            ? text.common.yes
+            : text.analysis.needsReview}
         </p>
       </div>
 
       <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-          {chemistryBalanceText.analysisComparison.remoteLabel}
+          {text.analysisComparison.remoteLabel}
         </p>
         <p className="mt-1 text-base font-black text-[var(--text-strong)]">
-          {formatChemistryBalanceComparisonType(remoteAnalysis.value.classification)}
+          {formatChemistryBalanceComparisonType(text, remoteAnalysis.value.classification)}
         </p>
         <p className="mt-2 text-sm text-[var(--text-muted)]">
-          Score {remoteAnalysis.value.score ?? chemistryBalanceText.common.notAvailable}
+          {text.analysis.scoreLabel} {remoteAnalysis.value.score ?? text.common.notAvailable}
         </p>
-        <p className="text-sm text-[var(--text-muted)]">{buildRemoteValidityLabel(remoteAnalysis)}</p>
+        <p className="text-sm text-[var(--text-muted)]">
+          {buildRemoteValidityLabel(text, remoteAnalysis)}
+        </p>
       </div>
 
       <div
         className={`rounded-2xl border px-4 py-3 ${resolveAlignmentTone(classificationAlignment)}`}
       >
         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-          {chemistryBalanceText.analysisComparison.classificationLabel}
+          {text.analysisComparison.classificationLabel}
         </p>
         <p className="mt-1 text-base font-black text-[var(--text-strong)]">
-          {formatAlignmentStatus(classificationAlignment)}
+          {formatAlignmentStatus(text, classificationAlignment)}
         </p>
         <p className="mt-2 text-sm text-[var(--text-muted)]">
-          {buildClassificationDeltaLabel(localAnalysis, remoteAnalysis)}
+          {buildClassificationDeltaLabel(text, localAnalysis, remoteAnalysis)}
         </p>
       </div>
     </div>

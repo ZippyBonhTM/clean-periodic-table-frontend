@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useReducer } from 'react';
 
+import useChemistryBalanceText from '@/components/templates/useChemistryBalanceText';
 import type { BalanceChemicalEquationFlowResult } from '@/shared/chemistry/analysis';
 import { equationBalanceHistoryReducer } from '@/components/templates/equationBalanceHistoryReducer';
 import {
@@ -16,6 +17,7 @@ export default function useEquationBalanceHistory(
   result: BalanceChemicalEquationFlowResult,
   submissionVersion: number,
 ) {
+  const { text } = useChemistryBalanceText();
   const [entries, dispatch] = useReducer(
     equationBalanceHistoryReducer,
     undefined,
@@ -27,7 +29,11 @@ export default function useEquationBalanceHistory(
       return;
     }
 
-    const nextEntry = buildEquationBalanceHistoryEntry(submittedEquation, result);
+    const nextEntry = buildEquationBalanceHistoryEntry(
+      submittedEquation,
+      result,
+      text.history.localFailureSummary,
+    );
 
     if (nextEntry === null) {
       return;
@@ -37,7 +43,7 @@ export default function useEquationBalanceHistory(
       type: 'record',
       entry: nextEntry,
     });
-  }, [result, submissionVersion, submittedEquation]);
+  }, [result, submissionVersion, submittedEquation, text.history.localFailureSummary]);
 
   useEffect(() => {
     writeEquationBalanceHistory(entries);

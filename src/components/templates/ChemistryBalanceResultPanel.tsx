@@ -1,7 +1,7 @@
 'use client';
 
 import Panel from '@/components/atoms/Panel';
-import { chemistryBalanceText } from '@/components/templates/chemistryBalanceText';
+import useChemistryBalanceText from '@/components/templates/useChemistryBalanceText';
 import type { BalanceChemicalEquationFlowResult } from '@/shared/chemistry/analysis';
 
 type ChemistryBalanceResultPanelProps = {
@@ -11,15 +11,17 @@ type ChemistryBalanceResultPanelProps = {
 function ChemistryBalanceResultPanel({
   result,
 }: ChemistryBalanceResultPanelProps) {
+  const { text } = useChemistryBalanceText();
+
   return (
     <Panel className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            {chemistryBalanceText.workspace.resultEyebrow}
+            {text.workspace.resultEyebrow}
           </p>
           <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-            {chemistryBalanceText.workspace.resultTitle}
+            {text.workspace.resultTitle}
           </h2>
         </div>
         <span
@@ -29,7 +31,7 @@ function ChemistryBalanceResultPanel({
               : 'border-[rgba(245,158,11,0.45)] bg-[rgba(245,158,11,0.14)] text-[var(--text-strong)]'
           }`}
         >
-          {result.ok ? chemistryBalanceText.common.balanced : result.stage}
+          {result.ok ? text.common.balanced : result.stage}
         </span>
       </div>
 
@@ -37,7 +39,7 @@ function ChemistryBalanceResultPanel({
         <div className="space-y-4">
           <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-soft)] px-4 py-4">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-              {chemistryBalanceText.workspace.formattedLabel}
+              {text.workspace.formattedLabel}
             </p>
             <p className="mt-2 break-words text-lg font-black text-[var(--text-strong)] sm:text-xl">
               {result.value.formatted}
@@ -47,7 +49,7 @@ function ChemistryBalanceResultPanel({
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                {chemistryBalanceText.workspace.termsLabel}
+                {text.workspace.termsLabel}
               </p>
               <p className="mt-1 text-lg font-black text-[var(--text-strong)]">
                 {result.value.equation.termCount}
@@ -55,7 +57,7 @@ function ChemistryBalanceResultPanel({
             </div>
             <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                {chemistryBalanceText.workspace.elementsLabel}
+                {text.workspace.elementsLabel}
               </p>
               <p className="mt-1 text-lg font-black text-[var(--text-strong)]">
                 {result.value.reaction.elementSymbols.length}
@@ -63,7 +65,7 @@ function ChemistryBalanceResultPanel({
             </div>
             <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                {chemistryBalanceText.workspace.vectorLabel}
+                {text.workspace.vectorLabel}
               </p>
               <p className="mt-1 text-lg font-black text-[var(--text-strong)]">
                 [{result.value.balancedReaction.coefficientVector.join(', ')}]
@@ -74,8 +76,8 @@ function ChemistryBalanceResultPanel({
       ) : (
         <div className="space-y-3 rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.08)] px-4 py-4">
           <p className="text-sm font-semibold text-[var(--text-strong)]">
-            {chemistryBalanceText.workspace.failurePrefix} <code>{result.stage}</code>{' '}
-            {chemistryBalanceText.workspace.failureSuffix}
+            {text.workspace.failurePrefix} <code>{result.stage}</code>
+            {text.workspace.failureSuffix}
           </p>
           <ul className="space-y-2 text-sm leading-6 text-[var(--text-muted)]">
             {result.issues.map((issue, index) => (

@@ -3,11 +3,11 @@
 import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import {
-  chemistryBalanceText,
   formatChemistryBalanceHistoryDate,
   formatChemistryBalanceHistoryStatus,
 } from '@/components/templates/chemistryBalanceText';
 import type { EquationBalanceHistoryEntry } from '@/components/templates/useEquationBalanceHistory';
+import useChemistryBalanceText from '@/components/templates/useChemistryBalanceText';
 
 type ChemistryBalanceHistoryPanelProps = {
   entries: EquationBalanceHistoryEntry[];
@@ -20,28 +20,30 @@ function ChemistryBalanceHistoryPanel({
   onSelect,
   onClear,
 }: ChemistryBalanceHistoryPanelProps) {
+  const { text } = useChemistryBalanceText();
+
   return (
     <Panel className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            {chemistryBalanceText.history.eyebrow}
+            {text.history.eyebrow}
           </p>
           <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-            {chemistryBalanceText.history.title}
+            {text.history.title}
           </h2>
         </div>
 
         {entries.length > 0 ? (
           <Button variant="ghost" onClick={onClear}>
-            {chemistryBalanceText.history.clear}
+            {text.history.clear}
           </Button>
         ) : null}
       </div>
 
       {entries.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-          {chemistryBalanceText.history.empty}
+          {text.history.empty}
         </div>
       ) : (
         <ul className="space-y-3">
@@ -57,14 +59,14 @@ function ChemistryBalanceHistoryPanel({
                     {entry.input}
                   </p>
                   <span className="shrink-0 rounded-full border border-[var(--border-subtle)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                    {formatChemistryBalanceHistoryStatus(entry.status)}
+                    {formatChemistryBalanceHistoryStatus(text, entry.status)}
                   </span>
                 </div>
                 <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--text-muted)]">
                   {entry.summary}
                 </p>
                 <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                  {formatChemistryBalanceHistoryDate(entry.savedAt)}
+                  {formatChemistryBalanceHistoryDate(text, entry.savedAt)}
                 </p>
               </button>
             </li>

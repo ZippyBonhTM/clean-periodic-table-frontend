@@ -1,8 +1,8 @@
 import {
-  chemistryBalanceText,
   formatChemistryBalanceAlignment,
   formatChemistryBalanceScoreDelta,
   formatChemistryBalanceValidity,
+  type ChemistryBalanceTextCatalog,
 } from '@/components/templates/chemistryBalanceText';
 import type { ChemistryBalanceRemoteAnalysisState } from '@/components/templates/chemistryBalanceRemoteAnalysis.types';
 import type { BalancedReactionAnalysis } from '@/shared/chemistry/rules';
@@ -63,36 +63,44 @@ export function resolveAlignmentTone(status: AlignmentStatus): string {
 }
 
 export function buildConfidenceSentence(
+  text: ChemistryBalanceTextCatalog,
   localAnalysis: BalancedReactionAnalysis,
   remoteAnalysis: Extract<ChemistryBalanceRemoteAnalysisState, { status: 'available' }>,
 ): string {
   const localConfidence = localAnalysis.likelyPlausible
-    ? chemistryBalanceText.analysisComparison.positive
-    : chemistryBalanceText.analysisComparison.cautious;
+    ? text.analysisComparison.positive
+    : text.analysisComparison.cautious;
 
-  const remoteValidity = formatChemistryBalanceValidity(remoteAnalysis.value.valid).toLowerCase();
+  const remoteValidity = formatChemistryBalanceValidity(text, remoteAnalysis.value.valid).toLowerCase();
 
-  return `${chemistryBalanceText.analysisComparison.confidenceSentencePrefix} ${localConfidence} ${chemistryBalanceText.analysisComparison.confidenceSentenceMiddle} ${remoteValidity}.`;
+  return `${text.analysisComparison.confidenceSentencePrefix} ${localConfidence} ${text.analysisComparison.confidenceSentenceMiddle} ${remoteValidity}.`;
 }
 
 export function buildClassificationDeltaLabel(
+  text: ChemistryBalanceTextCatalog,
   localAnalysis: BalancedReactionAnalysis,
   remoteAnalysis: Extract<ChemistryBalanceRemoteAnalysisState, { status: 'available' }>,
 ): string {
-  return `${chemistryBalanceText.analysisComparison.deltaPrefix} ${formatChemistryBalanceScoreDelta(
+  return `${text.analysisComparison.deltaPrefix} ${formatChemistryBalanceScoreDelta(
+    text,
     localAnalysis.score,
     remoteAnalysis.value.score,
   )}`;
 }
 
 export function buildRemoteValidityLabel(
+  text: ChemistryBalanceTextCatalog,
   remoteAnalysis: Extract<ChemistryBalanceRemoteAnalysisState, { status: 'available' }>,
 ): string {
-  return `${chemistryBalanceText.analysisComparison.remoteValidPrefix} ${formatChemistryBalanceValidity(
+  return `${text.analysisComparison.remoteValidPrefix} ${formatChemistryBalanceValidity(
+    text,
     remoteAnalysis.value.valid,
   )}`;
 }
 
-export function formatAlignmentStatus(status: AlignmentStatus): string {
-  return formatChemistryBalanceAlignment(status);
+export function formatAlignmentStatus(
+  text: ChemistryBalanceTextCatalog,
+  status: AlignmentStatus,
+): string {
+  return formatChemistryBalanceAlignment(text, status);
 }

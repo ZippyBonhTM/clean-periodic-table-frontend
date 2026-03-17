@@ -1,174 +1,55 @@
+import { chemistryBalanceTextEn } from '@/components/templates/chemistryBalanceText.en';
+import { chemistryBalanceTextPt } from '@/components/templates/chemistryBalanceText.pt';
 import type { ChemistryBalanceExample } from '@/components/templates/chemistryBalanceExamples';
 import type { BalanceChemicalEquationStage } from '@/shared/chemistry/analysis';
 import type { BalancedReactionAnalysis } from '@/shared/chemistry/rules';
+import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
-export const chemistryBalanceText = {
-  common: {
-    yes: 'Yes',
-    no: 'No',
-    unknown: 'Unknown',
-    notAvailable: 'N/A',
-    balanced: 'Balanced',
-    recent: 'Recent',
-    unchanged: 'unchanged',
-  },
-  workspace: {
-    eyebrow: 'Client-First Chemistry',
-    title: 'Balance Equation',
-    description:
-      'This page uses the local chemistry pipeline only: equation parsing, reaction creation, matrix balancing, and deterministic formatting.',
-    equationLabel: 'Equation',
-    equationPlaceholder: 'H2 + O2 -> H2O',
-    submit: 'Balance locally',
-    clear: 'Clear',
-    resultEyebrow: 'Result',
-    resultTitle: 'Balanced Output',
-    formattedLabel: 'Formatted',
-    termsLabel: 'Terms',
-    elementsLabel: 'Elements',
-    vectorLabel: 'Vector',
-    failurePrefix: 'The equation could not be balanced at the local',
-    failureSuffix: 'stage.',
-  },
-  comparison: {
-    eyebrow: 'Comparison',
-    title: 'Input vs Balanced',
-    unavailable:
-      'This panel becomes available after the equation balances successfully.',
-    originalLabel: 'Original',
-    balancedLabel: 'Balanced',
-    reactantLabel: 'reactant',
-    productLabel: 'product',
-  },
-  analysis: {
-    eyebrow: 'Heuristics',
-    title: 'Reaction Analysis',
-    noResult:
-      'Heuristic analysis runs after the equation is parsed and balanced successfully.',
-    typeLabel: 'Type',
-    scoreLabel: 'Score',
-    plausibilityLabel: 'Plausibility',
-    plausible: 'Likely plausible',
-    needsReview: 'Needs review',
-    noNotices: 'No heuristic notices were raised for this balanced reaction.',
-    metadata: {
-      loading: 'Loading Element DB metadata to enrich heuristics.',
-      ready: 'Heuristics are enriched with Element DB metadata.',
-      unavailable: 'Element DB metadata is unavailable right now. Using local heuristics only.',
-      inactive: 'Local heuristics are active. Login enables Element DB enrichment when available.',
-    },
-  },
-  engine: {
-    eyebrow: 'Optional Engine',
-    title: 'Remote Enrichment',
-    description:
-      'Local balance and heuristics stay primary. This optional step asks the backend Chemical Engine for extra validation when enabled.',
-    toggleLabel: 'Remote',
-    retry: 'Retry remote check',
-    off:
-      'Remote enrichment is currently off. The page is using client-only chemistry.',
-    idle:
-      'Remote enrichment will run the next time a balanced equation is submitted.',
-    loadingPrefix: 'Asking the optional Chemical Engine to enrich',
-    failedTitle: 'Remote enrichment did not complete.',
-    classificationLabel: 'Classification',
-    scoreLabel: 'Score',
-    validLabel: 'Valid',
-    noNotices:
-      'The optional Chemical Engine returned no additional notices for this equation.',
-  },
-  analysisComparison: {
-    eyebrow: 'Comparison',
-    title: 'Local vs Remote',
-    unavailable:
-      'This comparison becomes available when the local analysis succeeds and remote enrichment returns a result.',
-    description:
-      'This panel helps us compare the client-first heuristic reading with the optional Chemical Engine enrichment.',
-    localLabel: 'Local',
-    remoteLabel: 'Remote',
-    plausibleLabel: 'Plausible',
-    classificationLabel: 'Classification',
-    confidenceAlignmentLabel: 'Confidence Alignment',
-    aligned: 'Aligned',
-    partial: 'Partial',
-    different: 'Different',
-    deltaPrefix: 'Delta:',
-    remoteValidPrefix: 'Valid:',
-    confidenceSentencePrefix: 'Local plausibility is',
-    confidenceSentenceMiddle: 'while the remote engine validity is',
-    positive: 'positive',
-    cautious: 'cautious',
-  },
-  history: {
-    eyebrow: 'History',
-    title: 'Recent Equations',
-    clear: 'Clear history',
-    empty:
-      'Recent equations will appear here after you balance them locally.',
-    localFailureSummary: 'The equation could not be balanced locally.',
-    locale: 'en-US',
-  },
-  examples: {
-    eyebrow: 'Guided Examples',
-    title: 'Try a Category',
-    description:
-      'These examples are grouped by common reaction patterns so we can inspect the local solver and heuristics from different angles.',
-    use: 'Use',
-    categories: {
-      combustion: 'Combustion',
-      synthesis: 'Synthesis',
-      decomposition: 'Decomposition',
-      ionic: 'Ionic',
-    },
-  },
-  pipeline: {
-    eyebrow: 'Pipeline',
-    title: 'Local Stages',
-    steps: [
-      {
-        title: '1. Equation parse',
-        description:
-          'separates arrow, terms, coefficients, phases, and structural notation.',
-      },
-      {
-        title: '2. Reaction creation',
-        description: 'converts terms into structured participants with parsed formulas.',
-      },
-      {
-        title: '3. Matrix balancing',
-        description:
-          'builds the stoichiometric matrix, solves the null-space, and normalizes coefficients.',
-      },
-      {
-        title: '4. Heuristic analysis',
-        description:
-          'applies lightweight local rules and optionally enriches them with Element DB metadata.',
-      },
-      {
-        title: '5. Deterministic formatting',
-        description: 'returns a stable text result for display.',
-      },
-    ],
-  },
+const CHEMISTRY_BALANCE_TEXT_BY_LOCALE = {
+  'en-US': chemistryBalanceTextEn,
+  'pt-BR': chemistryBalanceTextPt,
 } as const;
 
-type ChemistryBalanceMetadataStatus = keyof typeof chemistryBalanceText.analysis.metadata;
-type EquationBalanceHistoryStatus = 'balanced' | BalanceChemicalEquationStage;
+type WidenChemistryBalanceTextLiterals<T> =
+  T extends string
+    ? string
+    : T extends readonly (infer Item)[]
+      ? ReadonlyArray<WidenChemistryBalanceTextLiterals<Item>>
+      : T extends object
+        ? { [Key in keyof T]: WidenChemistryBalanceTextLiterals<T[Key]> }
+        : T;
 
+export type ChemistryBalanceTextCatalog = WidenChemistryBalanceTextLiterals<
+  typeof chemistryBalanceTextEn
+>;
+
+type ChemistryBalanceMetadataStatus = keyof ChemistryBalanceTextCatalog['analysis']['metadata'];
+type EquationBalanceHistoryStatus = 'balanced' | BalanceChemicalEquationStage;
 type AlignmentStatus = 'aligned' | 'partial' | 'different';
 
-export function formatChemistryBalanceReactionType(
-  reactionType: BalancedReactionAnalysis['reactionType'],
-): string {
-  return reactionType
-    .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
+export function getChemistryBalanceText(locale: AppLocale): ChemistryBalanceTextCatalog {
+  return CHEMISTRY_BALANCE_TEXT_BY_LOCALE[locale];
 }
 
-export function formatChemistryBalanceComparisonType(value: string | null): string {
+export function formatChemistryBalanceReactionType(
+  text: ChemistryBalanceTextCatalog,
+  reactionType: BalancedReactionAnalysis['reactionType'],
+): string {
+  return text.common.reactionTypes[reactionType] ?? reactionType;
+}
+
+export function formatChemistryBalanceComparisonType(
+  text: ChemistryBalanceTextCatalog,
+  value: string | null,
+): string {
   if (value === null || value.trim().length === 0) {
-    return chemistryBalanceText.common.unknown;
+    return text.common.unknown;
+  }
+
+  const normalizedValue = value.trim().toLowerCase().replace(/[_\s]+/g, '-') as keyof ChemistryBalanceTextCatalog['common']['reactionTypes'];
+
+  if (normalizedValue in text.common.reactionTypes) {
+    return text.common.reactionTypes[normalizedValue];
   }
 
   return value
@@ -178,35 +59,41 @@ export function formatChemistryBalanceComparisonType(value: string | null): stri
 }
 
 export function formatChemistryBalanceExampleCategory(
+  text: ChemistryBalanceTextCatalog,
   category: ChemistryBalanceExample['category'],
 ): string {
-  return chemistryBalanceText.examples.categories[category] ?? category;
+  return text.examples.categories[category] ?? category;
 }
 
 export function getChemistryBalanceMetadataMessage(
+  text: ChemistryBalanceTextCatalog,
   metadataStatus: ChemistryBalanceMetadataStatus,
 ): string {
-  return chemistryBalanceText.analysis.metadata[metadataStatus];
+  return text.analysis.metadata[metadataStatus];
 }
 
 export function formatChemistryBalanceHistoryStatus(
+  text: ChemistryBalanceTextCatalog,
   status: EquationBalanceHistoryStatus,
 ): string {
   if (status === 'balanced') {
-    return chemistryBalanceText.common.balanced;
+    return text.common.balanced;
   }
 
   return status;
 }
 
-export function formatChemistryBalanceHistoryDate(savedAt: string): string {
+export function formatChemistryBalanceHistoryDate(
+  text: ChemistryBalanceTextCatalog,
+  savedAt: string,
+): string {
   const date = new Date(savedAt);
 
   if (Number.isNaN(date.getTime())) {
-    return chemistryBalanceText.common.recent;
+    return text.common.recent;
   }
 
-  return new Intl.DateTimeFormat(chemistryBalanceText.history.locale, {
+  return new Intl.DateTimeFormat(text.history.locale, {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -215,43 +102,51 @@ export function formatChemistryBalanceHistoryDate(savedAt: string): string {
 }
 
 export function formatChemistryBalanceCoefficientDelta(
+  text: ChemistryBalanceTextCatalog,
   inputCoefficient: number,
   balancedCoefficient: number,
 ): string {
   if (inputCoefficient === balancedCoefficient) {
-    return chemistryBalanceText.common.unchanged;
+    return text.common.unchanged;
   }
 
   return `${inputCoefficient} -> ${balancedCoefficient}`;
 }
 
-export function formatChemistryBalanceValidity(value: boolean | null): string {
+export function formatChemistryBalanceValidity(
+  text: ChemistryBalanceTextCatalog,
+  value: boolean | null,
+): string {
   if (value === null) {
-    return chemistryBalanceText.common.unknown;
+    return text.common.unknown;
   }
 
-  return value ? chemistryBalanceText.common.yes : chemistryBalanceText.common.no;
+  return value ? text.common.yes : text.common.no;
 }
 
 export function formatChemistryBalanceScoreDelta(
+  text: ChemistryBalanceTextCatalog,
   localScore: number,
   remoteScore: number | null,
 ): string {
   if (remoteScore === null) {
-    return chemistryBalanceText.common.notAvailable;
+    return text.common.notAvailable;
   }
 
   return `${Math.abs(localScore - remoteScore)} pts`;
 }
 
-export function formatChemistryBalanceAlignment(status: AlignmentStatus): string {
+export function formatChemistryBalanceAlignment(
+  text: ChemistryBalanceTextCatalog,
+  status: AlignmentStatus,
+): string {
   switch (status) {
     case 'aligned':
-      return chemistryBalanceText.analysisComparison.aligned;
+      return text.analysisComparison.aligned;
     case 'partial':
-      return chemistryBalanceText.analysisComparison.partial;
+      return text.analysisComparison.partial;
     case 'different':
     default:
-      return chemistryBalanceText.analysisComparison.different;
+      return text.analysisComparison.different;
   }
 }

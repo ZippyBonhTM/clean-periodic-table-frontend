@@ -2,10 +2,10 @@
 
 import Panel from '@/components/atoms/Panel';
 import {
-  chemistryBalanceText,
   formatChemistryBalanceReactionType,
   getChemistryBalanceMetadataMessage,
 } from '@/components/templates/chemistryBalanceText';
+import useChemistryBalanceText from '@/components/templates/useChemistryBalanceText';
 import type { BalancedReactionAnalysis } from '@/shared/chemistry/rules';
 
 type ChemistryBalanceAnalysisPanelProps = {
@@ -28,51 +28,53 @@ function ChemistryBalanceAnalysisPanel({
   analysis,
   metadataStatus,
 }: ChemistryBalanceAnalysisPanelProps) {
+  const { text } = useChemistryBalanceText();
+
   return (
     <Panel className="space-y-4">
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-          {chemistryBalanceText.analysis.eyebrow}
+          {text.analysis.eyebrow}
         </p>
         <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-          {chemistryBalanceText.analysis.title}
+          {text.analysis.title}
         </h2>
         <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
-          {getChemistryBalanceMetadataMessage(metadataStatus)}
+          {getChemistryBalanceMetadataMessage(text, metadataStatus)}
         </p>
       </div>
 
       {analysis === null ? (
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-          {chemistryBalanceText.analysis.noResult}
+          {text.analysis.noResult}
         </div>
       ) : (
         <>
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                {chemistryBalanceText.analysis.typeLabel}
+                {text.analysis.typeLabel}
               </p>
               <p className="mt-1 text-base font-black text-[var(--text-strong)]">
-                {formatChemistryBalanceReactionType(analysis.reactionType)}
+                {formatChemistryBalanceReactionType(text, analysis.reactionType)}
               </p>
             </div>
 
             <div className={`rounded-2xl border px-4 py-3 ${resolveScoreTone(analysis.score)}`}>
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                {chemistryBalanceText.analysis.scoreLabel}
+                {text.analysis.scoreLabel}
               </p>
               <p className="mt-1 text-base font-black text-[var(--text-strong)]">{analysis.score}/100</p>
             </div>
 
             <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                {chemistryBalanceText.analysis.plausibilityLabel}
+                {text.analysis.plausibilityLabel}
               </p>
               <p className="mt-1 text-base font-black text-[var(--text-strong)]">
                 {analysis.likelyPlausible
-                  ? chemistryBalanceText.analysis.plausible
-                  : chemistryBalanceText.analysis.needsReview}
+                  ? text.analysis.plausible
+                  : text.analysis.needsReview}
               </p>
             </div>
           </div>
@@ -89,7 +91,7 @@ function ChemistryBalanceAnalysisPanel({
                   }`}
                 >
                   <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                    {notice.level}
+                    {text.common.warnings[notice.level]}
                   </p>
                   <p className="mt-1 text-sm text-[var(--text-strong)]">{notice.message}</p>
                 </li>
@@ -97,7 +99,7 @@ function ChemistryBalanceAnalysisPanel({
             </ul>
           ) : (
             <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-              {chemistryBalanceText.analysis.noNotices}
+              {text.analysis.noNotices}
             </div>
           )}
         </>
