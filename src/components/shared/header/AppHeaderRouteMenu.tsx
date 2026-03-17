@@ -7,12 +7,16 @@ import { NAV_LINKS } from './appHeader.types';
 type AppHeaderRouteMenuProps = {
   isOpen: boolean;
   pathname: string | null;
+  balanceEquationHref: string;
+  isBalanceEquationActive: boolean;
   onClose: () => void;
 };
 
 export default function AppHeaderRouteMenu({
   isOpen,
   pathname,
+  balanceEquationHref,
+  isBalanceEquationActive,
   onClose,
 }: AppHeaderRouteMenuProps) {
   return (
@@ -55,12 +59,16 @@ export default function AppHeaderRouteMenu({
 
         <nav className="mt-3 flex flex-col gap-2">
           {NAV_LINKS.map((item) => {
-            const isActive = pathname === item.href || (pathname === '/' && item.href === '/search');
+            const href = item.href === '/balance-equation' ? balanceEquationHref : item.href;
+            const isActive =
+              item.href === '/balance-equation'
+                ? isBalanceEquationActive
+                : pathname === item.href || (pathname === '/' && item.href === '/search');
 
             return (
               <LinkButton
                 key={`mobile-${item.href}`}
-                href={item.href}
+                href={href}
                 variant={isActive ? 'secondary' : 'ghost'}
                 size="sm"
                 align="left"

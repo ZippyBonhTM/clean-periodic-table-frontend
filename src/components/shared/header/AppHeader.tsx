@@ -8,6 +8,8 @@ import TokenStatus from '@/components/molecules/TokenStatus';
 import type { TokenStatusType } from '@/components/molecules/TokenStatus';
 import UserAvatarPlaceholder from '@/components/molecules/UserAvatarPlaceholder';
 import useAuthToken from '@/shared/hooks/useAuthToken';
+import { buildBalanceEquationPath, isBalanceEquationPath } from '@/shared/i18n/appLocaleRouting';
+import useAppLocale from '@/shared/i18n/useAppLocale';
 import type { AppTheme } from '@/shared/hooks/useTheme';
 
 import AppHeaderAuthActions from './AppHeaderAuthActions';
@@ -98,7 +100,10 @@ function AppHeader({
   onRequestRegister,
 }: AppHeaderProps) {
   const pathname = usePathname();
+  const { locale } = useAppLocale();
   const { token, persistToken } = useAuthToken();
+  const balanceEquationHref = buildBalanceEquationPath(locale);
+  const isBalanceEquationActive = isBalanceEquationPath(pathname);
 
   const themeToggleLabel = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
   const authIndicatorTone = resolveAuthIndicatorTone(authStatus);
@@ -202,7 +207,11 @@ function AppHeader({
             </div>
           </div>
 
-          <AppHeaderDesktopNav pathname={pathname} />
+          <AppHeaderDesktopNav
+            pathname={pathname}
+            balanceEquationHref={balanceEquationHref}
+            isBalanceEquationActive={isBalanceEquationActive}
+          />
         </div>
       </header>
 
@@ -266,7 +275,13 @@ function AppHeader({
         </header>
       </div>
 
-      <AppHeaderRouteMenu isOpen={isRouteMenuOpen} pathname={pathname} onClose={closeRouteMenu} />
+      <AppHeaderRouteMenu
+        isOpen={isRouteMenuOpen}
+        pathname={pathname}
+        balanceEquationHref={balanceEquationHref}
+        isBalanceEquationActive={isBalanceEquationActive}
+        onClose={closeRouteMenu}
+      />
 
       <AppHeaderUserMenu
         isOpen={isUserMenuOpen}

@@ -1,5 +1,7 @@
 'use client';
 
+import { usePathname, useRouter } from 'next/navigation';
+
 import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import AppShell from '@/components/templates/AppShell';
@@ -13,8 +15,12 @@ import ChemistryBalancePipelinePanel from '@/components/templates/ChemistryBalan
 import ChemistryBalanceResultPanel from '@/components/templates/ChemistryBalanceResultPanel';
 import useChemistryBalanceText from '@/components/templates/useChemistryBalanceText';
 import useChemistryBalanceWorkspaceState from '@/components/templates/useChemistryBalanceWorkspaceState';
+import { buildBalanceEquationPath } from '@/shared/i18n/appLocaleRouting';
+import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
 export default function ChemistryBalanceWorkspace() {
+  const router = useRouter();
+  const pathname = usePathname();
   const { locale, setLocale, text } = useChemistryBalanceText();
   const {
     shell,
@@ -34,6 +40,16 @@ export default function ChemistryBalanceWorkspace() {
     handleToggleRemoteEngine,
     triggerRemoteAnalysis,
   } = useChemistryBalanceWorkspaceState();
+
+  const handleLocaleChange = (nextLocale: AppLocale) => {
+    setLocale(nextLocale);
+
+    const nextPath = buildBalanceEquationPath(nextLocale);
+
+    if (pathname !== nextPath) {
+      router.replace(nextPath);
+    }
+  };
 
   return (
     <AppShell
@@ -62,7 +78,7 @@ export default function ChemistryBalanceWorkspace() {
                 <span>{text.locale.label}</span>
                 <select
                   value={locale}
-                  onChange={(event) => setLocale(event.target.value as typeof locale)}
+                  onChange={(event) => handleLocaleChange(event.target.value as AppLocale)}
                   className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2 py-1 text-[11px] font-semibold normal-case text-[var(--text-strong)] outline-none"
                 >
                   <option value="en-US">{text.locale.options['en-US']}</option>
