@@ -12,6 +12,7 @@ import ChemistryBalanceExamplesPanel from '@/components/templates/ChemistryBalan
 import ChemistryBalanceHistoryPanel from '@/components/templates/ChemistryBalanceHistoryPanel';
 import useChemistryBalanceRemoteAnalysis from '@/components/templates/useChemistryBalanceRemoteAnalysis';
 import useEquationBalanceHistory from '@/components/templates/useEquationBalanceHistory';
+import useEquationBalanceRemotePreference from '@/components/templates/useEquationBalanceRemotePreference';
 import { logoutSession } from '@/shared/api/authApi';
 import { balanceChemicalEquationText } from '@/shared/chemistry/analysis';
 import { analyzeBalancedReaction } from '@/shared/chemistry/rules';
@@ -41,7 +42,8 @@ export default function ChemistryBalanceWorkspace() {
   const [equationInput, setEquationInput] = useState('H2 + O2 -> H2O');
   const [submittedEquation, setSubmittedEquation] = useState('H2 + O2 -> H2O');
   const [submissionVersion, setSubmissionVersion] = useState(0);
-  const [isRemoteEngineEnabled, setIsRemoteEngineEnabled] = useState(false);
+  const { isRemoteEngineEnabled, setIsRemoteEngineEnabled } =
+    useEquationBalanceRemotePreference();
 
   const result = useMemo(
     () =>
@@ -126,6 +128,14 @@ export default function ChemistryBalanceWorkspace() {
     }
 
     resetRemoteAnalysis();
+  };
+
+  const triggerRemoteAnalysis = () => {
+    if (!isRemoteEngineEnabled) {
+      return;
+    }
+
+    void runRemoteAnalysis(submittedEquation);
   };
 
   return (
@@ -284,6 +294,8 @@ export default function ChemistryBalanceWorkspace() {
             <ChemistryBalanceAnalysisPanel analysis={analysis} metadataStatus={metadataStatus} />
             <ChemistryBalanceEnginePanel
               enabled={isRemoteEngineEnabled}
+              canRetry={submissionVersion > 0 && submittedEquation.trim().length > 0}
+              onRetry={triggerRemoteAnalysis}
               onToggle={(enabled) => {
                 setIsRemoteEngineEnabled(enabled);
 
