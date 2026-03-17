@@ -5,7 +5,13 @@ import { useMemo, useState } from 'react';
 import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import AppShell from '@/components/templates/AppShell';
+import ChemistryBalanceAnalysisPanel from '@/components/templates/ChemistryBalanceAnalysisPanel';
+import { logoutSession } from '@/shared/api/authApi';
 import { balanceChemicalEquationText } from '@/shared/chemistry/analysis';
+import { analyzeBalancedReaction } from '@/shared/chemistry/rules';
+import useAuthSession from '@/shared/hooks/useAuthSession';
+import useAuthToken from '@/shared/hooks/useAuthToken';
+import useElements from '@/shared/hooks/useElements';
 
 const EXAMPLES = [
   'H2 + O2 -> H2O',
@@ -14,6 +20,24 @@ const EXAMPLES = [
 ];
 
 export default function ChemistryBalanceWorkspace() {
+  const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
+  const authSession = useAuthSession({
+    token,
+    onTokenRefresh: persistToken,
+    onUnauthorized: removeToken,
+    allowAnonymousRefresh: isHydrated && !isSilentRefreshBlocked,
+    skipTokenValidation: true,
+  });
+  const hasValidSession = authSession.status === 'authenticated';
+  const {
+    data: elements,
+    isLoading: isElementsLoading,
+    error: elementsError,
+  } = useElements({
+    token: hasValidSession ? token : null,
+    onTokenRefresh: persistToken,
+    onUnauthorized: removeToken,
+  });
   const [equationInput, setEquationInput] = useState('H2 + O2 -> H2O');
   const [submittedEquation, setSubmittedEquation] = useState('H2 + O2 -> H2O');
 
@@ -28,8 +52,64 @@ export default function ChemistryBalanceWorkspace() {
     [submittedEquation],
   );
 
+  const elementMetadataBySymbol = useMemo(() => {
+    if (elements.length === 0) {
+      return undefined;
+    }
+
+    return new Map(
+      elements.map((element) => [
+        element.symbol,
+        {
+          symbol: element.symbol,
+          group: element.group,
+          category: element.category,
+          electronegativity_pauling: element.electronegativity_pauling,
+        },
+      ]),
+    );
+  }, [elements]);
+
+  const analysis = useMemo(() => {
+    if (!result.ok) {
+      return null;
+    }
+
+    return analyzeBalancedReaction(result.value.balancedReaction, {
+      elementMetadataBySymbol,
+    });
+  }, [elementMetadataBySymbol, result]);
+
+  const metadataStatus = useMemo(() => {
+    if (!hasValidSession) {
+      return 'inactive' as const;
+    }
+
+    if (isElementsLoading) {
+      return 'loading' as const;
+    }
+
+    if (elementsError !== null) {
+      return 'unavailable' as const;
+    }
+
+    if (elements.length > 0) {
+      return 'ready' as const;
+    }
+
+    return 'inactive' as const;
+  }, [elements.length, elementsError, hasValidSession, isElementsLoading]);
+
   return (
-    <AppShell hasToken={false} authStatus="anonymous" showFooter={false}>
+    <AppShell
+      hasToken={hasValidSession}
+      authStatus={isHydrated ? authSession.status : 'checking'}
+      onLogout={() => {
+        void logoutSession().catch(() => undefined);
+        removeToken({ blockSilentRefresh: true });
+      }}
+      showFooter={false}
+    >
       <section className="space-y-5">
         <Panel className="space-y-4">
           <div className="space-y-2">
@@ -169,34 +249,42 @@ export default function ChemistryBalanceWorkspace() {
             )}
           </Panel>
 
-          <Panel className="space-y-4">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                Pipeline
-              </p>
-              <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-                Local Stages
-              </h2>
-            </div>
-            <ol className="space-y-3 text-sm leading-6 text-[var(--text-muted)]">
-              <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
-                <span className="font-semibold text-[var(--text-strong)]">1. Equation parse</span>
-                : separates arrow, terms, coefficients, phases, and structural notation.
-              </li>
-              <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
-                <span className="font-semibold text-[var(--text-strong)]">2. Reaction creation</span>
-                : converts terms into structured participants with parsed formulas.
-              </li>
-              <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
-                <span className="font-semibold text-[var(--text-strong)]">3. Matrix balancing</span>
-                : builds the stoichiometric matrix, solves the null-space, and normalizes coefficients.
-              </li>
-              <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
-                <span className="font-semibold text-[var(--text-strong)]">4. Deterministic formatting</span>
-                : returns a stable text result for display.
-              </li>
-            </ol>
-          </Panel>
+          <div className="space-y-5">
+            <ChemistryBalanceAnalysisPanel analysis={analysis} metadataStatus={metadataStatus} />
+
+            <Panel className="space-y-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                  Pipeline
+                </p>
+                <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
+                  Local Stages
+                </h2>
+              </div>
+              <ol className="space-y-3 text-sm leading-6 text-[var(--text-muted)]">
+                <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
+                  <span className="font-semibold text-[var(--text-strong)]">1. Equation parse</span>
+                  : separates arrow, terms, coefficients, phases, and structural notation.
+                </li>
+                <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
+                  <span className="font-semibold text-[var(--text-strong)]">2. Reaction creation</span>
+                  : converts terms into structured participants with parsed formulas.
+                </li>
+                <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
+                  <span className="font-semibold text-[var(--text-strong)]">3. Matrix balancing</span>
+                  : builds the stoichiometric matrix, solves the null-space, and normalizes coefficients.
+                </li>
+                <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
+                  <span className="font-semibold text-[var(--text-strong)]">4. Heuristic analysis</span>
+                  : applies lightweight local rules and optionally enriches them with Element DB metadata.
+                </li>
+                <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
+                  <span className="font-semibold text-[var(--text-strong)]">5. Deterministic formatting</span>
+                  : returns a stable text result for display.
+                </li>
+              </ol>
+            </Panel>
+          </div>
         </div>
       </section>
     </AppShell>
