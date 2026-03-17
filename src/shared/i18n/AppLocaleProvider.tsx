@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { createContext, useEffect, useMemo, useState } from 'react';
 
 import {
@@ -7,6 +8,7 @@ import {
   resolveInitialAppLocale,
   toHtmlLang,
 } from '@/shared/i18n/appLocale';
+import { resolveAppLocaleFromPathname } from '@/shared/i18n/appLocaleRouting';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
 type AppLocaleContextValue = {
@@ -21,7 +23,10 @@ type AppLocaleProviderProps = {
 };
 
 export default function AppLocaleProvider({ children }: AppLocaleProviderProps) {
-  const [locale, setLocale] = useState<AppLocale>(resolveInitialAppLocale);
+  const pathname = usePathname();
+  const routeLocale = resolveAppLocaleFromPathname(pathname);
+  const [storedLocale, setStoredLocale] = useState<AppLocale>(resolveInitialAppLocale);
+  const locale = routeLocale ?? storedLocale;
 
   useEffect(() => {
     persistAppLocale(locale);
@@ -31,7 +36,7 @@ export default function AppLocaleProvider({ children }: AppLocaleProviderProps) 
   const value = useMemo(
     () => ({
       locale,
-      setLocale,
+      setLocale: setStoredLocale,
     }),
     [locale],
   );

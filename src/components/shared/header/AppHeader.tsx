@@ -8,10 +8,13 @@ import TokenStatus from '@/components/molecules/TokenStatus';
 import type { TokenStatusType } from '@/components/molecules/TokenStatus';
 import UserAvatarPlaceholder from '@/components/molecules/UserAvatarPlaceholder';
 import useAuthToken from '@/shared/hooks/useAuthToken';
+import { buildBalanceEquationPath, isBalanceEquationPath } from '@/shared/i18n/appLocaleRouting';
+import useAppLocale from '@/shared/i18n/useAppLocale';
 import type { AppTheme } from '@/shared/hooks/useTheme';
 
 import AppHeaderAuthActions from './AppHeaderAuthActions';
 import AppHeaderDesktopNav from './AppHeaderDesktopNav';
+import AppHeaderLocaleSwitcher from './AppHeaderLocaleSwitcher';
 import AppHeaderRouteMenu from './AppHeaderRouteMenu';
 import AppHeaderUserMenu from './AppHeaderUserMenu';
 import type { AuthEntryMode } from './appHeader.types';
@@ -98,7 +101,10 @@ function AppHeader({
   onRequestRegister,
 }: AppHeaderProps) {
   const pathname = usePathname();
+  const { locale } = useAppLocale();
   const { token, persistToken } = useAuthToken();
+  const balanceEquationHref = buildBalanceEquationPath(locale);
+  const isBalanceEquationActive = isBalanceEquationPath(pathname);
 
   const themeToggleLabel = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
   const authIndicatorTone = resolveAuthIndicatorTone(authStatus);
@@ -166,6 +172,7 @@ function AppHeader({
           <div className="flex flex-col gap-2 md:col-start-2 md:row-span-2 md:h-full md:items-end md:justify-between">
             <div className="flex flex-wrap items-center gap-2 md:justify-end">
               <TokenStatus status={authStatus} />
+              <AppHeaderLocaleSwitcher />
               <Button
                 type="button"
                 variant="ghost"
@@ -202,7 +209,11 @@ function AppHeader({
             </div>
           </div>
 
-          <AppHeaderDesktopNav pathname={pathname} />
+          <AppHeaderDesktopNav
+            pathname={pathname}
+            balanceEquationHref={balanceEquationHref}
+            isBalanceEquationActive={isBalanceEquationActive}
+          />
         </div>
       </header>
 
@@ -263,10 +274,20 @@ function AppHeader({
               />
             </div>
           </div>
+
+          <div className="mt-3">
+            <AppHeaderLocaleSwitcher mobile />
+          </div>
         </header>
       </div>
 
-      <AppHeaderRouteMenu isOpen={isRouteMenuOpen} pathname={pathname} onClose={closeRouteMenu} />
+      <AppHeaderRouteMenu
+        isOpen={isRouteMenuOpen}
+        pathname={pathname}
+        balanceEquationHref={balanceEquationHref}
+        isBalanceEquationActive={isBalanceEquationActive}
+        onClose={closeRouteMenu}
+      />
 
       <AppHeaderUserMenu
         isOpen={isUserMenuOpen}
