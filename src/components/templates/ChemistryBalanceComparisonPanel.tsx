@@ -2,9 +2,9 @@
 
 import Panel from '@/components/atoms/Panel';
 import {
-  chemistryBalanceText,
   formatChemistryBalanceCoefficientDelta,
 } from '@/components/templates/chemistryBalanceText';
+import useChemistryBalanceText from '@/components/templates/useChemistryBalanceText';
 import type { BalanceChemicalEquationFlowValue } from '@/shared/chemistry/analysis';
 
 type ChemistryBalanceComparisonPanelProps = {
@@ -41,19 +41,21 @@ function buildParticipantComparisons(
 function ChemistryBalanceComparisonPanel({
   value,
 }: ChemistryBalanceComparisonPanelProps) {
+  const { text } = useChemistryBalanceText();
+
   if (value === null) {
     return (
       <Panel className="space-y-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            {chemistryBalanceText.comparison.eyebrow}
+            {text.comparison.eyebrow}
           </p>
           <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-            {chemistryBalanceText.comparison.title}
+            {text.comparison.title}
           </h2>
         </div>
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-          {chemistryBalanceText.comparison.unavailable}
+          {text.comparison.unavailable}
         </div>
       </Panel>
     );
@@ -65,17 +67,17 @@ function ChemistryBalanceComparisonPanel({
     <Panel className="space-y-4">
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-          {chemistryBalanceText.comparison.eyebrow}
+          {text.comparison.eyebrow}
         </p>
         <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-          {chemistryBalanceText.comparison.title}
+          {text.comparison.title}
         </h2>
       </div>
 
       <div className="space-y-3">
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-            {chemistryBalanceText.comparison.originalLabel}
+            {text.comparison.originalLabel}
           </p>
           <p className="mt-2 break-words text-sm font-semibold text-[var(--text-strong)] sm:text-base">
             {value.equation.normalized}
@@ -84,7 +86,7 @@ function ChemistryBalanceComparisonPanel({
 
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-soft)] px-4 py-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-            {chemistryBalanceText.comparison.balancedLabel}
+            {text.comparison.balancedLabel}
           </p>
           <p className="mt-2 break-words text-sm font-semibold text-[var(--text-strong)] sm:text-base">
             {value.formatted}
@@ -102,8 +104,8 @@ function ChemistryBalanceComparisonPanel({
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
                   {comparison.side === 'reactant'
-                    ? chemistryBalanceText.comparison.reactantLabel
-                    : chemistryBalanceText.comparison.productLabel}
+                    ? text.comparison.reactantLabel
+                    : text.comparison.productLabel}
                 </p>
                 <p className="mt-1 text-sm font-semibold text-[var(--text-strong)]">
                   {comparison.label}
@@ -111,6 +113,7 @@ function ChemistryBalanceComparisonPanel({
               </div>
               <span className="rounded-full border border-[var(--border-subtle)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
                 {formatChemistryBalanceCoefficientDelta(
+                  text,
                   comparison.inputCoefficient,
                   comparison.balancedCoefficient,
                 )}

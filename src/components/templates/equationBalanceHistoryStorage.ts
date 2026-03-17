@@ -1,4 +1,3 @@
-import { chemistryBalanceText } from '@/components/templates/chemistryBalanceText';
 import type { BalanceChemicalEquationFlowResult } from '@/shared/chemistry/analysis';
 import type {
   EquationBalanceHistoryEntry,
@@ -76,6 +75,7 @@ export function writeEquationBalanceHistory(entries: EquationBalanceHistoryEntry
 export function buildEquationBalanceHistoryEntry(
   input: string,
   result: BalanceChemicalEquationFlowResult,
+  localFailureSummary: string,
 ): EquationBalanceHistoryEntry | null {
   const trimmedInput = input.trim();
 
@@ -95,7 +95,7 @@ export function buildEquationBalanceHistoryEntry(
   return {
     input: trimmedInput,
     status: result.stage,
-    summary: result.issues[0]?.message ?? chemistryBalanceText.history.localFailureSummary,
+    summary: result.issues[0]?.message ?? localFailureSummary,
     savedAt: new Date().toISOString(),
   };
 }

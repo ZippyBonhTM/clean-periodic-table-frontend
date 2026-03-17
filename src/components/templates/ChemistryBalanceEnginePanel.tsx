@@ -3,10 +3,10 @@
 import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import {
-  chemistryBalanceText,
   formatChemistryBalanceValidity,
 } from '@/components/templates/chemistryBalanceText';
 import type { ChemistryBalanceRemoteAnalysisState } from '@/components/templates/chemistryBalanceRemoteAnalysis.types';
+import useChemistryBalanceText from '@/components/templates/useChemistryBalanceText';
 
 type ChemistryBalanceEnginePanelProps = {
   enabled: boolean;
@@ -23,18 +23,20 @@ function ChemistryBalanceEnginePanel({
   onRetry,
   remoteAnalysis,
 }: ChemistryBalanceEnginePanelProps) {
+  const { text } = useChemistryBalanceText();
+
   return (
     <Panel className="space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            {chemistryBalanceText.engine.eyebrow}
+            {text.engine.eyebrow}
           </p>
           <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-            {chemistryBalanceText.engine.title}
+            {text.engine.title}
           </h2>
           <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
-            {chemistryBalanceText.engine.description}
+            {text.engine.description}
           </p>
         </div>
 
@@ -45,7 +47,7 @@ function ChemistryBalanceEnginePanel({
             onChange={(event) => onToggle(event.target.checked)}
             className="h-4 w-4 accent-[var(--accent)]"
           />
-          {chemistryBalanceText.engine.toggleLabel}
+          {text.engine.toggleLabel}
         </label>
       </div>
 
@@ -57,27 +59,27 @@ function ChemistryBalanceEnginePanel({
             disabled={!canRetry || remoteAnalysis.status === 'loading'}
             onClick={onRetry}
           >
-            {chemistryBalanceText.engine.retry}
+            {text.engine.retry}
           </Button>
         </div>
       ) : null}
 
       {!enabled ? (
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-          {chemistryBalanceText.engine.off}
+          {text.engine.off}
         </div>
       ) : remoteAnalysis.status === 'idle' ? (
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-          {chemistryBalanceText.engine.idle}
+          {text.engine.idle}
         </div>
       ) : remoteAnalysis.status === 'loading' ? (
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-          {chemistryBalanceText.engine.loadingPrefix} <code>{remoteAnalysis.input}</code>.
+          {text.engine.loadingPrefix} <code>{remoteAnalysis.input}</code>.
         </div>
       ) : remoteAnalysis.status === 'failed' ? (
         <div className="rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.08)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
           <p className="font-semibold text-[var(--text-strong)]">
-            {chemistryBalanceText.engine.failedTitle}
+            {text.engine.failedTitle}
           </p>
           <p className="mt-2">
             <span className="font-semibold text-[var(--text-strong)]">{remoteAnalysis.error.code}</span>
@@ -89,26 +91,26 @@ function ChemistryBalanceEnginePanel({
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                {chemistryBalanceText.engine.classificationLabel}
+                {text.engine.classificationLabel}
               </p>
               <p className="mt-1 text-base font-black text-[var(--text-strong)]">
-                {remoteAnalysis.value.classification ?? chemistryBalanceText.common.notAvailable}
+                {remoteAnalysis.value.classification ?? text.common.notAvailable}
               </p>
             </div>
             <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                {chemistryBalanceText.engine.scoreLabel}
+                {text.engine.scoreLabel}
               </p>
               <p className="mt-1 text-base font-black text-[var(--text-strong)]">
-                {remoteAnalysis.value.score ?? chemistryBalanceText.common.notAvailable}
+                {remoteAnalysis.value.score ?? text.common.notAvailable}
               </p>
             </div>
             <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                {chemistryBalanceText.engine.validLabel}
+                {text.engine.validLabel}
               </p>
               <p className="mt-1 text-base font-black text-[var(--text-strong)]">
-                {formatChemistryBalanceValidity(remoteAnalysis.value.valid)}
+                {formatChemistryBalanceValidity(text, remoteAnalysis.value.valid)}
               </p>
             </div>
           </div>
@@ -125,7 +127,7 @@ function ChemistryBalanceEnginePanel({
                   }`}
                 >
                   <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                    {notice.level}
+                    {text.common.warnings[notice.level]}
                   </p>
                   <p className="mt-1 text-sm text-[var(--text-strong)]">{notice.message}</p>
                 </li>
@@ -133,7 +135,7 @@ function ChemistryBalanceEnginePanel({
             </ul>
           ) : (
             <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-              {chemistryBalanceText.engine.noNotices}
+              {text.engine.noNotices}
             </div>
           )}
         </div>

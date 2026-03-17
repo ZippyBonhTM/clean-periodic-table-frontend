@@ -2,9 +2,7 @@
 
 import Panel from '@/components/atoms/Panel';
 import ChemistryBalanceAnalysisComparisonOverview from '@/components/templates/ChemistryBalanceAnalysisComparisonOverview';
-import {
-  chemistryBalanceText,
-} from '@/components/templates/chemistryBalanceText';
+import useChemistryBalanceText from '@/components/templates/useChemistryBalanceText';
 import type { ChemistryBalanceRemoteAnalysisState } from '@/components/templates/chemistryBalanceRemoteAnalysis.types';
 import type { BalancedReactionAnalysis } from '@/shared/chemistry/rules';
 import {
@@ -24,20 +22,22 @@ function ChemistryBalanceAnalysisComparisonPanel({
   localAnalysis,
   remoteAnalysis,
 }: ChemistryBalanceAnalysisComparisonPanelProps) {
+  const { text } = useChemistryBalanceText();
+
   if (localAnalysis === null || remoteAnalysis.status !== 'available') {
     return (
       <Panel className="space-y-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            {chemistryBalanceText.analysisComparison.eyebrow}
+            {text.analysisComparison.eyebrow}
           </p>
           <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-            {chemistryBalanceText.analysisComparison.title}
+            {text.analysisComparison.title}
           </h2>
         </div>
 
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-          {chemistryBalanceText.analysisComparison.unavailable}
+          {text.analysisComparison.unavailable}
         </div>
       </Panel>
     );
@@ -56,13 +56,13 @@ function ChemistryBalanceAnalysisComparisonPanel({
     <Panel className="space-y-4">
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-          {chemistryBalanceText.analysisComparison.eyebrow}
+          {text.analysisComparison.eyebrow}
         </p>
         <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-          {chemistryBalanceText.analysisComparison.title}
+          {text.analysisComparison.title}
         </h2>
         <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
-          {chemistryBalanceText.analysisComparison.description}
+          {text.analysisComparison.description}
         </p>
       </div>
 
@@ -76,13 +76,13 @@ function ChemistryBalanceAnalysisComparisonPanel({
         className={`rounded-2xl border px-4 py-4 ${resolveAlignmentTone(confidenceAlignment)}`}
       >
         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-          {chemistryBalanceText.analysisComparison.confidenceAlignmentLabel}
+          {text.analysisComparison.confidenceAlignmentLabel}
         </p>
         <p className="mt-1 text-base font-black text-[var(--text-strong)]">
-          {formatAlignmentStatus(confidenceAlignment)}
+          {formatAlignmentStatus(text, confidenceAlignment)}
         </p>
         <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
-          {buildConfidenceSentence(localAnalysis, remoteAnalysis)}
+          {buildConfidenceSentence(text, localAnalysis, remoteAnalysis)}
         </p>
       </div>
     </Panel>

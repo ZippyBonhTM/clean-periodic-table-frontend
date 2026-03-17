@@ -3,6 +3,8 @@ import { JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
+import AppLocaleProvider from '@/shared/i18n/AppLocaleProvider';
+
 import './globals.css';
 
 const spaceGrotesk = Space_Grotesk({
@@ -33,9 +35,11 @@ export default function RootLayout({
         className={`${spaceGrotesk.variable} ${jetBrainsMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        {children}
-        {isProduction ? <Analytics /> : null}
-        {isProduction ? <SpeedInsights /> : null}
+        <AppLocaleProvider>
+          {children}
+          {isProduction ? <Analytics /> : null}
+          {isProduction ? <SpeedInsights /> : null}
+        </AppLocaleProvider>
       </body>
     </html>
   );
