@@ -6,6 +6,8 @@ import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import AppShell from '@/components/templates/AppShell';
 import ChemistryBalanceAnalysisPanel from '@/components/templates/ChemistryBalanceAnalysisPanel';
+import ChemistryBalanceHistoryPanel from '@/components/templates/ChemistryBalanceHistoryPanel';
+import useEquationBalanceHistory from '@/components/templates/useEquationBalanceHistory';
 import { logoutSession } from '@/shared/api/authApi';
 import { balanceChemicalEquationText } from '@/shared/chemistry/analysis';
 import { analyzeBalancedReaction } from '@/shared/chemistry/rules';
@@ -40,6 +42,7 @@ export default function ChemistryBalanceWorkspace() {
   });
   const [equationInput, setEquationInput] = useState('H2 + O2 -> H2O');
   const [submittedEquation, setSubmittedEquation] = useState('H2 + O2 -> H2O');
+  const [submissionVersion, setSubmissionVersion] = useState(0);
 
   const result = useMemo(
     () =>
@@ -100,6 +103,12 @@ export default function ChemistryBalanceWorkspace() {
     return 'inactive' as const;
   }, [elements.length, elementsError, hasValidSession, isElementsLoading]);
 
+  const { entries: historyEntries, clearHistory } = useEquationBalanceHistory(
+    submittedEquation,
+    result,
+    submissionVersion,
+  );
+
   return (
     <AppShell
       hasToken={hasValidSession}
@@ -150,6 +159,7 @@ export default function ChemistryBalanceWorkspace() {
                 onClick={() => {
                   setEquationInput(example);
                   setSubmittedEquation(example);
+                  setSubmissionVersion((currentVersion) => currentVersion + 1);
                 }}
                 className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
               >
@@ -159,7 +169,14 @@ export default function ChemistryBalanceWorkspace() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button onClick={() => setSubmittedEquation(equationInput)}>Balance locally</Button>
+            <Button
+              onClick={() => {
+                setSubmittedEquation(equationInput);
+                setSubmissionVersion((currentVersion) => currentVersion + 1);
+              }}
+            >
+              Balance locally
+            </Button>
             <Button
               variant="ghost"
               onClick={() => {
@@ -251,6 +268,15 @@ export default function ChemistryBalanceWorkspace() {
 
           <div className="space-y-5">
             <ChemistryBalanceAnalysisPanel analysis={analysis} metadataStatus={metadataStatus} />
+            <ChemistryBalanceHistoryPanel
+              entries={historyEntries}
+              onSelect={(input) => {
+                setEquationInput(input);
+                setSubmittedEquation(input);
+                setSubmissionVersion((currentVersion) => currentVersion + 1);
+              }}
+              onClear={clearHistory}
+            />
 
             <Panel className="space-y-4">
               <div>
