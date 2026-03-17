@@ -4,27 +4,15 @@ import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import {
   CHEMISTRY_BALANCE_EXAMPLES,
-  type ChemistryBalanceExample,
 } from '@/components/templates/chemistryBalanceExamples';
+import {
+  chemistryBalanceText,
+  formatChemistryBalanceExampleCategory,
+} from '@/components/templates/chemistryBalanceText';
 
 type ChemistryBalanceExamplesPanelProps = {
   onSelect: (equation: string) => void;
 };
-
-function formatCategoryLabel(category: ChemistryBalanceExample['category']): string {
-  switch (category) {
-    case 'combustion':
-      return 'Combustion';
-    case 'synthesis':
-      return 'Synthesis';
-    case 'decomposition':
-      return 'Decomposition';
-    case 'ionic':
-      return 'Ionic';
-    default:
-      return category;
-  }
-}
 
 function ChemistryBalanceExamplesPanel({
   onSelect,
@@ -33,14 +21,13 @@ function ChemistryBalanceExamplesPanel({
     <Panel className="space-y-4">
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-          Guided Examples
+          {chemistryBalanceText.examples.eyebrow}
         </p>
         <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-          Try a Category
+          {chemistryBalanceText.examples.title}
         </h2>
         <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
-          These examples are grouped by common reaction patterns so we can inspect the local solver
-          and heuristics from different angles.
+          {chemistryBalanceText.examples.description}
         </p>
       </div>
 
@@ -53,7 +40,7 @@ function ChemistryBalanceExamplesPanel({
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-2">
                 <span className="inline-flex rounded-full border border-[var(--border-subtle)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                  {formatCategoryLabel(example.category)}
+                  {formatChemistryBalanceExampleCategory(example.category)}
                 </span>
                 <div>
                   <h3 className="text-sm font-bold text-[var(--text-strong)]">{example.title}</h3>
@@ -70,7 +57,7 @@ function ChemistryBalanceExamplesPanel({
                 className="shrink-0"
                 onClick={() => onSelect(example.equation)}
               >
-                Use
+                {chemistryBalanceText.examples.use}
               </Button>
             </div>
           </li>

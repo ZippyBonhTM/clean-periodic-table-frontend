@@ -11,6 +11,7 @@ import ChemistryBalanceComparisonPanel from '@/components/templates/ChemistryBal
 import ChemistryBalanceEnginePanel from '@/components/templates/ChemistryBalanceEnginePanel';
 import ChemistryBalanceExamplesPanel from '@/components/templates/ChemistryBalanceExamplesPanel';
 import ChemistryBalanceHistoryPanel from '@/components/templates/ChemistryBalanceHistoryPanel';
+import { chemistryBalanceText } from '@/components/templates/chemistryBalanceText';
 import useChemistryBalanceRemoteAnalysis from '@/components/templates/useChemistryBalanceRemoteAnalysis';
 import useEquationBalanceHistory from '@/components/templates/useEquationBalanceHistory';
 import useEquationBalanceRemotePreference from '@/components/templates/useEquationBalanceRemotePreference';
@@ -153,14 +154,13 @@ export default function ChemistryBalanceWorkspace() {
         <Panel className="space-y-4">
           <div className="space-y-2">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-              Client-First Chemistry
+              {chemistryBalanceText.workspace.eyebrow}
             </p>
             <h1 className="text-2xl font-black text-[var(--text-strong)] sm:text-3xl">
-              Balance Equation
+              {chemistryBalanceText.workspace.title}
             </h1>
             <p className="max-w-3xl text-sm leading-6 text-[var(--text-muted)] sm:text-base">
-              This page uses the local chemistry pipeline only: equation parsing, reaction creation,
-              matrix balancing, and deterministic formatting.
+              {chemistryBalanceText.workspace.description}
             </p>
           </div>
 
@@ -169,13 +169,13 @@ export default function ChemistryBalanceWorkspace() {
               htmlFor="equation-input"
               className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]"
             >
-              Equation
+              {chemistryBalanceText.workspace.equationLabel}
             </label>
             <textarea
               id="equation-input"
               value={equationInput}
               onChange={(event) => setEquationInput(event.target.value)}
-              placeholder="H2 + O2 -> H2O"
+              placeholder={chemistryBalanceText.workspace.equationPlaceholder}
               rows={4}
               className="min-h-28 w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-4 py-3 text-sm text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)] sm:text-base"
             />
@@ -195,7 +195,7 @@ export default function ChemistryBalanceWorkspace() {
                 resetRemoteAnalysis();
               }}
             >
-              Balance locally
+              {chemistryBalanceText.workspace.submit}
             </Button>
             <Button
               variant="ghost"
@@ -205,7 +205,7 @@ export default function ChemistryBalanceWorkspace() {
                 resetRemoteAnalysis();
               }}
             >
-              Clear
+              {chemistryBalanceText.workspace.clear}
             </Button>
           </div>
         </Panel>
@@ -215,10 +215,10 @@ export default function ChemistryBalanceWorkspace() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                  Result
+                  {chemistryBalanceText.workspace.resultEyebrow}
                 </p>
                 <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-                  Balanced Output
+                  {chemistryBalanceText.workspace.resultTitle}
                 </h2>
               </div>
               <span
@@ -228,7 +228,7 @@ export default function ChemistryBalanceWorkspace() {
                     : 'border-[rgba(245,158,11,0.45)] bg-[rgba(245,158,11,0.14)] text-[var(--text-strong)]'
                 }`}
               >
-                {result.ok ? 'Balanced' : result.stage}
+                {result.ok ? chemistryBalanceText.common.balanced : result.stage}
               </span>
             </div>
 
@@ -236,7 +236,7 @@ export default function ChemistryBalanceWorkspace() {
               <div className="space-y-4">
                 <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-soft)] px-4 py-4">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                    Formatted
+                    {chemistryBalanceText.workspace.formattedLabel}
                   </p>
                   <p className="mt-2 break-words text-lg font-black text-[var(--text-strong)] sm:text-xl">
                     {result.value.formatted}
@@ -246,7 +246,7 @@ export default function ChemistryBalanceWorkspace() {
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                      Terms
+                      {chemistryBalanceText.workspace.termsLabel}
                     </p>
                     <p className="mt-1 text-lg font-black text-[var(--text-strong)]">
                       {result.value.equation.termCount}
@@ -254,7 +254,7 @@ export default function ChemistryBalanceWorkspace() {
                   </div>
                   <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                      Elements
+                      {chemistryBalanceText.workspace.elementsLabel}
                     </p>
                     <p className="mt-1 text-lg font-black text-[var(--text-strong)]">
                       {result.value.reaction.elementSymbols.length}
@@ -262,7 +262,7 @@ export default function ChemistryBalanceWorkspace() {
                   </div>
                   <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                      Vector
+                      {chemistryBalanceText.workspace.vectorLabel}
                     </p>
                     <p className="mt-1 text-lg font-black text-[var(--text-strong)]">
                       [{result.value.balancedReaction.coefficientVector.join(', ')}]
@@ -273,7 +273,8 @@ export default function ChemistryBalanceWorkspace() {
             ) : (
               <div className="space-y-3 rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.08)] px-4 py-4">
                 <p className="text-sm font-semibold text-[var(--text-strong)]">
-                  The equation could not be balanced at the local <code>{result.stage}</code> stage.
+                  {chemistryBalanceText.workspace.failurePrefix} <code>{result.stage}</code>{' '}
+                  {chemistryBalanceText.workspace.failureSuffix}
                 </p>
                 <ul className="space-y-2 text-sm leading-6 text-[var(--text-muted)]">
                   {result.issues.map((issue, index) => (
@@ -324,33 +325,19 @@ export default function ChemistryBalanceWorkspace() {
             <Panel className="space-y-4">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                  Pipeline
+                  {chemistryBalanceText.pipeline.eyebrow}
                 </p>
                 <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-                  Local Stages
+                  {chemistryBalanceText.pipeline.title}
                 </h2>
               </div>
               <ol className="space-y-3 text-sm leading-6 text-[var(--text-muted)]">
-                <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
-                  <span className="font-semibold text-[var(--text-strong)]">1. Equation parse</span>
-                  : separates arrow, terms, coefficients, phases, and structural notation.
-                </li>
-                <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
-                  <span className="font-semibold text-[var(--text-strong)]">2. Reaction creation</span>
-                  : converts terms into structured participants with parsed formulas.
-                </li>
-                <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
-                  <span className="font-semibold text-[var(--text-strong)]">3. Matrix balancing</span>
-                  : builds the stoichiometric matrix, solves the null-space, and normalizes coefficients.
-                </li>
-                <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
-                  <span className="font-semibold text-[var(--text-strong)]">4. Heuristic analysis</span>
-                  : applies lightweight local rules and optionally enriches them with Element DB metadata.
-                </li>
-                <li className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
-                  <span className="font-semibold text-[var(--text-strong)]">5. Deterministic formatting</span>
-                  : returns a stable text result for display.
-                </li>
+                {chemistryBalanceText.pipeline.steps.map((step) => (
+                  <li key={step.title} className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
+                    <span className="font-semibold text-[var(--text-strong)]">{step.title}</span>
+                    : {step.description}
+                  </li>
+                ))}
               </ol>
             </Panel>
           </div>

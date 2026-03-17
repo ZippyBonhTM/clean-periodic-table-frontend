@@ -2,6 +2,11 @@
 
 import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
+import {
+  chemistryBalanceText,
+  formatChemistryBalanceHistoryDate,
+  formatChemistryBalanceHistoryStatus,
+} from '@/components/templates/chemistryBalanceText';
 import type { EquationBalanceHistoryEntry } from '@/components/templates/useEquationBalanceHistory';
 
 type ChemistryBalanceHistoryPanelProps = {
@@ -9,29 +14,6 @@ type ChemistryBalanceHistoryPanelProps = {
   onSelect: (input: string) => void;
   onClear: () => void;
 };
-
-function formatHistoryStatus(status: EquationBalanceHistoryEntry['status']): string {
-  if (status === 'balanced') {
-    return 'Balanced';
-  }
-
-  return status;
-}
-
-function formatSavedAt(savedAt: string): string {
-  const date = new Date(savedAt);
-
-  if (Number.isNaN(date.getTime())) {
-    return 'Recent';
-  }
-
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-}
 
 function ChemistryBalanceHistoryPanel({
   entries,
@@ -43,23 +25,23 @@ function ChemistryBalanceHistoryPanel({
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            History
+            {chemistryBalanceText.history.eyebrow}
           </p>
           <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-            Recent Equations
+            {chemistryBalanceText.history.title}
           </h2>
         </div>
 
         {entries.length > 0 ? (
           <Button variant="ghost" onClick={onClear}>
-            Clear history
+            {chemistryBalanceText.history.clear}
           </Button>
         ) : null}
       </div>
 
       {entries.length === 0 ? (
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-          Recent equations will appear here after you balance them locally.
+          {chemistryBalanceText.history.empty}
         </div>
       ) : (
         <ul className="space-y-3">
@@ -75,14 +57,14 @@ function ChemistryBalanceHistoryPanel({
                     {entry.input}
                   </p>
                   <span className="shrink-0 rounded-full border border-[var(--border-subtle)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                    {formatHistoryStatus(entry.status)}
+                    {formatChemistryBalanceHistoryStatus(entry.status)}
                   </span>
                 </div>
                 <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--text-muted)]">
                   {entry.summary}
                 </p>
                 <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                  {formatSavedAt(entry.savedAt)}
+                  {formatChemistryBalanceHistoryDate(entry.savedAt)}
                 </p>
               </button>
             </li>

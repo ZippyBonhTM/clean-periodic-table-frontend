@@ -2,6 +2,10 @@
 
 import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
+import {
+  chemistryBalanceText,
+  formatChemistryBalanceValidity,
+} from '@/components/templates/chemistryBalanceText';
 import type { ChemistryBalanceRemoteAnalysisState } from '@/components/templates/chemistryBalanceRemoteAnalysis.types';
 
 type ChemistryBalanceEnginePanelProps = {
@@ -24,14 +28,13 @@ function ChemistryBalanceEnginePanel({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            Optional Engine
+            {chemistryBalanceText.engine.eyebrow}
           </p>
           <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-            Remote Enrichment
+            {chemistryBalanceText.engine.title}
           </h2>
           <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
-            Local balance and heuristics stay primary. This optional step asks the backend Chemical
-            Engine for extra validation when enabled.
+            {chemistryBalanceText.engine.description}
           </p>
         </div>
 
@@ -42,7 +45,7 @@ function ChemistryBalanceEnginePanel({
             onChange={(event) => onToggle(event.target.checked)}
             className="h-4 w-4 accent-[var(--accent)]"
           />
-          Remote
+          {chemistryBalanceText.engine.toggleLabel}
         </label>
       </div>
 
@@ -54,27 +57,27 @@ function ChemistryBalanceEnginePanel({
             disabled={!canRetry || remoteAnalysis.status === 'loading'}
             onClick={onRetry}
           >
-            Retry remote check
+            {chemistryBalanceText.engine.retry}
           </Button>
         </div>
       ) : null}
 
       {!enabled ? (
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-          Remote enrichment is currently off. The page is using client-only chemistry.
+          {chemistryBalanceText.engine.off}
         </div>
       ) : remoteAnalysis.status === 'idle' ? (
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-          Remote enrichment will run the next time a balanced equation is submitted.
+          {chemistryBalanceText.engine.idle}
         </div>
       ) : remoteAnalysis.status === 'loading' ? (
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-          Asking the optional Chemical Engine to enrich <code>{remoteAnalysis.input}</code>.
+          {chemistryBalanceText.engine.loadingPrefix} <code>{remoteAnalysis.input}</code>.
         </div>
       ) : remoteAnalysis.status === 'failed' ? (
         <div className="rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.08)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
           <p className="font-semibold text-[var(--text-strong)]">
-            Remote enrichment did not complete.
+            {chemistryBalanceText.engine.failedTitle}
           </p>
           <p className="mt-2">
             <span className="font-semibold text-[var(--text-strong)]">{remoteAnalysis.error.code}</span>
@@ -86,30 +89,26 @@ function ChemistryBalanceEnginePanel({
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                Classification
+                {chemistryBalanceText.engine.classificationLabel}
               </p>
               <p className="mt-1 text-base font-black text-[var(--text-strong)]">
-                {remoteAnalysis.value.classification ?? 'N/A'}
+                {remoteAnalysis.value.classification ?? chemistryBalanceText.common.notAvailable}
               </p>
             </div>
             <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                Score
+                {chemistryBalanceText.engine.scoreLabel}
               </p>
               <p className="mt-1 text-base font-black text-[var(--text-strong)]">
-                {remoteAnalysis.value.score ?? 'N/A'}
+                {remoteAnalysis.value.score ?? chemistryBalanceText.common.notAvailable}
               </p>
             </div>
             <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                Valid
+                {chemistryBalanceText.engine.validLabel}
               </p>
               <p className="mt-1 text-base font-black text-[var(--text-strong)]">
-                {remoteAnalysis.value.valid === null
-                  ? 'Unknown'
-                  : remoteAnalysis.value.valid
-                    ? 'Yes'
-                    : 'No'}
+                {formatChemistryBalanceValidity(remoteAnalysis.value.valid)}
               </p>
             </div>
           </div>
@@ -134,7 +133,7 @@ function ChemistryBalanceEnginePanel({
             </ul>
           ) : (
             <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-              The optional Chemical Engine returned no additional notices for this equation.
+              {chemistryBalanceText.engine.noNotices}
             </div>
           )}
         </div>

@@ -1,19 +1,17 @@
 'use client';
 
 import Panel from '@/components/atoms/Panel';
+import {
+  chemistryBalanceText,
+  formatChemistryBalanceReactionType,
+  getChemistryBalanceMetadataMessage,
+} from '@/components/templates/chemistryBalanceText';
 import type { BalancedReactionAnalysis } from '@/shared/chemistry/rules';
 
 type ChemistryBalanceAnalysisPanelProps = {
   analysis: BalancedReactionAnalysis | null;
   metadataStatus: 'inactive' | 'loading' | 'ready' | 'unavailable';
 };
-
-function formatReactionTypeLabel(reactionType: BalancedReactionAnalysis['reactionType']): string {
-  return reactionType
-    .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
 
 function resolveScoreTone(score: number): string {
   if (score >= 80) {
@@ -26,21 +24,6 @@ function resolveScoreTone(score: number): string {
 
   return 'border-[rgba(244,63,94,0.45)] bg-[rgba(244,63,94,0.14)]';
 }
-
-function resolveMetadataMessage(metadataStatus: ChemistryBalanceAnalysisPanelProps['metadataStatus']): string {
-  switch (metadataStatus) {
-    case 'loading':
-      return 'Loading Element DB metadata to enrich heuristics.';
-    case 'ready':
-      return 'Heuristics are enriched with Element DB metadata.';
-    case 'unavailable':
-      return 'Element DB metadata is unavailable right now. Using local heuristics only.';
-    case 'inactive':
-    default:
-      return 'Local heuristics are active. Login enables Element DB enrichment when available.';
-  }
-}
-
 function ChemistryBalanceAnalysisPanel({
   analysis,
   metadataStatus,
@@ -49,45 +32,47 @@ function ChemistryBalanceAnalysisPanel({
     <Panel className="space-y-4">
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-          Heuristics
+          {chemistryBalanceText.analysis.eyebrow}
         </p>
         <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-          Reaction Analysis
+          {chemistryBalanceText.analysis.title}
         </h2>
         <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
-          {resolveMetadataMessage(metadataStatus)}
+          {getChemistryBalanceMetadataMessage(metadataStatus)}
         </p>
       </div>
 
       {analysis === null ? (
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-          Heuristic analysis runs after the equation is parsed and balanced successfully.
+          {chemistryBalanceText.analysis.noResult}
         </div>
       ) : (
         <>
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                Type
+                {chemistryBalanceText.analysis.typeLabel}
               </p>
               <p className="mt-1 text-base font-black text-[var(--text-strong)]">
-                {formatReactionTypeLabel(analysis.reactionType)}
+                {formatChemistryBalanceReactionType(analysis.reactionType)}
               </p>
             </div>
 
             <div className={`rounded-2xl border px-4 py-3 ${resolveScoreTone(analysis.score)}`}>
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                Score
+                {chemistryBalanceText.analysis.scoreLabel}
               </p>
               <p className="mt-1 text-base font-black text-[var(--text-strong)]">{analysis.score}/100</p>
             </div>
 
             <div className="rounded-2xl bg-[var(--surface-overlay-faint)] px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                Plausibility
+                {chemistryBalanceText.analysis.plausibilityLabel}
               </p>
               <p className="mt-1 text-base font-black text-[var(--text-strong)]">
-                {analysis.likelyPlausible ? 'Likely plausible' : 'Needs review'}
+                {analysis.likelyPlausible
+                  ? chemistryBalanceText.analysis.plausible
+                  : chemistryBalanceText.analysis.needsReview}
               </p>
             </div>
           </div>
@@ -112,7 +97,7 @@ function ChemistryBalanceAnalysisPanel({
             </ul>
           ) : (
             <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-              No heuristic notices were raised for this balanced reaction.
+              {chemistryBalanceText.analysis.noNotices}
             </div>
           )}
         </>

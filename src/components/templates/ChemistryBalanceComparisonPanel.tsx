@@ -1,6 +1,10 @@
 'use client';
 
 import Panel from '@/components/atoms/Panel';
+import {
+  chemistryBalanceText,
+  formatChemistryBalanceCoefficientDelta,
+} from '@/components/templates/chemistryBalanceText';
 import type { BalanceChemicalEquationFlowValue } from '@/shared/chemistry/analysis';
 
 type ChemistryBalanceComparisonPanelProps = {
@@ -34,17 +38,6 @@ function buildParticipantComparisons(
   return [...reactantComparisons, ...productComparisons];
 }
 
-function formatCoefficientDelta(
-  inputCoefficient: number,
-  balancedCoefficient: number,
-): string {
-  if (inputCoefficient === balancedCoefficient) {
-    return 'unchanged';
-  }
-
-  return `${inputCoefficient} -> ${balancedCoefficient}`;
-}
-
 function ChemistryBalanceComparisonPanel({
   value,
 }: ChemistryBalanceComparisonPanelProps) {
@@ -53,14 +46,14 @@ function ChemistryBalanceComparisonPanel({
       <Panel className="space-y-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-            Comparison
+            {chemistryBalanceText.comparison.eyebrow}
           </p>
           <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-            Input vs Balanced
+            {chemistryBalanceText.comparison.title}
           </h2>
         </div>
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-          This panel becomes available after the equation balances successfully.
+          {chemistryBalanceText.comparison.unavailable}
         </div>
       </Panel>
     );
@@ -72,17 +65,17 @@ function ChemistryBalanceComparisonPanel({
     <Panel className="space-y-4">
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-          Comparison
+          {chemistryBalanceText.comparison.eyebrow}
         </p>
         <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
-          Input vs Balanced
+          {chemistryBalanceText.comparison.title}
         </h2>
       </div>
 
       <div className="space-y-3">
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-            Original
+            {chemistryBalanceText.comparison.originalLabel}
           </p>
           <p className="mt-2 break-words text-sm font-semibold text-[var(--text-strong)] sm:text-base">
             {value.equation.normalized}
@@ -91,7 +84,7 @@ function ChemistryBalanceComparisonPanel({
 
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-soft)] px-4 py-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-            Balanced
+            {chemistryBalanceText.comparison.balancedLabel}
           </p>
           <p className="mt-2 break-words text-sm font-semibold text-[var(--text-strong)] sm:text-base">
             {value.formatted}
@@ -108,14 +101,16 @@ function ChemistryBalanceComparisonPanel({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                  {comparison.side}
+                  {comparison.side === 'reactant'
+                    ? chemistryBalanceText.comparison.reactantLabel
+                    : chemistryBalanceText.comparison.productLabel}
                 </p>
                 <p className="mt-1 text-sm font-semibold text-[var(--text-strong)]">
                   {comparison.label}
                 </p>
               </div>
               <span className="rounded-full border border-[var(--border-subtle)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                {formatCoefficientDelta(
+                {formatChemistryBalanceCoefficientDelta(
                   comparison.inputCoefficient,
                   comparison.balancedCoefficient,
                 )}
