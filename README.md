@@ -37,6 +37,7 @@ Frontend runs on `http://localhost:3000` by default.
 ## Docs
 
 - Chemical system architecture: `docs/chemical-system-architecture.md`
+- Chemical system context: `docs/chemical-system-context.md`
 
 ## Structure
 
