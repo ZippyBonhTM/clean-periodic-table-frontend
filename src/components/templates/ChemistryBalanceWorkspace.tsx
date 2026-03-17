@@ -1,7 +1,5 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
-
 import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import AppShell from '@/components/templates/AppShell';
@@ -15,13 +13,9 @@ import ChemistryBalancePipelinePanel from '@/components/templates/ChemistryBalan
 import ChemistryBalanceResultPanel from '@/components/templates/ChemistryBalanceResultPanel';
 import useChemistryBalanceText from '@/components/templates/useChemistryBalanceText';
 import useChemistryBalanceWorkspaceState from '@/components/templates/useChemistryBalanceWorkspaceState';
-import { buildBalanceEquationPath } from '@/shared/i18n/appLocaleRouting';
-import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
 export default function ChemistryBalanceWorkspace() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const { locale, setLocale, text } = useChemistryBalanceText();
+  const { text } = useChemistryBalanceText();
   const {
     shell,
     equationInput,
@@ -41,16 +35,6 @@ export default function ChemistryBalanceWorkspace() {
     triggerRemoteAnalysis,
   } = useChemistryBalanceWorkspaceState();
 
-  const handleLocaleChange = (nextLocale: AppLocale) => {
-    setLocale(nextLocale);
-
-    const nextPath = buildBalanceEquationPath(nextLocale);
-
-    if (pathname !== nextPath) {
-      router.replace(nextPath);
-    }
-  };
-
   return (
     <AppShell
       hasToken={shell.hasToken}
@@ -61,31 +45,15 @@ export default function ChemistryBalanceWorkspace() {
       <section className="space-y-5">
         <Panel className="space-y-4">
           <div className="space-y-2">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                  {text.workspace.eyebrow}
-                </p>
-                <h1 className="text-2xl font-black text-[var(--text-strong)] sm:text-3xl">
-                  {text.workspace.title}
-                </h1>
-                <p className="max-w-3xl text-sm leading-6 text-[var(--text-muted)] sm:text-base">
-                  {text.workspace.description}
-                </p>
-              </div>
-
-              <label className="flex shrink-0 items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-                <span>{text.locale.label}</span>
-                <select
-                  value={locale}
-                  onChange={(event) => handleLocaleChange(event.target.value as AppLocale)}
-                  className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2 py-1 text-[11px] font-semibold normal-case text-[var(--text-strong)] outline-none"
-                >
-                  <option value="en-US">{text.locale.options['en-US']}</option>
-                  <option value="pt-BR">{text.locale.options['pt-BR']}</option>
-                </select>
-              </label>
-            </div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              {text.workspace.eyebrow}
+            </p>
+            <h1 className="text-2xl font-black text-[var(--text-strong)] sm:text-3xl">
+              {text.workspace.title}
+            </h1>
+            <p className="max-w-3xl text-sm leading-6 text-[var(--text-muted)] sm:text-base">
+              {text.workspace.description}
+            </p>
           </div>
 
           <div className="space-y-3">

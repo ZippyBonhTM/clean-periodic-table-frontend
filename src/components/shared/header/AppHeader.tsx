@@ -14,6 +14,7 @@ import type { AppTheme } from '@/shared/hooks/useTheme';
 
 import AppHeaderAuthActions from './AppHeaderAuthActions';
 import AppHeaderDesktopNav from './AppHeaderDesktopNav';
+import AppHeaderLocaleSwitcher from './AppHeaderLocaleSwitcher';
 import AppHeaderRouteMenu from './AppHeaderRouteMenu';
 import AppHeaderUserMenu from './AppHeaderUserMenu';
 import type { AuthEntryMode } from './appHeader.types';
@@ -171,6 +172,7 @@ function AppHeader({
           <div className="flex flex-col gap-2 md:col-start-2 md:row-span-2 md:h-full md:items-end md:justify-between">
             <div className="flex flex-wrap items-center gap-2 md:justify-end">
               <TokenStatus status={authStatus} />
+              <AppHeaderLocaleSwitcher />
               <Button
                 type="button"
                 variant="ghost"
@@ -271,6 +273,10 @@ function AppHeader({
                 onRequestRegister={onRequestRegisterFromButton}
               />
             </div>
+          </div>
+
+          <div className="mt-3">
+            <AppHeaderLocaleSwitcher mobile />
           </div>
         </header>
       </div>
