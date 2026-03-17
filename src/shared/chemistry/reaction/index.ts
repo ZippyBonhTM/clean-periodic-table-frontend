@@ -23,6 +23,7 @@ export type {
   CreateChemicalReactionResult,
   CreateChemicalReactionSuccess,
 } from '@/shared/chemistry/reaction/reactionFactory.types';
+export type { FormatBalancedReactionOptions } from '@/shared/chemistry/reaction/reactionFormatting';
 export { balanceChemicalReaction } from '@/shared/chemistry/reaction/reactionBalancer';
 export { formatBalancedReaction } from '@/shared/chemistry/reaction/reactionFormatting';
 export { createChemicalReactionFromEquation } from '@/shared/chemistry/reaction/reactionFromEquation';
