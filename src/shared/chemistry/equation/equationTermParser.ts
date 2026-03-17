@@ -59,11 +59,25 @@ function isEquationTermSeparator(source: string, index: number): boolean {
     return true;
   }
 
+  const previousNonWhitespaceCharacter = source[previousNonWhitespaceIndex];
+  const nextNonWhitespaceCharacter = source[nextNonWhitespaceIndex];
+
+  if (nextNonWhitespaceCharacter === '+' || nextNonWhitespaceCharacter === '-') {
+    return false;
+  }
+
+  if (
+    (previousNonWhitespaceCharacter === '+' || previousNonWhitespaceCharacter === '-') &&
+    nextNonWhitespaceIndex > index
+  ) {
+    return true;
+  }
+
   if (/\s/.test(source[index - 1] ?? '') || /\s/.test(source[index + 1] ?? '')) {
     return true;
   }
 
-  return /[A-Z(0-9]/.test(source[nextNonWhitespaceIndex]);
+  return /[A-Z(0-9]/.test(nextNonWhitespaceCharacter);
 }
 
 function splitEquationSideTerms(
