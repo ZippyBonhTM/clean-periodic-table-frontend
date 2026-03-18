@@ -34,10 +34,10 @@ export function normalizeElementImageUrl(value: unknown): string {
 
 export function formatNullableValue(
   value: unknown,
-  options: NullableValueTextOptions | string = 'Not informed',
+  options: NullableValueTextOptions | string = '—',
 ): string {
   const {
-    fallbackText = 'Not informed',
+    fallbackText = '—',
     yesText = 'Yes',
     noText = 'No',
   } = typeof options === 'string' ? { fallbackText: options } : options;
