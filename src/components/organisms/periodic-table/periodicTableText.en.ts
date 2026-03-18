@@ -4,9 +4,19 @@ export const periodicTableTextEn = {
     loading: 'Loading...',
     yes: 'Yes',
     no: 'No',
+    notAvailableShort: 'n/a',
     showingCountPrefix: 'Showing',
     showingCountMiddle: 'of',
     showingCountSuffix: 'elements',
+  },
+  tile: {
+    openDetailsPrefix: 'Open details of',
+    radioactiveElement: 'Radioactive element',
+    phase: {
+      solid: 'Solid',
+      liquid: 'Liquid',
+      gas: 'Gas',
+    },
   },
   explore: {
     searchLabel: 'Search',

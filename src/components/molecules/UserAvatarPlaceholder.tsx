@@ -12,8 +12,7 @@ function UserAvatarPlaceholder({ hasToken }: UserAvatarPlaceholderProps) {
           ? 'border-[rgba(16,185,129,0.55)] bg-[rgba(16,185,129,0.12)] text-[var(--text-strong)]'
           : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)]'
       }`}
-      title="User avatar placeholder"
-      aria-label="User avatar placeholder"
+      aria-hidden="true"
     >
       UI
     </div>

@@ -78,3 +78,10 @@ export function formatElementModalTitle(
 ): string {
   return `${elementName} (${elementSymbol})`;
 }
+
+export function formatElementTileOpenLabel(
+  text: PeriodicTableTextCatalog,
+  elementName: string,
+): string {
+  return `${text.tile.openDetailsPrefix} ${elementName}`;
+}

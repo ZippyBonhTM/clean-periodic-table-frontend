@@ -1,5 +1,11 @@
 import { memo } from 'react';
 
+import {
+  formatElementModalTitle,
+  formatElementTileOpenLabel,
+} from '@/components/organisms/periodic-table/periodicTableText';
+import usePeriodicTableText from '@/components/organisms/periodic-table/usePeriodicTableText';
+import useAppLocale from '@/shared/i18n/useAppLocale';
 import type { ChemicalElement } from '@/shared/types/element';
 import {
   formatAtomicMass,
@@ -16,9 +22,14 @@ type ElementTileProps = {
   onOpen?: (element: ChemicalElement) => void;
 };
 
-const compactMassFormatter = new Intl.NumberFormat('en-US', {
-  maximumSignificantDigits: 4,
-});
+const compactMassFormatterByLocale = {
+  'en-US': new Intl.NumberFormat('en-US', {
+    maximumSignificantDigits: 4,
+  }),
+  'pt-BR': new Intl.NumberFormat('pt-BR', {
+    maximumSignificantDigits: 4,
+  }),
+} as const;
 
 function RadioactiveIcon() {
   const bladePath = 'M12 5.4a6.6 6.6 0 0 1 5.2 2.52l-3.46 2a2.62 2.62 0 0 0-1.74-1V5.4Z';
@@ -39,23 +50,23 @@ function RadioactiveIcon() {
   );
 }
 
-function compactPhase(phase: unknown): string {
+function compactPhase(phase: unknown, text: ReturnType<typeof usePeriodicTableText>): string {
   if (typeof phase !== 'string') {
-    return 'n/a';
+    return text.common.notAvailableShort;
   }
 
   const normalizedPhase = phase.trim().toLowerCase();
 
   if (normalizedPhase.includes('solid')) {
-    return 'Solid';
+    return text.tile.phase.solid;
   }
 
   if (normalizedPhase.includes('liquid')) {
-    return 'Liquid';
+    return text.tile.phase.liquid;
   }
 
   if (normalizedPhase.includes('gas')) {
-    return 'Gas';
+    return text.tile.phase.gas;
   }
 
   if (normalizedPhase.length > 8) {
@@ -65,20 +76,26 @@ function compactPhase(phase: unknown): string {
   return phase.trim();
 }
 
-function compactAtomicMass(atomicMass: unknown): string {
+function compactAtomicMass(
+  atomicMass: unknown,
+  locale: ReturnType<typeof useAppLocale>['locale'],
+  text: ReturnType<typeof usePeriodicTableText>,
+): string {
   if (typeof atomicMass !== 'number' || !Number.isFinite(atomicMass)) {
-    return 'n/a';
+    return text.common.notAvailableShort;
   }
 
-  return compactMassFormatter.format(atomicMass);
+  return compactMassFormatterByLocale[locale].format(atomicMass);
 }
 
 function ElementTile({ element, density = 'regular', mode = 'default', onOpen }: ElementTileProps) {
+  const text = usePeriodicTableText();
+  const { locale } = useAppLocale();
   const color = resolveCategoryColor(element.category);
   const isRadioactive = isElementRadioactive(element);
   const isCompact = density === 'compact';
-  const compactPhaseLabel = compactPhase(element.phase);
-  const compactMassLabel = compactAtomicMass(element.atomic_mass);
+  const compactPhaseLabel = compactPhase(element.phase, text);
+  const compactMassLabel = compactAtomicMass(element.atomic_mass, locale, text);
   const symbolLength = element.symbol.trim().length;
   const nameLength = element.name.trim().length;
   const symbolClassName =
@@ -108,8 +125,8 @@ function ElementTile({ element, density = 'regular', mode = 'default', onOpen }:
         className={`element-classic-tile relative h-full w-full overflow-hidden border text-left text-[var(--text-strong)] transition-transform duration-200 hover:-translate-y-0.5 ${
           onOpen !== undefined ? 'cursor-pointer' : 'cursor-default'
         }`}
-        aria-label={`Open details of ${element.name}`}
-        title={`${element.name} (${element.symbol})`}
+        aria-label={formatElementTileOpenLabel(text, element.name)}
+        title={formatElementModalTitle(text, element.name, element.symbol)}
         disabled={onOpen === undefined}
         style={{
           background: `linear-gradient(145deg, rgba(${color.rgb}, 0.2), rgba(${color.rgb}, 0.05) 58%, rgba(6, 12, 25, 0.34))`,
@@ -125,8 +142,8 @@ function ElementTile({ element, density = 'regular', mode = 'default', onOpen }:
             {isRadioactive ? (
               <span
                 className="element-classic-tile__radio"
-                title="Radioactive"
-                aria-label="Radioactive element"
+                title={text.details.badges.radioactive}
+                aria-label={text.tile.radioactiveElement}
               >
                 <RadioactiveIcon />
               </span>
@@ -169,8 +186,8 @@ function ElementTile({ element, density = 'regular', mode = 'default', onOpen }:
       className={`relative h-full w-full overflow-hidden rounded-xl border text-left text-[var(--text-strong)] transition-transform duration-200 hover:-translate-y-0.5 ${
         onOpen !== undefined ? 'cursor-pointer' : 'cursor-default'
       } ${isCompact ? 'p-2' : 'p-3'}`}
-      aria-label={`Open details of ${element.name}`}
-      title={`${element.name} (${element.symbol})`}
+      aria-label={formatElementTileOpenLabel(text, element.name)}
+      title={formatElementModalTitle(text, element.name, element.symbol)}
       disabled={onOpen === undefined}
       style={{
         background: `linear-gradient(145deg, rgba(${color.rgb}, 0.2), rgba(${color.rgb}, 0.05) 58%, rgba(6, 12, 25, 0.34))`,
@@ -186,7 +203,7 @@ function ElementTile({ element, density = 'regular', mode = 'default', onOpen }:
 
         {isRadioactive ? (
           <span className="rounded-md border border-rose-400/70 bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-rose-300">
-            Radioactive
+            {text.details.badges.radioactive}
           </span>
         ) : null}
       </div>
