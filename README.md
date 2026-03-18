@@ -18,6 +18,7 @@ Create `.env.local` (or `.env`) based on `.env.example`:
 ```bash
 NEXT_PUBLIC_AUTH_API_URL=http://localhost:3002
 NEXT_PUBLIC_BACKEND_API_URL=http://localhost:3001
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 ## Run

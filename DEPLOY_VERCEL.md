@@ -13,6 +13,13 @@ Set these variables in Vercel (Production, and Preview if needed):
 
 - `NEXT_PUBLIC_AUTH_API_URL=https://<AUTH_PUBLIC_DOMAIN>`
 - `NEXT_PUBLIC_BACKEND_API_URL=https://<BACKEND_PUBLIC_DOMAIN>`
+- `NEXT_PUBLIC_SITE_URL=https://<YOUR_CANONICAL_SITE_DOMAIN>`
+
+`NEXT_PUBLIC_SITE_URL` should always point to the canonical domain you want search engines to index.
+
+- Before a custom domain exists, it can point to your production `vercel.app` URL.
+- After a custom domain is connected, change it to `https://<YOUR_CUSTOM_DOMAIN>`.
+- The app uses this value for canonical metadata, `sitemap.xml`, and `robots.txt`.
 
 ## 3) Build settings
 

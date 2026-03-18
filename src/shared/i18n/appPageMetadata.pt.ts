@@ -32,14 +32,17 @@ export const appPageMetadataPt = {
     moleculeGallery: {
       title: 'Galeria de Moléculas',
       description: 'Abra, revise e continue editando as moléculas salvas na sua galeria.',
+      indexable: false,
     },
     login: {
       title: 'Entrar',
       description: 'Entre para sincronizar seus dados e manter suas ferramentas de química alinhadas.',
+      indexable: false,
     },
     register: {
       title: 'Criar Conta',
       description: 'Crie uma conta para salvar seu progresso e voltar depois.',
+      indexable: false,
     },
   },
 } as const;
