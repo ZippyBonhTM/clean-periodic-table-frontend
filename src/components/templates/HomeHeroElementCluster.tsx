@@ -202,7 +202,7 @@ export default function HomeHeroElementCluster({
           );
         })}
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-1 flex items-center justify-between gap-3 px-1">
+        <div className="pointer-events-none absolute inset-x-0 bottom-1 hidden items-center justify-between gap-3 px-1 md:flex">
           <p className="text-xs font-medium text-(--text-muted)">{idleLabel}</p>
           <LinkButton
             href={periodicTableHref}
@@ -277,6 +277,18 @@ export default function HomeHeroElementCluster({
             </div>
           </div>
         ) : null}
+      </div>
+
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 border-t border-white/8 px-1 pt-3 md:hidden">
+        <p className="max-w-[7.5rem] text-xs font-medium leading-5 text-(--text-muted)">{idleLabel}</p>
+        <LinkButton
+          href={periodicTableHref}
+          variant="ghost"
+          size="md"
+          className="max-w-[9rem] rounded-full px-4 py-3 text-right leading-5 whitespace-normal"
+        >
+          {openTableLabel}
+        </LinkButton>
       </div>
     </div>
   );
