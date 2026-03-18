@@ -33,18 +33,77 @@ export function resolveAppLocaleFromPathname(pathname: string | null): AppLocale
   return resolveAppLocaleFromSegment(firstSegment);
 }
 
-export function buildBalanceEquationPath(locale: AppLocale): string {
-  return `/${APP_LOCALE_SEGMENT_BY_LOCALE[locale]}/balance-equation`;
+const LOCALIZED_APP_PATHS = new Set([
+  '/search',
+  '/periodic-table',
+  '/balance-equation',
+  '/molecular-editor',
+  '/molecule-gallery',
+  '/login',
+  '/register',
+  '/molecular-builder',
+]);
+
+export function normalizeAppPathname(pathname: string | null): string | null {
+  if (pathname === null) {
+    return null;
+  }
+
+  const trimmed = pathname.trim();
+
+  if (trimmed.length === 0) {
+    return '/';
+  }
+
+  const normalizedPath = trimmed === '/' ? '/' : trimmed.replace(/\/+$/, '');
+  const segments = normalizedPath.split('/').filter(Boolean);
+
+  if (segments.length === 0) {
+    return '/';
+  }
+
+  if (isAppLocaleSegment(segments[0])) {
+    const remainingPath = `/${segments.slice(1).join('/')}`;
+    return remainingPath === '/' ? '/' : remainingPath.replace(/\/+$/, '');
+  }
+
+  return normalizedPath;
 }
 
-export function isBalanceEquationPath(pathname: string | null): boolean {
-  if (pathname === null) {
+export function isLocalizedAppPath(pathname: string | null): boolean {
+  const normalizedPathname = normalizeAppPathname(pathname);
+
+  if (normalizedPathname === null) {
     return false;
   }
 
-  return (
-    pathname === '/balance-equation' ||
-    pathname === '/en/balance-equation' ||
-    pathname === '/pt/balance-equation'
-  );
+  return LOCALIZED_APP_PATHS.has(normalizedPathname);
+}
+
+export function buildLocalizedAppPath(locale: AppLocale, pathname: string): string {
+  const normalizedPathname = normalizeAppPathname(pathname);
+
+  if (normalizedPathname === null || !LOCALIZED_APP_PATHS.has(normalizedPathname)) {
+    return pathname;
+  }
+
+  return `/${APP_LOCALE_SEGMENT_BY_LOCALE[locale]}${normalizedPathname}`;
+}
+
+export function isLocalizedAppHrefActive(pathname: string | null, href: string): boolean {
+  const normalizedCurrentPath = normalizeAppPathname(pathname);
+
+  if (normalizedCurrentPath === null) {
+    return false;
+  }
+
+  return normalizedCurrentPath === href || (normalizedCurrentPath === '/' && href === '/search');
+}
+
+export function buildBalanceEquationPath(locale: AppLocale): string {
+  return buildLocalizedAppPath(locale, '/balance-equation');
+}
+
+export function isBalanceEquationPath(pathname: string | null): boolean {
+  return isLocalizedAppHrefActive(pathname, '/balance-equation');
 }

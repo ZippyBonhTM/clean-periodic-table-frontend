@@ -9,6 +9,8 @@ import FormField from '@/components/molecules/FormField';
 import useAuthText from '@/components/organisms/auth/useAuthText';
 import { register } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
+import { buildLocalizedAppPath } from '@/shared/i18n/appLocaleRouting';
+import useAppLocale from '@/shared/i18n/useAppLocale';
 
 type RegisterFormProps = {
   onSuccess: (token: string) => void;
@@ -18,6 +20,7 @@ type RegisterFormProps = {
 
 function RegisterForm({ onSuccess, mode = 'page', onSwitchToLogin }: RegisterFormProps) {
   const text = useAuthText();
+  const { locale } = useAppLocale();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -136,7 +139,10 @@ function RegisterForm({ onSuccess, mode = 'page', onSwitchToLogin }: RegisterFor
       ) : (
         <p className="mt-4 text-sm text-[var(--text-muted)]">
           {text.register.switchPrompt}{' '}
-          <Link href="/login" className="font-semibold text-[var(--accent)] transition-colors hover:text-[var(--accent-strong)]">
+          <Link
+            href={buildLocalizedAppPath(locale, '/login')}
+            className="font-semibold text-[var(--accent)] transition-colors hover:text-[var(--accent-strong)]"
+          >
             {text.register.switchAction}
           </Link>
         </p>

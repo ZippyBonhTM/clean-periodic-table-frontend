@@ -8,7 +8,7 @@ import TokenStatus from '@/components/molecules/TokenStatus';
 import type { TokenStatusType } from '@/components/molecules/TokenStatus';
 import UserAvatarPlaceholder from '@/components/molecules/UserAvatarPlaceholder';
 import useAuthToken from '@/shared/hooks/useAuthToken';
-import { buildBalanceEquationPath, isBalanceEquationPath } from '@/shared/i18n/appLocaleRouting';
+import { buildLocalizedAppPath } from '@/shared/i18n/appLocaleRouting';
 import useAppLocale from '@/shared/i18n/useAppLocale';
 import type { AppTheme } from '@/shared/hooks/useTheme';
 
@@ -105,8 +105,8 @@ function AppHeader({
   const { locale } = useAppLocale();
   const text = useAppHeaderText();
   const { token, persistToken } = useAuthToken();
-  const balanceEquationHref = buildBalanceEquationPath(locale);
-  const isBalanceEquationActive = isBalanceEquationPath(pathname);
+  const loginHref = buildLocalizedAppPath(locale, '/login');
+  const registerHref = buildLocalizedAppPath(locale, '/register');
 
   const themeToggleLabel =
     theme === 'dark' ? text.theme.switchToLight : text.theme.switchToDark;
@@ -212,6 +212,8 @@ function AppHeader({
               <AppHeaderAuthActions
                 hasToken={hasToken}
                 authEntryMode={authEntryMode}
+                loginHref={loginHref}
+                registerHref={registerHref}
                 text={text.auth}
                 onRequestLogin={onRequestLogin}
                 onRequestRegister={onRequestRegister}
@@ -220,9 +222,8 @@ function AppHeader({
           </div>
 
           <AppHeaderDesktopNav
+            locale={locale}
             pathname={pathname}
-            balanceEquationHref={balanceEquationHref}
-            isBalanceEquationActive={isBalanceEquationActive}
             text={text.navigation}
           />
         </div>
@@ -280,6 +281,8 @@ function AppHeader({
               <AppHeaderAuthActions
                 hasToken={hasToken}
                 authEntryMode={authEntryMode}
+                loginHref={loginHref}
+                registerHref={registerHref}
                 text={text.auth}
                 onRequestLogin={onRequestLoginFromButton}
                 onRequestRegister={onRequestRegisterFromButton}
@@ -295,9 +298,8 @@ function AppHeader({
 
       <AppHeaderRouteMenu
         isOpen={isRouteMenuOpen}
+        locale={locale}
         pathname={pathname}
-        balanceEquationHref={balanceEquationHref}
-        isBalanceEquationActive={isBalanceEquationActive}
         text={text.navigation}
         onClose={closeRouteMenu}
       />
