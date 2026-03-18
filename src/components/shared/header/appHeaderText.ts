@@ -4,7 +4,6 @@ import type {
   AppHeaderNavBadgeKey,
   AppHeaderNavLinkKey,
 } from '@/components/shared/header/appHeader.types';
-import type { TokenStatusType } from '@/components/molecules/TokenStatus';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
 const APP_HEADER_TEXT_BY_LOCALE = {
@@ -43,11 +42,4 @@ export function getAppHeaderNavBadge(
   }
 
   return text.navigation.badges[key];
-}
-
-export function getTokenStatusLabel(
-  text: AppHeaderTextCatalog,
-  status: TokenStatusType,
-): string {
-  return text.tokenStatus[status];
 }

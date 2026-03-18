@@ -48,7 +48,6 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
     deferredQuery,
     visibleElements,
     selectedElement,
-    currentSortOption,
     onClearQuery,
     onLuckySearch,
     openElementModal,
@@ -86,18 +85,18 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
 
   const localizedSortOptions = useMemo(
     () =>
-      SORT_OPTIONS.map((option) => ({
-        mode: option.mode,
-        label: getPeriodicSortLabel(text, option.mode),
+      SORT_OPTIONS.map((mode) => ({
+        mode,
+        label: getPeriodicSortLabel(text, mode),
       })),
     [text],
   );
 
   const localizedViewOptions = useMemo(
     () =>
-      VIEW_OPTIONS.map((option) => ({
-        mode: option.mode,
-        label: getPeriodicViewLabel(text, option.mode),
+      VIEW_OPTIONS.map((mode) => ({
+        mode,
+        label: getPeriodicViewLabel(text, mode),
       })),
     [text],
   );
@@ -114,7 +113,7 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
           viewMode={viewMode}
           isViewMenuOpen={isViewMenuOpen}
           isSortMenuOpen={isSortMenuOpen}
-          currentSortLabel={getPeriodicSortLabel(text, currentSortOption.mode)}
+          currentSortLabel={getPeriodicSortLabel(text, sortMode)}
           onQueryChange={setQuery}
           onToggleSortMenu={() => {
             setIsSortMenuOpen((previous) => {
