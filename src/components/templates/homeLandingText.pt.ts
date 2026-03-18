@@ -12,12 +12,7 @@ export const homeLandingTextPt = {
       'Navegação imediata',
       'Em português e inglês',
     ],
-    showcaseTitle: 'Elementos da tabela já vivos na própria home',
-    showcaseDescription:
-      'Toque, descubra e veja a página ganhar movimento sem sair do primeiro bloco.',
-    showcaseHint: 'Toque em um elemento para abrir um resumo rápido.',
-    showcaseRotationHint: 'A seleção muda sozinha com o tempo.',
-    showcaseEmptyHint: 'Escolha um dos elementos ao lado e veja um resumo aparecer aqui.',
+    showcaseIdleLabel: 'Escolha um elemento',
     showcaseOpenTableCta: 'Abrir tabela completa',
   },
   features: {
