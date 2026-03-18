@@ -16,6 +16,17 @@ export default function HomeLandingPage({ locale }: HomeLandingPageProps) {
   const periodicTableHref = buildLocalizedAppPath(locale, '/periodic-table');
   const balanceEquationHref = buildLocalizedAppPath(locale, '/balance-equation');
   const molecularEditorHref = buildLocalizedAppPath(locale, '/molecular-editor');
+  const heroBackgroundStyle = {
+    background: [
+      'radial-gradient(circle at top left, rgba(251,191,36,0.18), transparent 24%)',
+      'radial-gradient(circle at 82% 16%, color-mix(in oklab, var(--accent) 24%, transparent), transparent 26%)',
+      'linear-gradient(160deg, color-mix(in oklab, var(--surface-2) 96%, var(--background-top)), color-mix(in oklab, var(--surface-1) 88%, var(--background-base)))',
+    ].join(', '),
+  } as const;
+  const spotlightSectionStyle = {
+    background:
+      'linear-gradient(180deg, color-mix(in oklab, var(--surface-1) 82%, transparent), color-mix(in oklab, var(--surface-2) 68%, transparent))',
+  } as const;
 
   return (
     <AppShell
@@ -27,7 +38,7 @@ export default function HomeLandingPage({ locale }: HomeLandingPageProps) {
     >
       <div className="space-y-12 pb-12 md:space-y-16 md:pb-16">
         <section className="relative rounded-[2.8rem] px-5 py-8 shadow-[0_40px_120px_-72px_rgba(15,23,42,1)] md:px-8 md:py-12 lg:px-10">
-          <div className="absolute inset-0 overflow-hidden rounded-[2.8rem] bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_24%),radial-gradient(circle_at_82%_16%,rgba(20,184,166,0.18),transparent_26%),linear-gradient(160deg,rgba(15,23,42,0.98),rgba(15,23,42,0.9))]">
+          <div className="absolute inset-0 overflow-hidden rounded-[2.8rem]" style={heroBackgroundStyle}>
             <div className="absolute -left-10 top-10 h-32 w-32 rounded-full bg-amber-300/10 blur-3xl" />
             <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-teal-300/10 blur-3xl" />
           </div>
@@ -77,7 +88,7 @@ export default function HomeLandingPage({ locale }: HomeLandingPageProps) {
           </div>
         </section>
 
-        <section className="rounded-[2.4rem] border border-(--border-subtle) bg-[linear-gradient(180deg,rgba(15,23,42,0.16),rgba(15,23,42,0.04))] px-5 py-8 md:px-8">
+        <section className="rounded-[2.4rem] border border-(--border-subtle) px-5 py-8 md:px-8" style={spotlightSectionStyle}>
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-start">
             <div className="space-y-6">
               <div className="max-w-2xl space-y-3">
