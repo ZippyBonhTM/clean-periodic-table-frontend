@@ -179,7 +179,6 @@ function AppHeader({
             <div className="flex flex-wrap items-center gap-2 md:justify-end">
               <TokenStatus
                 status={authStatus}
-                labels={text.tokenStatus}
               />
               <AppHeaderLocaleSwitcher />
               <Button

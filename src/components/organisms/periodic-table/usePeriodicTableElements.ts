@@ -5,7 +5,7 @@ import { useCallback, useDeferredValue, useMemo, useState } from 'react';
 import type { ChemicalElement } from '@/shared/types/element';
 import { matchesElementQuery, sortElements } from '@/shared/utils/elementPresentation';
 
-import { SORT_OPTIONS, type PeriodicViewMode, type SortMode } from './periodicTable.types';
+import { type PeriodicViewMode, type SortMode } from './periodicTable.types';
 
 type UsePeriodicTableElementsParams = {
   elements: ChemicalElement[];
@@ -107,10 +107,6 @@ export default function usePeriodicTableElements({
     }
   }, [hasNextElement, selectedElementIndex, visibleElements]);
 
-  const currentSortOption = useMemo(() => {
-    return SORT_OPTIONS.find((option) => option.mode === sortMode) ?? SORT_OPTIONS[0];
-  }, [sortMode]);
-
   return {
     sortMode,
     setSortMode,
@@ -119,7 +115,6 @@ export default function usePeriodicTableElements({
     deferredQuery,
     visibleElements,
     selectedElement,
-    currentSortOption,
     onClearQuery,
     onLuckySearch,
     openElementModal,

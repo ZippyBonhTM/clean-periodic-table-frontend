@@ -156,17 +156,17 @@ export default function PeriodicTableExploreControls({
               {text.explore.viewLabel}
             </p>
             <div className="flex flex-col items-start gap-1.5">
-              {VIEW_OPTIONS.map((option) => (
+              {VIEW_OPTIONS.map((mode) => (
                 <Button
-                  key={option.mode}
+                  key={mode}
                   type="button"
-                  variant={option.mode === viewMode ? 'secondary' : 'ghost'}
+                  variant={mode === viewMode ? 'secondary' : 'ghost'}
                   size="sm"
                   align="left"
-                  onClick={() => onSelectViewMode(option.mode)}
+                  onClick={() => onSelectViewMode(mode)}
                   className="w-full"
                 >
-                  {getPeriodicViewLabel(text, option.mode)}
+                  {getPeriodicViewLabel(text, mode)}
                 </Button>
               ))}
             </div>

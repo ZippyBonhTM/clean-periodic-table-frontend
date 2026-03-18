@@ -20,12 +20,6 @@ export const appHeaderTextEn = {
       },
     },
   },
-  tokenStatus: {
-    authenticated: 'Session active',
-    checking: 'Checking session',
-    unverified: 'Session unverified',
-    anonymous: 'Not authenticated',
-  },
   navigation: {
     openMenu: 'Open routes menu',
     closeMenu: 'Close',

@@ -1,4 +1,8 @@
+'use client';
+
 import { memo } from 'react';
+
+import useTokenStatusText from '@/components/molecules/useTokenStatusText';
 
 type TokenStatusType = 'authenticated' | 'checking' | 'unverified' | 'anonymous';
 type TokenStatusLabels = Record<TokenStatusType, string>;
@@ -24,28 +28,14 @@ function resolveStatusStyles(status: TokenStatusType): string {
   return 'border-[rgba(245,158,11,0.48)] bg-[rgba(245,158,11,0.15)] text-[var(--text-strong)]';
 }
 
-function resolveStatusLabel(status: TokenStatusType): string {
-  if (status === 'authenticated') {
-    return 'Session active';
-  }
-
-  if (status === 'checking') {
-    return 'Checking session';
-  }
-
-  if (status === 'unverified') {
-    return 'Session unverified';
-  }
-
-  return 'Not authenticated';
-}
-
 function TokenStatus({ status, labels }: TokenStatusProps) {
+  const text = useTokenStatusText();
+
   return (
     <span
       className={`rounded-full border px-3 py-1 text-[10px] font-semibold ${resolveStatusStyles(status)}`}
     >
-      {labels?.[status] ?? resolveStatusLabel(status)}
+      {labels?.[status] ?? text[status]}
     </span>
   );
 }

@@ -14,15 +14,15 @@ export type PeriodicMenuOption = {
   label: string;
 };
 
-export const VIEW_OPTIONS: Array<{ mode: PeriodicViewMode; label: string }> = [
-  { mode: 'classic', label: 'Classic' },
-  { mode: 'category', label: 'Category' },
-  { mode: 'compact', label: 'Compact' },
+export const VIEW_OPTIONS: PeriodicViewMode[] = [
+  'classic',
+  'category',
+  'compact',
 ];
 
-export const SORT_OPTIONS: Array<{ mode: SortMode; label: string }> = [
-  { mode: 'number', label: 'Atomic Number' },
-  { mode: 'name', label: 'Name' },
-  { mode: 'symbol', label: 'Symbol' },
-  { mode: 'mass', label: 'Atomic Mass' },
+export const SORT_OPTIONS: SortMode[] = [
+  'number',
+  'name',
+  'symbol',
+  'mass',
 ];

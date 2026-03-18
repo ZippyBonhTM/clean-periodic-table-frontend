@@ -20,12 +20,6 @@ export const appHeaderTextPt = {
       },
     },
   },
-  tokenStatus: {
-    authenticated: 'Sessão ativa',
-    checking: 'Verificando sessão',
-    unverified: 'Sessão não verificada',
-    anonymous: 'Não autenticado',
-  },
   navigation: {
     openMenu: 'Abrir menu de rotas',
     closeMenu: 'Fechar',
