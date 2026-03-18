@@ -83,6 +83,13 @@ export const chemistryBalanceTextEn = {
     scoreLabel: 'Score',
     validLabel: 'Valid',
     noNotices: 'No extra notes from the server.',
+    errorMessages: {
+      'network-error': 'We could not reach the extra check right now.',
+      unauthorized: 'The extra check needs a valid session.',
+      unavailable: 'The extra check is unavailable right now.',
+      'invalid-response': 'The extra check returned an invalid response.',
+      'unknown-error': 'The extra check could not be completed.',
+    },
   },
   analysisComparison: {
     eyebrow: 'Comparison',

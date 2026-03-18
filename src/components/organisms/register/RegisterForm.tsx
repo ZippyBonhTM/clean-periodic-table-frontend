@@ -5,10 +5,10 @@ import { memo, useCallback, useState } from 'react';
 
 import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
+import { resolveAuthApiErrorMessage } from '@/components/organisms/auth/authApiErrorText';
 import FormField from '@/components/molecules/FormField';
 import useAuthText from '@/components/organisms/auth/useAuthText';
 import { register } from '@/shared/api/authApi';
-import { ApiError } from '@/shared/api/httpClient';
 import { buildLocalizedAppPath } from '@/shared/i18n/appLocaleRouting';
 import useAppLocale from '@/shared/i18n/useAppLocale';
 
@@ -44,18 +44,12 @@ function RegisterForm({ onSuccess, mode = 'page', onSwitchToLogin }: RegisterFor
         const response = await register({ name, email, password });
         onSuccess(response.accessToken);
       } catch (caughtError: unknown) {
-        if (caughtError instanceof ApiError) {
-          setError(caughtError.message);
-        } else if (caughtError instanceof Error && caughtError.message.trim().length > 0) {
-          setError(caughtError.message);
-        } else {
-          setError(text.register.fallbackError);
-        }
+        setError(resolveAuthApiErrorMessage(caughtError, 'register', text));
       } finally {
         setIsSubmitting(false);
       }
     },
-    [email, name, onSuccess, password, passwordConfirmation, text.register.fallbackError, text.register.passwordMismatch],
+    [email, name, onSuccess, password, passwordConfirmation, text],
   );
 
   const content = (

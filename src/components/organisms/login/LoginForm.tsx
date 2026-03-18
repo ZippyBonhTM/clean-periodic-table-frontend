@@ -5,10 +5,10 @@ import { memo, useCallback, useState } from 'react';
 
 import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
+import { resolveAuthApiErrorMessage } from '@/components/organisms/auth/authApiErrorText';
 import FormField from '@/components/molecules/FormField';
 import useAuthText from '@/components/organisms/auth/useAuthText';
 import { login } from '@/shared/api/authApi';
-import { ApiError } from '@/shared/api/httpClient';
 import { buildLocalizedAppPath } from '@/shared/i18n/appLocaleRouting';
 import useAppLocale from '@/shared/i18n/useAppLocale';
 
@@ -37,18 +37,12 @@ function LoginForm({ onSuccess, mode = 'page', onSwitchToRegister }: LoginFormPr
         const response = await login({ email, password });
         onSuccess(response.accessToken);
       } catch (caughtError: unknown) {
-        if (caughtError instanceof ApiError) {
-          setError(caughtError.message);
-        } else if (caughtError instanceof Error && caughtError.message.trim().length > 0) {
-          setError(caughtError.message);
-        } else {
-          setError(text.login.fallbackError);
-        }
+        setError(resolveAuthApiErrorMessage(caughtError, 'login', text));
       } finally {
         setIsSubmitting(false);
       }
     },
-    [email, onSuccess, password, text.login.fallbackError],
+    [email, onSuccess, password, text],
   );
 
   const content = (

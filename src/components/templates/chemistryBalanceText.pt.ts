@@ -83,6 +83,13 @@ export const chemistryBalanceTextPt = {
     scoreLabel: 'Pontuação',
     validLabel: 'Válida',
     noNotices: 'Sem observações extras do servidor.',
+    errorMessages: {
+      'network-error': 'Não conseguimos acessar a checagem extra agora.',
+      unauthorized: 'A checagem extra precisa de uma sessão válida.',
+      unavailable: 'A checagem extra está indisponível agora.',
+      'invalid-response': 'A checagem extra respondeu de forma inválida.',
+      'unknown-error': 'A checagem extra não pôde ser concluída.',
+    },
   },
   analysisComparison: {
     eyebrow: 'Comparação',
