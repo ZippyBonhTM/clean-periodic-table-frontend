@@ -1,9 +1,9 @@
 export const homeLandingTextEn = {
   hero: {
     eyebrow: 'A new way to present chemistry',
-    title: 'A chemistry experience built to catch attention fast.',
+    title: 'A chemistry experience designed to stand out without feeling crowded.',
     description:
-      'Strong visuals, easy reading, and clear paths that turn curiosity into the urge to keep exploring.',
+      'More presence, less noise, and a better way to turn curiosity into action on the very first visit.',
     primaryCta: 'View periodic table',
     secondaryCta: 'Balance an equation',
     tertiaryCta: 'Open molecular editor',
@@ -12,14 +12,18 @@ export const homeLandingTextEn = {
       'Easy to navigate',
       'English and Portuguese',
     ],
-    showcaseTitle: 'Everything feels part of the same experience',
+    showcaseTitle: 'Elements already alive inside the homepage',
     showcaseDescription:
-      'Elements, equations, and molecules feel connected from the first glance instead of looking like separate screens.',
+      'Tap, explore, and watch the page move before leaving the first scene.',
+    showcaseHint: 'Tap an element to open a quick summary.',
+    showcaseRotationHint: 'The selection changes on its own over time.',
+    showcaseEmptyHint: 'Pick one of the elements beside it and a quick summary will appear here.',
+    showcaseOpenTableCta: 'Open full table',
   },
   features: {
-    title: 'Visitors understand where to start right away.',
+    title: 'Three main paths, without overexplaining the page.',
     description:
-      'The homepage points to the main experiences without feeling crowded or weighed down by internal language.',
+      'The homepage shows the essentials and lets the experience itself do the convincing.',
     items: [
       {
         title: 'Periodic table',
@@ -42,9 +46,9 @@ export const homeLandingTextEn = {
     ],
   },
   positioning: {
-    title: 'Made to look strong in a demo and feel easy in real use.',
+    title: 'Good for presenting, easy to follow, ready to continue.',
     description:
-      'The goal here is to open the conversation, support a strong walkthrough, and make people want to continue.',
+      'Without turning into a wall of features, the homepage helps show value quickly and supports a cleaner walkthrough.',
     items: [
       {
         title: 'First impression',
@@ -61,7 +65,7 @@ export const homeLandingTextEn = {
     ],
   },
   faq: {
-    title: 'Questions people usually ask at the beginning.',
+    title: 'What most visitors want to know first.',
     items: [
       {
         question: 'Does it work directly in the browser?',
@@ -78,9 +82,9 @@ export const homeLandingTextEn = {
     ],
   },
   finalCta: {
-    title: 'The first visit should make people want to stay.',
+    title: 'When the entrance feels right, the next click almost happens on its own.',
     description:
-      'If the entry feels right, visitors will find the next step on their own and the experience can take over.',
+      'The goal here is to open the right door, not compete for attention with a heavy landing page.',
     primary: 'Start with the table',
     secondary: 'Open equations',
   },

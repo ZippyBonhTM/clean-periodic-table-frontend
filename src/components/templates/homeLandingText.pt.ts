@@ -1,9 +1,9 @@
 export const homeLandingTextPt = {
   hero: {
     eyebrow: 'Uma nova forma de apresentar química',
-    title: 'Uma experiência de química feita para prender o olhar.',
+    title: 'Uma experiência de química feita para chamar atenção sem cansar.',
     description:
-      'Visual forte, leitura fácil e caminhos claros para transformar curiosidade em vontade de explorar.',
+      'Mais presença, menos ruído e um jeito melhor de transformar curiosidade em clique já na primeira visita.',
     primaryCta: 'Ver tabela periódica',
     secondaryCta: 'Balancear equação',
     tertiaryCta: 'Abrir editor molecular',
@@ -12,14 +12,18 @@ export const homeLandingTextPt = {
       'Navegação imediata',
       'Em português e inglês',
     ],
-    showcaseTitle: 'Tudo conversa na mesma experiência',
+    showcaseTitle: 'Elementos que vivem na própria home',
     showcaseDescription:
-      'Elementos, equações e moléculas aparecem como partes do mesmo universo, não como telas soltas.',
+      'Toque, descubra e veja a página ganhar movimento sem sair do primeiro bloco.',
+    showcaseHint: 'Toque em um elemento para abrir um resumo rápido.',
+    showcaseRotationHint: 'A seleção muda sozinha com o tempo.',
+    showcaseEmptyHint: 'Escolha um dos elementos ao lado e veja um resumo aparecer aqui.',
+    showcaseOpenTableCta: 'Abrir tabela completa',
   },
   features: {
-    title: 'Quem chega aqui entende rápido por onde começar.',
+    title: 'Três caminhos principais, sem excesso de explicação.',
     description:
-      'A home aponta os caminhos principais com leveza, sem virar uma vitrine pesada ou cheia de texto interno.',
+      'A home mostra o essencial e deixa o resto para a própria experiência provar.',
     items: [
       {
         title: 'Tabela periódica',
@@ -42,9 +46,9 @@ export const homeLandingTextPt = {
     ],
   },
   positioning: {
-    title: 'Bonita para apresentar. Clara para usar. Forte para continuar.',
+    title: 'Boa para apresentar, fácil de percorrer e pronta para continuar.',
     description:
-      'A proposta aqui é abrir conversa, sustentar uma boa demonstração e deixar vontade de seguir explorando.',
+      'Sem virar mural de features, a home ajuda a mostrar valor rápido e sustenta uma demonstração mais elegante.',
     items: [
       {
         title: 'Primeira impressão',
@@ -61,7 +65,7 @@ export const homeLandingTextPt = {
     ],
   },
   faq: {
-    title: 'Perguntas que costumam aparecer logo no começo.',
+    title: 'O básico que quase todo visitante quer saber.',
     items: [
       {
         question: 'Dá para usar direto no navegador?',
@@ -78,9 +82,9 @@ export const homeLandingTextPt = {
     ],
   },
   finalCta: {
-    title: 'A primeira visita precisa convidar a continuar.',
+    title: 'Quando a entrada é boa, o próximo clique acontece quase sozinho.',
     description:
-      'Se a entrada for boa, o visitante encontra sozinho o próximo passo e a experiência faz o resto.',
+      'A ideia aqui é abrir a porta certa, não disputar atenção com uma página pesada.',
     primary: 'Começar pela tabela',
     secondary: 'Abrir equações',
   },
