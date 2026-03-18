@@ -16,6 +16,7 @@ export const periodicTableTextEn = {
       solid: 'Solid',
       liquid: 'Liquid',
       gas: 'Gas',
+      unknown: 'Unknown',
     },
   },
   taxonomy: {

@@ -4,6 +4,7 @@ import NoTranslateText from '@/components/atoms/NoTranslateText';
 import Panel from '@/components/atoms/Panel';
 import {
   formatElementCategoryLabel,
+  formatElementLocalizedSummary,
   formatElementPhaseLabel,
 } from '@/components/organisms/periodic-table/periodicTableText';
 import usePeriodicTableText from '@/components/organisms/periodic-table/usePeriodicTableText';
@@ -37,7 +38,9 @@ function ElementCard({ element }: ElementCardProps) {
         </p>
       </div>
 
-      <p className="line-clamp-5 text-sm leading-6 text-slate-700">{element.summary}</p>
+      <p className="line-clamp-5 text-sm leading-6 text-slate-700">
+        {formatElementLocalizedSummary(text, element)}
+      </p>
     </Panel>
   );
 }

@@ -5,6 +5,7 @@ import {
 } from '@/shared/utils/elementPresentation';
 import {
   formatElementCategoryLabel,
+  formatElementLocalizedSummary,
   formatElementPhaseLabel,
 } from '@/components/organisms/periodic-table/periodicTableText';
 
@@ -76,7 +77,7 @@ export function buildElementRows(
     { key: 'widePositionY', label: fieldLabels.widePositionY, value: String(element.wypos) },
     { key: 'imageTitle', label: fieldLabels.imageTitle, value: formatNullableValue(element.image?.title, nullableValueText) },
     { key: 'imageAttribution', label: fieldLabels.imageAttribution, value: formatNullableValue(element.image?.attribution, nullableValueText) },
-    { key: 'summary', label: fieldLabels.summary, value: formatNullableValue(element.summary, nullableValueText) },
+    { key: 'summary', label: fieldLabels.summary, value: formatElementLocalizedSummary(text, element) },
   ];
 }
 
