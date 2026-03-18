@@ -6,6 +6,7 @@ import { memo, useCallback, useState } from 'react';
 import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import FormField from '@/components/molecules/FormField';
+import useAuthText from '@/components/organisms/auth/useAuthText';
 import { login } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
 
@@ -16,6 +17,7 @@ type LoginFormProps = {
 };
 
 function LoginForm({ onSuccess, mode = 'page', onSwitchToRegister }: LoginFormProps) {
+  const text = useAuthText();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,30 +39,30 @@ function LoginForm({ onSuccess, mode = 'page', onSwitchToRegister }: LoginFormPr
         } else if (caughtError instanceof Error && caughtError.message.trim().length > 0) {
           setError(caughtError.message);
         } else {
-          setError('Could not sign in right now.');
+          setError(text.login.fallbackError);
         }
       } finally {
         setIsSubmitting(false);
       }
     },
-    [email, onSuccess, password],
+    [email, onSuccess, password, text.login.fallbackError],
   );
 
   const content = (
     <>
       <div className="auth-modal__header mb-4">
-        <p className="auth-modal__eyebrow text-xs uppercase tracking-[0.25em] text-[var(--text-muted)]">Authentication</p>
-        <h2 className="auth-modal__title text-2xl font-bold text-[var(--text-strong)]">Login</h2>
-        <p className="auth-modal__subtitle mt-1 text-sm text-[var(--text-muted)]">Sign in to unlock the periodic table data.</p>
+        <p className="auth-modal__eyebrow text-xs uppercase tracking-[0.25em] text-[var(--text-muted)]">{text.login.eyebrow}</p>
+        <h2 className="auth-modal__title text-2xl font-bold text-[var(--text-strong)]">{text.login.title}</h2>
+        <p className="auth-modal__subtitle mt-1 text-sm text-[var(--text-muted)]">{text.login.subtitle}</p>
       </div>
 
       <form className="auth-modal__form space-y-4" onSubmit={onSubmit}>
         <FormField
           id="email"
-          label="Email"
+          label={text.fields.email}
           name="email"
           type="email"
-          placeholder="you@example.com"
+          placeholder={text.fields.emailPlaceholder}
           value={email}
           onChange={setEmail}
           autoComplete="email"
@@ -69,10 +71,10 @@ function LoginForm({ onSuccess, mode = 'page', onSwitchToRegister }: LoginFormPr
 
         <FormField
           id="password"
-          label="Password"
+          label={text.fields.password}
           name="password"
           type="password"
-          placeholder="********"
+          placeholder={text.fields.passwordPlaceholder}
           value={password}
           onChange={setPassword}
           autoComplete="current-password"
@@ -86,26 +88,26 @@ function LoginForm({ onSuccess, mode = 'page', onSwitchToRegister }: LoginFormPr
         ) : null}
 
         <Button type="submit" disabled={isSubmitting} className="auth-modal__submit w-full">
-          {isSubmitting ? 'Signing in...' : 'Sign in'}
+          {isSubmitting ? text.login.submitting : text.login.submit}
         </Button>
       </form>
 
       {mode === 'modal' ? (
         <p className="auth-modal__switch mt-4 text-sm text-[var(--text-muted)]">
-          Need an account?{' '}
+          {text.login.switchPrompt}{' '}
           <button
             type="button"
             onClick={onSwitchToRegister}
             className="font-semibold text-[var(--accent)] transition-colors hover:text-[var(--accent-strong)]"
           >
-            Register here
+            {text.login.switchAction}
           </button>
         </p>
       ) : (
         <p className="mt-4 text-sm text-[var(--text-muted)]">
-          Need an account?{' '}
+          {text.login.switchPrompt}{' '}
           <Link href="/register" className="font-semibold text-[var(--accent)] transition-colors hover:text-[var(--accent-strong)]">
-            Register here
+            {text.login.switchAction}
           </Link>
         </p>
       )}

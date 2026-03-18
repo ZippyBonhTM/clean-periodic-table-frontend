@@ -10,6 +10,7 @@ type FloatingModalProps = {
   panelClassName?: string;
   bodyClassName?: string;
   headerActions?: React.ReactNode;
+  closeLabel?: string;
 };
 
 function FloatingModal({
@@ -20,6 +21,7 @@ function FloatingModal({
   panelClassName = '',
   bodyClassName = '',
   headerActions,
+  closeLabel = 'Close',
 }: FloatingModalProps) {
   const didPointerStartOnBackdrop = useRef(false);
   const onCloseRef = useRef(onClose);
@@ -184,13 +186,13 @@ function FloatingModal({
           <div className="flex flex-wrap items-center justify-end gap-2">
             {headerActions}
             <button
-              type="button"
-              onClick={requestClose}
-              className="rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
-            >
-              Close
-            </button>
-          </div>
+            type="button"
+            onClick={requestClose}
+            className="rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
+          >
+            {closeLabel}
+          </button>
+        </div>
         </div>
 
         <div className={`floating-modal__body ${bodyClassName}`.trim()}>{children}</div>
