@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 
-import { buildAbsoluteAppUrl, getAppSiteUrl } from '@/shared/seo/appSite';
+import { buildAbsoluteAppUrl } from '@/shared/seo/appSite';
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -12,6 +12,5 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: buildAbsoluteAppUrl('/sitemap.xml'),
-    host: getAppSiteUrl().origin,
   };
 }
