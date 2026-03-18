@@ -18,6 +18,22 @@ export const periodicTableTextEn = {
       gas: 'Gas',
     },
   },
+  taxonomy: {
+    categories: {
+      alkaliMetal: 'Alkali metal',
+      alkalineEarthMetal: 'Alkaline earth metal',
+      transitionMetal: 'Transition metal',
+      postTransitionMetal: 'Post-transition metal',
+      metalloid: 'Metalloid',
+      nonmetal: 'Nonmetal',
+      halogen: 'Halogen',
+      nobleGas: 'Noble gas',
+      lanthanide: 'Lanthanide',
+      actinide: 'Actinide',
+      unknown: 'Unknown',
+      other: 'Other',
+    },
+  },
   explore: {
     searchLabel: 'Search',
     searchPlaceholder: 'Name, symbol, number, phase, category...',

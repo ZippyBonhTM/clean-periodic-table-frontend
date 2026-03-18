@@ -1,4 +1,8 @@
 import ElementTile from '@/components/molecules/ElementTile';
+import {
+  formatElementCategoryLabel,
+} from '@/components/organisms/periodic-table/periodicTableText';
+import usePeriodicTableText from '@/components/organisms/periodic-table/usePeriodicTableText';
 import type { ChemicalElement } from '@/shared/types/element';
 import { resolveCategoryColor } from '@/shared/utils/elementPresentation';
 
@@ -13,7 +17,9 @@ export default function CategoryPeriodicGroupCard({
   elements,
   onElementOpen,
 }: CategoryPeriodicGroupCardProps) {
+  const text = usePeriodicTableText();
   const color = resolveCategoryColor(category);
+  const localizedCategory = formatElementCategoryLabel(text, category);
 
   return (
     <article
@@ -24,7 +30,7 @@ export default function CategoryPeriodicGroupCard({
       }}
     >
       <header className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold capitalize text-[var(--text-strong)]">{category}</h3>
+        <h3 className="text-sm font-semibold text-[var(--text-strong)]">{localizedCategory}</h3>
         <span className="rounded-md border border-white/15 bg-black/20 px-2 py-1 text-xs text-[var(--text-muted)]">
           {elements.length}
         </span>

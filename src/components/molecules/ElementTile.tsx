@@ -2,7 +2,9 @@ import { memo } from 'react';
 
 import NoTranslateText from '@/components/atoms/NoTranslateText';
 import {
+  formatElementCategoryLabel,
   formatElementModalTitle,
+  formatElementPhaseLabel,
   formatElementTileOpenLabel,
 } from '@/components/organisms/periodic-table/periodicTableText';
 import usePeriodicTableText from '@/components/organisms/periodic-table/usePeriodicTableText';
@@ -52,29 +54,13 @@ function RadioactiveIcon() {
 }
 
 function compactPhase(phase: unknown, text: ReturnType<typeof usePeriodicTableText>): string {
-  if (typeof phase !== 'string') {
-    return text.common.notAvailableShort;
+  const localizedPhase = formatElementPhaseLabel(text, typeof phase === 'string' ? phase : null, text.common.notAvailableShort);
+
+  if (localizedPhase.length > 8) {
+    return localizedPhase.slice(0, 8);
   }
 
-  const normalizedPhase = phase.trim().toLowerCase();
-
-  if (normalizedPhase.includes('solid')) {
-    return text.tile.phase.solid;
-  }
-
-  if (normalizedPhase.includes('liquid')) {
-    return text.tile.phase.liquid;
-  }
-
-  if (normalizedPhase.includes('gas')) {
-    return text.tile.phase.gas;
-  }
-
-  if (normalizedPhase.length > 8) {
-    return normalizedPhase.slice(0, 8);
-  }
-
-  return phase.trim();
+  return localizedPhase;
 }
 
 function compactAtomicMass(
@@ -97,6 +83,7 @@ function ElementTile({ element, density = 'regular', mode = 'default', onOpen }:
   const isCompact = density === 'compact';
   const compactPhaseLabel = compactPhase(element.phase, text);
   const compactMassLabel = compactAtomicMass(element.atomic_mass, locale, text);
+  const localizedCategoryLabel = formatElementCategoryLabel(text, element.category, text.common.notAvailableShort);
   const symbolLength = element.symbol.trim().length;
   const nameLength = element.name.trim().length;
   const symbolClassName =
@@ -217,7 +204,7 @@ function ElementTile({ element, density = 'regular', mode = 'default', onOpen }:
       </div>
 
       <div className={`relative mt-2 flex items-center justify-between gap-2 text-[10px] ${isCompact ? '' : 'text-[11px]'}`}>
-        <span className="rounded-md bg-black/20 px-1.5 py-0.5 text-[var(--text-muted)]">{color.label}</span>
+        <span className="rounded-md bg-black/20 px-1.5 py-0.5 text-[var(--text-muted)]">{localizedCategoryLabel}</span>
         <span className="font-semibold text-[var(--text-strong)]">{formatAtomicMass(element.atomic_mass)}</span>
       </div>
     </button>
