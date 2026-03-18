@@ -1,9 +1,9 @@
 export const homeLandingTextEn = {
   hero: {
-    eyebrow: 'A new way to present chemistry',
-    title: 'A chemistry experience designed to stand out without feeling crowded.',
+    eyebrow: 'Chemistry to explore',
+    title: 'A more engaging way to discover chemistry.',
     description:
-      'More presence, less noise, and a better way to turn curiosity into action on the very first visit.',
+      'Explore elements, try equations, and open molecular structures through an experience that feels lighter, clearer, and more inviting.',
     primaryCta: 'View periodic table',
     secondaryCta: 'Balance an equation',
     tertiaryCta: 'Open molecular editor',
@@ -16,9 +16,9 @@ export const homeLandingTextEn = {
     showcaseOpenTableCta: 'Open full table',
   },
   features: {
-    title: 'Three main paths, without overexplaining the page.',
+    title: 'Three ways to begin, depending on what draws attention first.',
     description:
-      'The homepage shows the essentials and lets the experience itself do the convincing.',
+      'Pick a direction and let the experience speak for itself.',
     items: [
       {
         title: 'Periodic table',
@@ -41,21 +41,21 @@ export const homeLandingTextEn = {
     ],
   },
   positioning: {
-    title: 'Good for presenting, easy to follow, ready to continue.',
+    title: 'Made to spark curiosity from the very first glance.',
     description:
-      'Without turning into a wall of features, the homepage helps show value quickly and supports a cleaner walkthrough.',
+      'Everything here is meant to feel clear, pleasant, and easy to explore from the first tap.',
     items: [
       {
-        title: 'First impression',
-        description: 'When the entrance feels polished, trust starts showing up before the second click.',
+        title: 'Inviting visual language',
+        description: 'The page opens with more presence and less noise, giving the experience room to breathe.',
       },
       {
-        title: 'Natural navigation',
-        description: 'People quickly understand where to click, what they will see, and what comes next.',
+        title: 'Easier reading',
+        description: 'The main choices appear clearly, without too many blocks or competing distractions.',
       },
       {
-        title: 'Clear next step',
-        description: 'After the first spark of curiosity, the main paths are already in front of them.',
+        title: 'Immediate exploration',
+        description: 'Visitors find something to tap, open, and try almost right away.',
       },
     ],
   },
@@ -77,13 +77,13 @@ export const homeLandingTextEn = {
     ],
   },
   finalCta: {
-    title: 'When the entrance feels right, the next click almost happens on its own.',
+    title: 'Start with whatever catches your attention first.',
     description:
-      'The goal here is to open the right door, not compete for attention with a heavy landing page.',
+      'The periodic table, equations, and editor are already waiting to be explored at your own pace.',
     primary: 'Start with the table',
     secondary: 'Open equations',
   },
   footer: {
-    note: 'A cleaner, more memorable entry point for people who are still discovering what this experience can become.',
+    note: 'Chemistry with more clarity, more presence, and more room to explore.',
   },
 } as const;
