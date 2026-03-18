@@ -18,6 +18,7 @@ import AppHeaderLocaleSwitcher from './AppHeaderLocaleSwitcher';
 import AppHeaderRouteMenu from './AppHeaderRouteMenu';
 import AppHeaderUserMenu from './AppHeaderUserMenu';
 import type { AuthEntryMode } from './appHeader.types';
+import useAppHeaderText from './useAppHeaderText';
 import useAppHeaderMobileMenus from './useAppHeaderMobileMenus';
 import useAppHeaderUserMenu from './useAppHeaderUserMenu';
 
@@ -102,11 +103,13 @@ function AppHeader({
 }: AppHeaderProps) {
   const pathname = usePathname();
   const { locale } = useAppLocale();
+  const text = useAppHeaderText();
   const { token, persistToken } = useAuthToken();
   const balanceEquationHref = buildBalanceEquationPath(locale);
   const isBalanceEquationActive = isBalanceEquationPath(pathname);
 
-  const themeToggleLabel = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
+  const themeToggleLabel =
+    theme === 'dark' ? text.theme.switchToLight : text.theme.switchToDark;
   const authIndicatorTone = resolveAuthIndicatorTone(authStatus);
   const {
     isUserMenuOpen,
@@ -129,6 +132,9 @@ function AppHeader({
     hasToken,
     token,
     onPersistToken: persistToken,
+    guestDisplayName: text.userMenu.guest,
+    userDisplayNameFallback: text.userMenu.userFallback,
+    profileLoadErrorFallback: text.userMenu.profileLoadErrorFallback,
     onLogout,
   });
   const { isRouteMenuOpen, closeRouteMenu, closeAllMenus, openRouteMenu } =
@@ -162,16 +168,19 @@ function AppHeader({
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[auto_auto] md:items-stretch">
           <div className="min-w-0 md:col-start-1 md:row-start-1">
             <p className="whitespace-nowrap text-[9px] uppercase tracking-[0.22em] text-(--text-muted) sm:text-[10px]">
-              Clean Periodic Table
+              {text.brand.eyebrow}
             </p>
             <h1 className="mt-1 whitespace-nowrap text-lg font-extrabold leading-none text-foreground sm:text-xl">
-              Chemical Explorer
+              {text.brand.title}
             </h1>
           </div>
 
           <div className="flex flex-col gap-2 md:col-start-2 md:row-span-2 md:h-full md:items-end md:justify-between">
             <div className="flex flex-wrap items-center gap-2 md:justify-end">
-              <TokenStatus status={authStatus} />
+              <TokenStatus
+                status={authStatus}
+                labels={text.tokenStatus}
+              />
               <AppHeaderLocaleSwitcher />
               <Button
                 type="button"
@@ -188,8 +197,8 @@ function AppHeader({
                 type="button"
                 onClick={onOpenUserMenu}
                 className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
-                aria-label="Open user menu"
-                title="Open user menu"
+                aria-label={text.userMenu.open}
+                title={text.userMenu.open}
               >
                 <span
                   className={`pointer-events-none absolute -right-0.5 -top-0.5 z-10 size-2.5 rounded-full border border-[#020617] ${authIndicatorTone}`}
@@ -203,6 +212,7 @@ function AppHeader({
               <AppHeaderAuthActions
                 hasToken={hasToken}
                 authEntryMode={authEntryMode}
+                text={text.auth}
                 onRequestLogin={onRequestLogin}
                 onRequestRegister={onRequestRegister}
               />
@@ -213,13 +223,14 @@ function AppHeader({
             pathname={pathname}
             balanceEquationHref={balanceEquationHref}
             isBalanceEquationActive={isBalanceEquationActive}
+            text={text.navigation}
           />
         </div>
       </header>
 
       <div className="md:hidden">
         <p className="mb-2 text-center text-[9px] uppercase tracking-[0.24em] text-(--text-muted)">
-          Clean Periodic Table
+          {text.brand.eyebrow}
         </p>
         <header className="surface-panel rounded-3xl border border-(--border-subtle) p-3 shadow-sm">
           <div className="flex items-center justify-between gap-2">
@@ -229,8 +240,8 @@ function AppHeader({
               size="sm"
               onClick={openRouteMenu}
               className="size-9 rounded-xl px-0"
-              aria-label="Open routes menu"
-              title="Open routes menu"
+              aria-label={text.navigation.openMenu}
+              title={text.navigation.openMenu}
             >
               <span className="inline-flex flex-col items-center justify-center gap-0.5" aria-hidden="true">
                 <span className="h-0.5 w-4 rounded-full bg-foreground" />
@@ -256,8 +267,8 @@ function AppHeader({
                 type="button"
                 onClick={onOpenUserMenu}
                 className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
-                aria-label="Open user menu"
-                title="Open user menu"
+                aria-label={text.userMenu.open}
+                title={text.userMenu.open}
               >
                 <span
                   className={`pointer-events-none absolute -right-0.5 -top-0.5 z-10 size-2.5 rounded-full border border-[#020617] ${authIndicatorTone}`}
@@ -269,6 +280,7 @@ function AppHeader({
               <AppHeaderAuthActions
                 hasToken={hasToken}
                 authEntryMode={authEntryMode}
+                text={text.auth}
                 onRequestLogin={onRequestLoginFromButton}
                 onRequestRegister={onRequestRegisterFromButton}
               />
@@ -286,6 +298,7 @@ function AppHeader({
         pathname={pathname}
         balanceEquationHref={balanceEquationHref}
         isBalanceEquationActive={isBalanceEquationActive}
+        text={text.navigation}
         onClose={closeRouteMenu}
       />
 
@@ -298,6 +311,8 @@ function AppHeader({
         userProfileError={userProfileError}
         isLogoutConfirmOpen={isLogoutConfirmOpen}
         userMenuPanelStyle={userMenuPanelStyle}
+        text={text.userMenu}
+        profileText={text.profile}
         onClose={closeUserMenu}
         onRequestLogoutConfirm={requestLogoutConfirm}
         onCancelLogoutConfirm={cancelLogoutConfirm}

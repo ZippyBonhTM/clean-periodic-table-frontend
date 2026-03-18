@@ -1,6 +1,7 @@
 import type * as React from 'react';
 
 import Button from '@/components/atoms/Button';
+import type { AppHeaderTextCatalog } from '@/components/shared/header/appHeaderText';
 import type { AuthUserProfile } from '@/shared/types/auth';
 
 import type { UserProfileRequestStatus } from './appHeader.types';
@@ -15,6 +16,8 @@ type AppHeaderUserMenuProps = {
   userProfileError: string | null;
   isLogoutConfirmOpen: boolean;
   userMenuPanelStyle: React.CSSProperties;
+  text: AppHeaderTextCatalog['userMenu'];
+  profileText: AppHeaderTextCatalog['profile'];
   onClose: () => void;
   onRequestLogoutConfirm: () => void;
   onCancelLogoutConfirm: () => void;
@@ -35,6 +38,8 @@ export default function AppHeaderUserMenu({
   userProfileError,
   isLogoutConfirmOpen,
   userMenuPanelStyle,
+  text,
+  profileText,
   onClose,
   onRequestLogoutConfirm,
   onCancelLogoutConfirm,
@@ -56,7 +61,7 @@ export default function AppHeaderUserMenu({
         type="button"
         onClick={onClose}
         className="absolute inset-0 bg-black/35"
-        aria-label="Close user menu backdrop"
+        aria-label={text.closeBackdrop}
       />
 
       <aside
@@ -64,7 +69,7 @@ export default function AppHeaderUserMenu({
         style={userMenuPanelStyle}
         role="dialog"
         aria-modal="true"
-        aria-label="User menu"
+        aria-label={text.dialogLabel}
       >
         <button
           type="button"
@@ -75,8 +80,8 @@ export default function AppHeaderUserMenu({
           onPointerCancel={onHandlePointerCancel}
           onLostPointerCapture={onHandleLostPointerCapture}
           className="absolute left-0 top-0 h-full w-4 -translate-x-full border-r border-(--border-subtle)/55 bg-transparent"
-          aria-label="Drag or tap edge to close user menu"
-          title="Drag or tap edge to close user menu"
+          aria-label={text.dragHandle}
+          title={text.dragHandle}
         />
 
         <div className="flex items-center justify-between gap-2">
@@ -89,26 +94,27 @@ export default function AppHeaderUserMenu({
             size="sm"
             className="px-2"
             onClick={onClose}
-            aria-label="Close user menu"
+            aria-label={text.close}
           >
-            Close
+            {text.close}
           </Button>
         </div>
 
-        <p className="mt-1 text-xs text-(--text-muted)">User menu</p>
+        <p className="mt-1 text-xs text-(--text-muted)">{text.subtitle}</p>
 
         <AppHeaderUserProfilePanel
           hasToken={hasToken}
           userProfileStatus={userProfileStatus}
           userProfile={userProfile}
           userProfileError={userProfileError}
+          text={profileText}
         />
 
         <div className="mt-4">
           {hasToken ? (
             isLogoutConfirmOpen ? (
               <div className="space-y-2 rounded-lg border border-rose-500/45 bg-rose-500/10 p-2">
-                <p className="text-[11px] text-rose-100">Confirm logout?</p>
+                <p className="text-[11px] text-rose-100">{text.confirmLogout}</p>
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
@@ -117,7 +123,7 @@ export default function AppHeaderUserMenu({
                     className="flex-1 px-2 text-[10px] uppercase tracking-[0.06em]"
                     onClick={onCancelLogoutConfirm}
                   >
-                    Cancel
+                    {text.cancel}
                   </Button>
                   <Button
                     type="button"
@@ -126,7 +132,7 @@ export default function AppHeaderUserMenu({
                     className="flex-1 border border-rose-500/65 bg-rose-500/12 px-2 text-[10px] uppercase tracking-[0.06em] text-rose-200 hover:bg-rose-500/22"
                     onClick={onConfirmLogout}
                   >
-                    Logout
+                    {text.logout}
                   </Button>
                 </div>
               </div>
@@ -138,7 +144,7 @@ export default function AppHeaderUserMenu({
                 className="w-full border border-rose-500/65 bg-rose-500/12 px-3 text-[10px] uppercase tracking-[0.08em] text-rose-200 hover:bg-rose-500/22"
                 onClick={onRequestLogoutConfirm}
               >
-                Logout
+                {text.logout}
               </Button>
             )
           ) : null}

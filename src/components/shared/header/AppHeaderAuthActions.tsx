@@ -1,11 +1,13 @@
 import Button from '@/components/atoms/Button';
 import LinkButton from '@/components/atoms/LinkButton';
+import type { AppHeaderTextCatalog } from '@/components/shared/header/appHeaderText';
 
 import type { AuthEntryMode } from './appHeader.types';
 
 type AppHeaderAuthActionsProps = {
   hasToken: boolean;
   authEntryMode: AuthEntryMode;
+  text: AppHeaderTextCatalog['auth'];
   onRequestLogin?: () => void;
   onRequestRegister?: () => void;
 };
@@ -13,6 +15,7 @@ type AppHeaderAuthActionsProps = {
 export default function AppHeaderAuthActions({
   hasToken,
   authEntryMode,
+  text,
   onRequestLogin,
   onRequestRegister,
 }: AppHeaderAuthActionsProps) {
@@ -30,7 +33,7 @@ export default function AppHeaderAuthActions({
           uppercase
           className="px-2.5 text-[10px]"
         >
-          Login
+          {text.login}
         </LinkButton>
         <LinkButton
           href="/register"
@@ -39,7 +42,7 @@ export default function AppHeaderAuthActions({
           uppercase
           className="px-2.5 text-[10px]"
         >
-          Register
+          {text.register}
         </LinkButton>
       </>
     );
@@ -55,7 +58,7 @@ export default function AppHeaderAuthActions({
         className="px-2.5 text-[10px]"
         onClick={onRequestLogin}
       >
-        Login
+        {text.login}
       </Button>
       <Button
         type="button"
@@ -65,7 +68,7 @@ export default function AppHeaderAuthActions({
         className="px-2.5 text-[10px]"
         onClick={onRequestRegister}
       >
-        Register
+        {text.register}
       </Button>
     </>
   );

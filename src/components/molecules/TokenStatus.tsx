@@ -1,9 +1,11 @@
 import { memo } from 'react';
 
 type TokenStatusType = 'authenticated' | 'checking' | 'unverified' | 'anonymous';
+type TokenStatusLabels = Record<TokenStatusType, string>;
 
 type TokenStatusProps = {
   status: TokenStatusType;
+  labels?: TokenStatusLabels;
 };
 
 function resolveStatusStyles(status: TokenStatusType): string {
@@ -38,15 +40,15 @@ function resolveStatusLabel(status: TokenStatusType): string {
   return 'Not authenticated';
 }
 
-function TokenStatus({ status }: TokenStatusProps) {
+function TokenStatus({ status, labels }: TokenStatusProps) {
   return (
     <span
       className={`rounded-full border px-3 py-1 text-[10px] font-semibold ${resolveStatusStyles(status)}`}
     >
-      {resolveStatusLabel(status)}
+      {labels?.[status] ?? resolveStatusLabel(status)}
     </span>
   );
 }
 
 export default memo(TokenStatus);
-export type { TokenStatusType };
+export type { TokenStatusLabels, TokenStatusType };
