@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useCallback, useState } from 'react';
 
+import useAuthText from '@/components/organisms/auth/useAuthText';
 import ElementsState from '@/components/organisms/elements/ElementsState';
 import type { AuthModalMode } from '@/components/organisms/auth/AuthModal';
 import AppShell from '@/components/templates/AppShell';
@@ -14,7 +15,7 @@ import useAuthToken from '@/shared/hooks/useAuthToken';
 import useElements from '@/shared/hooks/useElements';
 
 const MolecularEditor = dynamic(() => import('@/components/organisms/molecular-editor/MolecularEditor'), {
-  loading: () => <ElementsState tone="info" message="Preparing molecular editor..." showProgress />,
+  loading: () => <ElementsState tone="info" message="Loading..." showProgress />,
 });
 
 const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'));
@@ -26,6 +27,7 @@ type MolecularEditorWorkspaceProps = {
 };
 
 function MolecularEditorWorkspace({ pageMode = 'editor' }: MolecularEditorWorkspaceProps) {
+  const text = useAuthText();
   const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
   const authSession = useAuthSession({
     token,
@@ -76,7 +78,7 @@ function MolecularEditorWorkspace({ pageMode = 'editor' }: MolecularEditorWorksp
   if (!isHydrated) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-[var(--app-max-width)] items-center px-[var(--app-inline-padding)] py-6">
-        <ElementsState tone="info" message="Loading local session..." />
+        <ElementsState tone="info" message={text.workspace.loadingSession} />
       </main>
     );
   }
@@ -94,23 +96,23 @@ function MolecularEditorWorkspace({ pageMode = 'editor' }: MolecularEditorWorksp
     >
       <section className="flex min-h-full flex-col">
         {authSession.status === 'checking' ? (
-          <ElementsState tone="info" message="Validating session..." />
+          <ElementsState tone="info" message={text.workspace.checkingSession} />
         ) : authSession.status === 'unverified' ? (
           <ElementsState
             tone="error"
-            message={authSession.message ?? 'Could not verify your session right now.'}
-            actionLabel="Try again"
+            message={authSession.message ?? text.workspace.sessionVerificationFailed}
+            actionLabel={text.common.tryAgain}
             onAction={authSession.revalidate}
           />
         ) : !hasValidSession ? (
           <ElementsState
             tone="info"
-            message={pageMode === 'editor' ? 'Authenticate to use the molecular editor.' : 'Authenticate to access the molecule gallery.'}
-            actionLabel="Open login"
+            message={pageMode === 'editor' ? text.workspace.signInForEditor : text.workspace.signInForGallery}
+            actionLabel={text.common.openLogin}
             onAction={() => openAuthModal('login')}
           />
         ) : pageMode === 'editor' && isLoading ? (
-          <ElementsState tone="info" message="Preparing the chemical element library..." showProgress />
+          <ElementsState tone="info" message={text.workspace.loadingElementLibrary} showProgress />
         ) : pageMode === 'editor' && error !== null ? (
           <ElementsState tone="error" message={error} />
         ) : (

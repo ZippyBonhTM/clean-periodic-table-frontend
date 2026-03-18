@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useCallback, useState } from 'react';
 
+import useAuthText from '@/components/organisms/auth/useAuthText';
 import ElementsState from '@/components/organisms/elements/ElementsState';
 import type { AuthModalMode } from '@/components/organisms/auth/AuthModal';
 import AppShell from '@/components/templates/AppShell';
@@ -15,7 +16,7 @@ import useElements from '@/shared/hooks/useElements';
 
 const PeriodicTable = dynamic(() => import('@/components/organisms/periodic-table/PeriodicTable'), {
   loading: () => (
-    <ElementsState tone="info" message="Opening the periodic table..." showProgress />
+    <ElementsState tone="info" message="Loading..." showProgress />
   ),
 });
 
@@ -26,6 +27,7 @@ type ElementsWorkspaceProps = {
 };
 
 function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
+  const text = useAuthText();
   const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
   const authSession = useAuthSession({
     token,
@@ -70,7 +72,7 @@ function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
   if (!isHydrated) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-[var(--app-max-width)] items-center px-[var(--app-inline-padding)] py-6">
-        <ElementsState tone="info" message="Loading local session..." />
+        <ElementsState tone="info" message={text.workspace.loadingSession} />
       </main>
     );
   }
@@ -87,25 +89,25 @@ function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
     >
       <section className="space-y-4">
         {authSession.status === 'checking' ? (
-          <ElementsState tone="info" message="Validating session..." />
+          <ElementsState tone="info" message={text.workspace.checkingSession} />
         ) : authSession.status === 'unverified' ? (
           <ElementsState
             tone="error"
-            message={authSession.message ?? 'Could not verify your session right now.'}
-            actionLabel="Try again"
+            message={authSession.message ?? text.workspace.sessionVerificationFailed}
+            actionLabel={text.common.tryAgain}
             onAction={authSession.revalidate}
           />
         ) : !hasValidSession ? (
           <ElementsState
             tone="info"
-            message="Authenticate to access the element data."
-            actionLabel="Open login"
+            message={text.workspace.signInForElements}
+            actionLabel={text.common.openLogin}
             onAction={() => openAuthModal('login')}
           />
         ) : isLoading ? (
           <ElementsState
             tone="info"
-            message="Getting the periodic table ready..."
+            message={text.workspace.loadingPeriodicTable}
             showProgress
           />
         ) : error !== null ? (

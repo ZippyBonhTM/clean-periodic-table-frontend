@@ -6,6 +6,7 @@ import { memo, useCallback, useState } from 'react';
 import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import FormField from '@/components/molecules/FormField';
+import useAuthText from '@/components/organisms/auth/useAuthText';
 import { register } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
 
@@ -16,6 +17,7 @@ type RegisterFormProps = {
 };
 
 function RegisterForm({ onSuccess, mode = 'page', onSwitchToLogin }: RegisterFormProps) {
+  const text = useAuthText();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +30,7 @@ function RegisterForm({ onSuccess, mode = 'page', onSwitchToLogin }: RegisterFor
       event.preventDefault();
 
       if (password !== passwordConfirmation) {
-        setError('Password confirmation does not match.');
+        setError(text.register.passwordMismatch);
         return;
       }
 
@@ -44,29 +46,29 @@ function RegisterForm({ onSuccess, mode = 'page', onSwitchToLogin }: RegisterFor
         } else if (caughtError instanceof Error && caughtError.message.trim().length > 0) {
           setError(caughtError.message);
         } else {
-          setError('Could not create your account right now.');
+          setError(text.register.fallbackError);
         }
       } finally {
         setIsSubmitting(false);
       }
     },
-    [email, name, onSuccess, password, passwordConfirmation],
+    [email, name, onSuccess, password, passwordConfirmation, text.register.fallbackError, text.register.passwordMismatch],
   );
 
   const content = (
     <>
       <div className="auth-modal__header mb-4">
-        <p className="auth-modal__eyebrow text-xs uppercase tracking-[0.25em] text-[var(--text-muted)]">Authentication</p>
-        <h2 className="auth-modal__title text-2xl font-bold text-[var(--text-strong)]">Register</h2>
-        <p className="auth-modal__subtitle mt-1 text-sm text-[var(--text-muted)]">Create your account to request secured element data.</p>
+        <p className="auth-modal__eyebrow text-xs uppercase tracking-[0.25em] text-[var(--text-muted)]">{text.register.eyebrow}</p>
+        <h2 className="auth-modal__title text-2xl font-bold text-[var(--text-strong)]">{text.register.title}</h2>
+        <p className="auth-modal__subtitle mt-1 text-sm text-[var(--text-muted)]">{text.register.subtitle}</p>
       </div>
 
       <form className="auth-modal__form space-y-4" onSubmit={onSubmit}>
         <FormField
           id="name"
-          label="Name"
+          label={text.fields.name}
           name="name"
-          placeholder="Ada Lovelace"
+          placeholder={text.fields.namePlaceholder}
           value={name}
           onChange={setName}
           autoComplete="name"
@@ -75,10 +77,10 @@ function RegisterForm({ onSuccess, mode = 'page', onSwitchToLogin }: RegisterFor
 
         <FormField
           id="email"
-          label="Email"
+          label={text.fields.email}
           name="email"
           type="email"
-          placeholder="you@example.com"
+          placeholder={text.fields.emailPlaceholder}
           value={email}
           onChange={setEmail}
           autoComplete="email"
@@ -87,10 +89,10 @@ function RegisterForm({ onSuccess, mode = 'page', onSwitchToLogin }: RegisterFor
 
         <FormField
           id="password"
-          label="Password"
+          label={text.fields.password}
           name="password"
           type="password"
-          placeholder="********"
+          placeholder={text.fields.passwordPlaceholder}
           value={password}
           onChange={setPassword}
           autoComplete="new-password"
@@ -99,10 +101,10 @@ function RegisterForm({ onSuccess, mode = 'page', onSwitchToLogin }: RegisterFor
 
         <FormField
           id="passwordConfirmation"
-          label="Confirm password"
+          label={text.fields.confirmPassword}
           name="passwordConfirmation"
           type="password"
-          placeholder="********"
+          placeholder={text.fields.passwordPlaceholder}
           value={passwordConfirmation}
           onChange={setPasswordConfirmation}
           autoComplete="new-password"
@@ -116,26 +118,26 @@ function RegisterForm({ onSuccess, mode = 'page', onSwitchToLogin }: RegisterFor
         ) : null}
 
         <Button type="submit" disabled={isSubmitting} className="auth-modal__submit w-full">
-          {isSubmitting ? 'Creating account...' : 'Create account'}
+          {isSubmitting ? text.register.submitting : text.register.submit}
         </Button>
       </form>
 
       {mode === 'modal' ? (
         <p className="auth-modal__switch mt-4 text-sm text-[var(--text-muted)]">
-          Already have an account?{' '}
+          {text.register.switchPrompt}{' '}
           <button
             type="button"
             onClick={onSwitchToLogin}
             className="font-semibold text-[var(--accent)] transition-colors hover:text-[var(--accent-strong)]"
           >
-            Sign in
+            {text.register.switchAction}
           </button>
         </p>
       ) : (
         <p className="mt-4 text-sm text-[var(--text-muted)]">
-          Already have an account?{' '}
+          {text.register.switchPrompt}{' '}
           <Link href="/login" className="font-semibold text-[var(--accent)] transition-colors hover:text-[var(--accent-strong)]">
-            Sign in
+            {text.register.switchAction}
           </Link>
         </p>
       )}
