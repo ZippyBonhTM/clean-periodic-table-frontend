@@ -29,9 +29,11 @@ function ChemistryBalanceExamplesPanel({
         <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
           {text.examples.title}
         </h2>
-        <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
-          {text.examples.description}
-        </p>
+        {text.examples.description.length > 0 ? (
+          <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
+            {text.examples.description}
+          </p>
+        ) : null}
       </div>
 
       <ul className="space-y-3">

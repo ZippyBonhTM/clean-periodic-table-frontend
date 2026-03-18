@@ -35,9 +35,11 @@ function ChemistryBalanceEnginePanel({
           <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
             {text.engine.title}
           </h2>
-          <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
-            {text.engine.description}
-          </p>
+          {text.engine.description.length > 0 ? (
+            <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
+              {text.engine.description}
+            </p>
+          ) : null}
         </div>
 
         <label className="flex shrink-0 items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">

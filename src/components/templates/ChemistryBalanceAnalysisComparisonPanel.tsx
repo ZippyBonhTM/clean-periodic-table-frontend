@@ -61,9 +61,11 @@ function ChemistryBalanceAnalysisComparisonPanel({
         <h2 className="text-lg font-black text-[var(--text-strong)] sm:text-xl">
           {text.analysisComparison.title}
         </h2>
-        <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
-          {text.analysisComparison.description}
-        </p>
+        {text.analysisComparison.description.length > 0 ? (
+          <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
+            {text.analysisComparison.description}
+          </p>
+        ) : null}
       </div>
 
       <ChemistryBalanceAnalysisComparisonOverview
