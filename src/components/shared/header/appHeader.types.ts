@@ -6,18 +6,16 @@ export type AppHeaderNavLinkKey =
   | 'balanceEquation'
   | 'molecularEditor'
   | 'moleculeGallery';
-export type AppHeaderNavBadgeKey = 'new' | 'beta';
 
 export type AppHeaderNavLink = {
   href: string;
   labelKey: AppHeaderNavLinkKey;
-  badgeKey?: AppHeaderNavBadgeKey;
 };
 
 export const NAV_LINKS: AppHeaderNavLink[] = [
   { href: '/periodic-table', labelKey: 'periodicTable' },
   { href: '/search', labelKey: 'search' },
-  { href: '/balance-equation', labelKey: 'balanceEquation', badgeKey: 'new' },
-  { href: '/molecular-editor', labelKey: 'molecularEditor', badgeKey: 'beta' },
-  { href: '/molecule-gallery', labelKey: 'moleculeGallery', badgeKey: 'beta' },
+  { href: '/balance-equation', labelKey: 'balanceEquation' },
+  { href: '/molecular-editor', labelKey: 'molecularEditor' },
+  { href: '/molecule-gallery', labelKey: 'moleculeGallery' },
 ];

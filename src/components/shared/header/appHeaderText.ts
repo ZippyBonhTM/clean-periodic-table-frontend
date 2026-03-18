@@ -1,9 +1,6 @@
 import { appHeaderTextEn } from '@/components/shared/header/appHeaderText.en';
 import { appHeaderTextPt } from '@/components/shared/header/appHeaderText.pt';
-import type {
-  AppHeaderNavBadgeKey,
-  AppHeaderNavLinkKey,
-} from '@/components/shared/header/appHeader.types';
+import type { AppHeaderNavLinkKey } from '@/components/shared/header/appHeader.types';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
 const APP_HEADER_TEXT_BY_LOCALE = {
@@ -31,15 +28,4 @@ export function getAppHeaderNavLabel(
   key: AppHeaderNavLinkKey,
 ): string {
   return text.navigation.links[key];
-}
-
-export function getAppHeaderNavBadge(
-  text: AppHeaderTextCatalog,
-  key?: AppHeaderNavBadgeKey,
-): string | undefined {
-  if (key === undefined) {
-    return undefined;
-  }
-
-  return text.navigation.badges[key];
 }
