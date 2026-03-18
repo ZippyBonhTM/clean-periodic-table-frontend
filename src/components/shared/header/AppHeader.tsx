@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { memo, useCallback } from 'react';
 
@@ -25,6 +26,7 @@ import useAppHeaderUserMenu from './useAppHeaderUserMenu';
 type AppHeaderProps = {
   hasToken: boolean;
   authStatus: TokenStatusType;
+  showAccountChrome?: boolean;
   theme: AppTheme;
   onToggleTheme: () => void;
   onLogout?: () => void;
@@ -94,6 +96,7 @@ function ThemeGlyph({ theme }: { theme: AppTheme }) {
 function AppHeader({
   hasToken,
   authStatus,
+  showAccountChrome = true,
   theme,
   onToggleTheme,
   onLogout,
@@ -167,19 +170,23 @@ function AppHeader({
       <header className="hidden rounded-3xl border border-(--border-subtle) p-4 shadow-sm md:block md:p-5 surface-panel">
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[auto_auto] md:items-stretch">
           <div className="min-w-0 md:col-start-1 md:row-start-1">
-            <p className="whitespace-nowrap text-[9px] uppercase tracking-[0.22em] text-(--text-muted) sm:text-[10px]">
-              {text.brand.eyebrow}
-            </p>
-            <h1 className="mt-1 whitespace-nowrap text-lg font-extrabold leading-none text-foreground sm:text-xl">
-              {text.brand.title}
-            </h1>
+            <Link href={buildLocalizedAppPath(locale, '/')} className="inline-block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)">
+              <p className="whitespace-nowrap text-[9px] uppercase tracking-[0.22em] text-(--text-muted) sm:text-[10px]">
+                {text.brand.eyebrow}
+              </p>
+              <h1 className="mt-1 whitespace-nowrap text-lg font-extrabold leading-none text-foreground sm:text-xl">
+                {text.brand.title}
+              </h1>
+            </Link>
           </div>
 
           <div className="flex flex-col gap-2 md:col-start-2 md:row-span-2 md:h-full md:items-end md:justify-between">
             <div className="flex flex-wrap items-center gap-2 md:justify-end">
-              <TokenStatus
-                status={authStatus}
-              />
+              {showAccountChrome ? (
+                <TokenStatus
+                  status={authStatus}
+                />
+              ) : null}
               <AppHeaderLocaleSwitcher />
               <Button
                 type="button"
@@ -192,19 +199,21 @@ function AppHeader({
               >
                 <ThemeGlyph theme={theme} />
               </Button>
-              <button
-                type="button"
-                onClick={onOpenUserMenu}
-                className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
-                aria-label={text.userMenu.open}
-                title={text.userMenu.open}
-              >
-                <span
-                  className={`pointer-events-none absolute -right-0.5 -top-0.5 z-10 size-2.5 rounded-full border border-[#020617] ${authIndicatorTone}`}
-                  aria-hidden="true"
-                />
-                <UserAvatarPlaceholder hasToken={hasToken} />
-              </button>
+              {showAccountChrome ? (
+                <button
+                  type="button"
+                  onClick={onOpenUserMenu}
+                  className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
+                  aria-label={text.userMenu.open}
+                  title={text.userMenu.open}
+                >
+                  <span
+                    className={`pointer-events-none absolute -right-0.5 -top-0.5 z-10 size-2.5 rounded-full border border-[#020617] ${authIndicatorTone}`}
+                    aria-hidden="true"
+                  />
+                  <UserAvatarPlaceholder hasToken={hasToken} />
+                </button>
+              ) : null}
             </div>
 
             <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
@@ -229,9 +238,14 @@ function AppHeader({
       </header>
 
       <div className="md:hidden">
-        <p className="mb-2 text-center text-[9px] uppercase tracking-[0.24em] text-(--text-muted)">
-          {text.brand.eyebrow}
-        </p>
+        <Link
+          href={buildLocalizedAppPath(locale, '/')}
+          className="mb-2 block rounded-lg text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
+        >
+          <p className="text-[9px] uppercase tracking-[0.24em] text-(--text-muted)">
+            {text.brand.eyebrow}
+          </p>
+        </Link>
         <header className="surface-panel rounded-3xl border border-(--border-subtle) p-3 shadow-sm">
           <div className="flex items-center justify-between gap-2">
             <Button
@@ -263,19 +277,21 @@ function AppHeader({
                 <ThemeGlyph theme={theme} />
               </Button>
 
-              <button
-                type="button"
-                onClick={onOpenUserMenu}
-                className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
-                aria-label={text.userMenu.open}
-                title={text.userMenu.open}
-              >
-                <span
-                  className={`pointer-events-none absolute -right-0.5 -top-0.5 z-10 size-2.5 rounded-full border border-[#020617] ${authIndicatorTone}`}
-                  aria-hidden="true"
-                />
-                <UserAvatarPlaceholder hasToken={hasToken} />
-              </button>
+              {showAccountChrome ? (
+                <button
+                  type="button"
+                  onClick={onOpenUserMenu}
+                  className="relative rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
+                  aria-label={text.userMenu.open}
+                  title={text.userMenu.open}
+                >
+                  <span
+                    className={`pointer-events-none absolute -right-0.5 -top-0.5 z-10 size-2.5 rounded-full border border-[#020617] ${authIndicatorTone}`}
+                    aria-hidden="true"
+                  />
+                  <UserAvatarPlaceholder hasToken={hasToken} />
+                </button>
+              ) : null}
 
               <AppHeaderAuthActions
                 hasToken={hasToken}
@@ -303,27 +319,29 @@ function AppHeader({
         onClose={closeRouteMenu}
       />
 
-      <AppHeaderUserMenu
-        isOpen={isUserMenuOpen}
-        hasToken={hasToken}
-        userDisplayName={userDisplayName}
-        userProfileStatus={userProfileStatus}
-        userProfile={userProfile}
-        userProfileError={userProfileError}
-        isLogoutConfirmOpen={isLogoutConfirmOpen}
-        userMenuPanelStyle={userMenuPanelStyle}
-        text={text.userMenu}
-        profileText={text.profile}
-        onClose={closeUserMenu}
-        onRequestLogoutConfirm={requestLogoutConfirm}
-        onCancelLogoutConfirm={cancelLogoutConfirm}
-        onConfirmLogout={confirmLogout}
-        onHandlePointerDown={onUserMenuHandlePointerDown}
-        onHandlePointerMove={onUserMenuHandlePointerMove}
-        onHandlePointerUp={(event) => finishUserMenuDrag(event)}
-        onHandlePointerCancel={(event) => finishUserMenuDrag(event)}
-        onHandleLostPointerCapture={resetUserMenuDrag}
-      />
+      {showAccountChrome ? (
+        <AppHeaderUserMenu
+          isOpen={isUserMenuOpen}
+          hasToken={hasToken}
+          userDisplayName={userDisplayName}
+          userProfileStatus={userProfileStatus}
+          userProfile={userProfile}
+          userProfileError={userProfileError}
+          isLogoutConfirmOpen={isLogoutConfirmOpen}
+          userMenuPanelStyle={userMenuPanelStyle}
+          text={text.userMenu}
+          profileText={text.profile}
+          onClose={closeUserMenu}
+          onRequestLogoutConfirm={requestLogoutConfirm}
+          onCancelLogoutConfirm={cancelLogoutConfirm}
+          onConfirmLogout={confirmLogout}
+          onHandlePointerDown={onUserMenuHandlePointerDown}
+          onHandlePointerMove={onUserMenuHandlePointerMove}
+          onHandlePointerUp={(event) => finishUserMenuDrag(event)}
+          onHandlePointerCancel={(event) => finishUserMenuDrag(event)}
+          onHandleLostPointerCapture={resetUserMenuDrag}
+        />
+      ) : null}
     </>
   );
 }

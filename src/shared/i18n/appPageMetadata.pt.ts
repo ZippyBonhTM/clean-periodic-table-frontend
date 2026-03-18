@@ -2,6 +2,17 @@ export const appPageMetadataPt = {
   brandTitle: 'Clean Periodic Table',
   brandDescription: 'Explore elementos, balanceie equações e monte moléculas em um só lugar.',
   pages: {
+    home: {
+      title: 'Plataforma de Química',
+      description: 'Explore a tabela periódica, balanceie equações e monte moléculas em uma plataforma de química feita para aprendizado claro e uso prático.',
+      keywords: [
+        'plataforma de química',
+        'tabela periódica online',
+        'balanceador de equações químicas',
+        'editor molecular',
+        'ferramentas de química',
+      ],
+    },
     search: {
       title: 'Pesquisar',
       description: 'Pesquise elementos por nome, símbolo, número, fase ou categoria.',

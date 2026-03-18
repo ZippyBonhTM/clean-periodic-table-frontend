@@ -13,5 +13,5 @@ export default async function HomePage() {
     acceptLanguage: requestHeaders.get('accept-language'),
   });
 
-  redirect(buildLocalizedAppPath(locale, '/search'));
+  redirect(buildLocalizedAppPath(locale, '/'));
 }

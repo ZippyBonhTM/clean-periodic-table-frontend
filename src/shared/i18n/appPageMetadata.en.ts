@@ -2,6 +2,17 @@ export const appPageMetadataEn = {
   brandTitle: 'Clean Periodic Table',
   brandDescription: 'Explore elements, balance equations, and build molecules in one place.',
   pages: {
+    home: {
+      title: 'Chemistry Workspace',
+      description: 'Explore the periodic table, balance equations, and build molecules in a chemistry workspace designed for clear learning and practical use.',
+      keywords: [
+        'online chemistry workspace',
+        'periodic table app',
+        'chemical equation balancer',
+        'molecular editor',
+        'chemistry tools',
+      ],
+    },
     search: {
       title: 'Search',
       description: 'Search elements by name, symbol, number, phase, or category.',

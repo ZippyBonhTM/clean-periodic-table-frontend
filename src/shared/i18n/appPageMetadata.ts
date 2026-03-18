@@ -21,9 +21,18 @@ export function buildLocalizedPageMetadata(
 ): Metadata {
   const metadata = getAppPageMetadata(locale);
   const pageMetadata = metadata.pages[page];
+  const keywords = 'keywords' in pageMetadata ? [...pageMetadata.keywords] : undefined;
 
   return {
     title: `${pageMetadata.title} | ${metadata.brandTitle}`,
     description: pageMetadata.description,
+    keywords,
+    openGraph: {
+      title: `${pageMetadata.title} | ${metadata.brandTitle}`,
+      description: pageMetadata.description,
+      siteName: metadata.brandTitle,
+      locale,
+      type: 'website',
+    },
   };
 }
