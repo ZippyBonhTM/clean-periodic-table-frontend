@@ -1,9 +1,9 @@
 export const homeLandingTextPt = {
   hero: {
-    eyebrow: 'Uma nova forma de apresentar química',
-    title: 'Uma experiência de química feita para chamar atenção sem cansar.',
+    eyebrow: 'Química para explorar',
+    title: 'Um jeito mais envolvente de descobrir a química.',
     description:
-      'Mais presença, menos ruído e um jeito melhor de transformar curiosidade em clique já na primeira visita.',
+      'Explore elementos, teste equações e abra estruturas moleculares em uma experiência mais bonita, mais leve e mais convidativa.',
     primaryCta: 'Ver tabela periódica',
     secondaryCta: 'Balancear equação',
     tertiaryCta: 'Abrir editor molecular',
@@ -16,9 +16,9 @@ export const homeLandingTextPt = {
     showcaseOpenTableCta: 'Abrir tabela completa',
   },
   features: {
-    title: 'Três caminhos principais, sem excesso de explicação.',
+    title: 'Três caminhos para começar do jeito que fizer mais sentido.',
     description:
-      'A home mostra o essencial e deixa o resto para a própria experiência provar.',
+      'Escolha por onde entrar e deixe a própria experiência mostrar o valor.',
     items: [
       {
         title: 'Tabela periódica',
@@ -41,21 +41,21 @@ export const homeLandingTextPt = {
     ],
   },
   positioning: {
-    title: 'Boa para apresentar, fácil de percorrer e pronta para continuar.',
+    title: 'Feita para despertar curiosidade logo de cara.',
     description:
-      'Sem virar mural de features, a home ajuda a mostrar valor rápido e sustenta uma demonstração mais elegante.',
+      'Tudo aqui foi pensado para parecer claro, agradável e fácil de explorar desde o primeiro toque.',
     items: [
       {
-        title: 'Primeira impressão',
-        description: 'Quando a entrada é boa, a confiança aparece antes mesmo do segundo clique.',
+        title: 'Visual que convida',
+        description: 'A página abre com mais presença e menos ruído, deixando a experiência respirar.',
       },
       {
-        title: 'Navegação natural',
-        description: 'A pessoa entende rápido onde tocar, o que ver e para onde seguir depois.',
+        title: 'Leitura mais simples',
+        description: 'As escolhas principais aparecem com clareza, sem excesso de blocos ou distrações.',
       },
       {
-        title: 'Próximo passo claro',
-        description: 'Depois da curiosidade inicial, os caminhos principais já estão na mão e sem fricção.',
+        title: 'Exploração imediata',
+        description: 'Quem chega já encontra algo para tocar, abrir e experimentar sem demora.',
       },
     ],
   },
@@ -77,13 +77,13 @@ export const homeLandingTextPt = {
     ],
   },
   finalCta: {
-    title: 'Quando a entrada é boa, o próximo clique acontece quase sozinho.',
+    title: 'Comece pelo que mais chamar sua atenção.',
     description:
-      'A ideia aqui é abrir a porta certa, não disputar atenção com uma página pesada.',
+      'A tabela periódica, as equações e o editor já estão prontos para serem explorados no seu ritmo.',
     primary: 'Começar pela tabela',
     secondary: 'Abrir equações',
   },
   footer: {
-    note: 'Uma entrada mais leve, mais elegante e mais preparada para transformar visita em interesse.',
+    note: 'Química com mais clareza, mais presença e mais espaço para explorar.',
   },
 } as const;

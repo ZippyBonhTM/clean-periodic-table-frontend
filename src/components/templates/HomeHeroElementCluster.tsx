@@ -135,7 +135,7 @@ export default function HomeHeroElementCluster({
 
   return (
     <div className="relative rounded-[2.2rem] border border-white/10 bg-black/16 p-4 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.95)] backdrop-blur-sm md:p-5">
-      <div className="relative h-[18.75rem] md:h-[20rem]">
+      <div className="relative h-[18.75rem] overflow-visible md:h-[20rem]">
         {activeElements.map((element, index) => {
           const isAnimating = animatingSlotIndex === index;
           const isSelected = selectedElement?.number === element.number;
