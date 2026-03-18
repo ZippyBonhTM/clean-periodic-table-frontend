@@ -8,6 +8,11 @@ import ElementsState from '@/components/organisms/elements/ElementsState';
 import type { AuthModalMode } from '@/components/organisms/auth/AuthModal';
 import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import AppShell from '@/components/templates/AppShell';
+import {
+  resolveElementsWorkspaceMessage,
+  resolveSavedMoleculesWorkspaceMessage,
+  resolveSessionWorkspaceMessage,
+} from '@/components/templates/workspaceErrorCopy';
 import type { TokenStatusType } from '@/components/molecules/TokenStatus';
 import { logoutSession } from '@/shared/api/authApi';
 import useAuthSession from '@/shared/hooks/useAuthSession';
@@ -59,6 +64,9 @@ function MolecularEditorWorkspace({ pageMode = 'editor' }: MolecularEditorWorksp
 
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const resolvedSessionMessage = resolveSessionWorkspaceMessage(authSession.message, text);
+  const resolvedElementsError = resolveElementsWorkspaceMessage(error, text);
+  const resolvedSavedMoleculesError = resolveSavedMoleculesWorkspaceMessage(savedMolecules.error, text);
 
   const onLogout = useCallback(() => {
     void logoutSession().catch(() => undefined);
@@ -107,7 +115,7 @@ function MolecularEditorWorkspace({ pageMode = 'editor' }: MolecularEditorWorksp
         ) : authSession.status === 'unverified' ? (
           <ElementsState
             tone="error"
-            message={authSession.message ?? text.workspace.sessionVerificationFailed}
+            message={resolvedSessionMessage}
             actionLabel={text.common.tryAgain}
             onAction={authSession.revalidate}
           />
@@ -120,14 +128,14 @@ function MolecularEditorWorkspace({ pageMode = 'editor' }: MolecularEditorWorksp
           />
         ) : pageMode === 'editor' && isLoading ? (
           <ElementsState tone="info" message={text.workspace.loadingElementLibrary} showProgress />
-        ) : pageMode === 'editor' && error !== null ? (
-          <ElementsState tone="error" message={error} />
+        ) : pageMode === 'editor' && resolvedElementsError !== null ? (
+          <ElementsState tone="error" message={resolvedElementsError} />
         ) : (
           <MolecularEditor
             pageMode={pageMode}
             elements={pageMode === 'editor' ? data : []}
             savedMolecules={savedMolecules.data}
-            savedMoleculesError={savedMolecules.error}
+            savedMoleculesError={resolvedSavedMoleculesError}
             isSavedMoleculesLoading={savedMolecules.isLoading}
             isSavedMoleculesMutating={savedMolecules.isMutating}
             onReloadSavedMolecules={savedMolecules.reload}

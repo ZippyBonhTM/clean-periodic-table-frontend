@@ -4,6 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { refreshAccessToken } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
+import {
+  AUTH_SESSION_GENERIC_ERROR_MESSAGE,
+  AUTH_SESSION_NETWORK_ERROR_MESSAGE,
+} from '@/shared/hooks/hookErrorMessages';
 import useAuthSessionRefreshTimer from '@/shared/hooks/useAuthSessionRefreshTimer';
 import useAuthSessionResolver from '@/shared/hooks/useAuthSessionResolver';
 
@@ -31,7 +35,7 @@ type UseAuthSessionOutput = {
 
 function mapVerificationErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.statusCode === 0) {
-    return 'Could not verify your session due to network or CORS. Check service availability.';
+    return AUTH_SESSION_NETWORK_ERROR_MESSAGE;
   }
 
   if (error instanceof ApiError && error.message.trim().length > 0) {
@@ -42,7 +46,7 @@ function mapVerificationErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Could not verify your session right now.';
+  return AUTH_SESSION_GENERIC_ERROR_MESSAGE;
 }
 
 function useAuthSession({

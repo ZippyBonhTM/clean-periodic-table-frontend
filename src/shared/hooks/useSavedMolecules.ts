@@ -4,6 +4,10 @@ import { useCallback, useState } from 'react';
 
 import { refreshAccessToken } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
+import {
+  SAVED_MOLECULES_GENERIC_ERROR_MESSAGE,
+  SAVED_MOLECULES_NETWORK_ERROR_MESSAGE,
+} from '@/shared/hooks/hookErrorMessages';
 import useSavedMoleculesLoader from '@/shared/hooks/useSavedMoleculesLoader';
 import useSavedMoleculesMutations from '@/shared/hooks/useSavedMoleculesMutations';
 import useSavedMoleculesSnapshot from '@/shared/hooks/useSavedMoleculesSnapshot';
@@ -22,7 +26,7 @@ function sortSavedMolecules(data: SavedMolecule[]): SavedMolecule[] {
 
 function mapSavedMoleculesErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.statusCode === 0) {
-    return 'Could not sync your molecules due to network or CORS. Please try again.';
+    return SAVED_MOLECULES_NETWORK_ERROR_MESSAGE;
   }
 
   if (error instanceof ApiError && error.message.trim().length > 0) {
@@ -33,7 +37,7 @@ function mapSavedMoleculesErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Could not sync saved molecules right now.';
+  return SAVED_MOLECULES_GENERIC_ERROR_MESSAGE;
 }
 
 function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMoleculesInput): UseSavedMoleculesOutput {
