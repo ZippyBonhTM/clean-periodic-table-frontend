@@ -139,7 +139,7 @@ export default function HomeHeroElementCluster({
   }, []);
 
   return (
-    <div className="relative">
+    <div className="relative rounded-[2.2rem] border border-white/10 bg-black/16 p-4 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.95)] backdrop-blur-sm md:p-5">
       <div className="relative h-[18rem] md:h-[19.5rem]">
         {activeElements.map((element, index) => {
           const isAnimating = animatingSlotIndex === index;
@@ -160,7 +160,7 @@ export default function HomeHeroElementCluster({
         })}
       </div>
 
-      <div className="mt-4 max-w-sm space-y-3">
+      <div className="mt-4 max-w-sm space-y-3 border-t border-white/10 pt-4">
         <div className="space-y-2">
           <p className="text-sm font-semibold text-(--text-strong)">{title}</p>
           <p className="text-sm leading-7 text-(--text-muted)">{description}</p>
