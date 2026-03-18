@@ -3,8 +3,8 @@ export const appPageMetadataEn = {
   brandDescription: 'Explore elements, balance equations, and build molecules in one place.',
   pages: {
     home: {
-      title: 'Chemistry Workspace',
-      description: 'Explore the periodic table, balance equations, and build molecules in a chemistry workspace designed for clear learning and practical use.',
+      title: 'Interactive Chemistry Experience',
+      description: 'Explore chemistry through a more inviting homepage, a striking periodic table, quick equation balancing, and an easy-to-open molecular editor.',
       keywords: [
         'online chemistry workspace',
         'periodic table app',
