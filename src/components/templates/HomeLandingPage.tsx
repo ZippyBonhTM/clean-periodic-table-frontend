@@ -14,10 +14,8 @@ type HomeLandingPageProps = {
 export default function HomeLandingPage({ locale }: HomeLandingPageProps) {
   const text = getHomeLandingText(locale);
   const periodicTableHref = buildLocalizedAppPath(locale, '/periodic-table');
-  const searchHref = buildLocalizedAppPath(locale, '/search');
   const balanceEquationHref = buildLocalizedAppPath(locale, '/balance-equation');
   const molecularEditorHref = buildLocalizedAppPath(locale, '/molecular-editor');
-  const loginHref = buildLocalizedAppPath(locale, '/login');
 
   return (
     <AppShell
@@ -27,173 +25,167 @@ export default function HomeLandingPage({ locale }: HomeLandingPageProps) {
       authEntryMode="route"
       showFooter={false}
     >
-      <div className="space-y-6 pb-8 md:space-y-8 md:pb-10">
-        <section className="relative overflow-hidden rounded-[2rem] border border-(--border-subtle) bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.16),transparent_30%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.18),transparent_28%),linear-gradient(145deg,rgba(15,23,42,0.96),rgba(15,23,42,0.86))] p-5 shadow-[0_30px_90px_-50px_rgba(15,23,42,0.9)] md:p-8">
-          <div className="absolute inset-y-0 right-0 hidden w-1/3 bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.04),transparent)] md:block" />
+      <div className="space-y-12 pb-12 md:space-y-16 md:pb-16">
+        <section className="relative overflow-hidden rounded-[2.6rem] bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(20,184,166,0.16),transparent_30%),linear-gradient(160deg,rgba(15,23,42,0.98),rgba(15,23,42,0.88))] px-5 py-8 shadow-[0_40px_120px_-70px_rgba(15,23,42,0.95)] md:px-8 md:py-12 lg:px-10">
+          <div className="absolute -left-10 top-10 h-32 w-32 rounded-full bg-amber-300/10 blur-3xl" />
+          <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-teal-300/10 blur-3xl" />
 
-          <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.9fr)] lg:items-start">
-            <div className="space-y-5">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-(--text-muted)">
+          <div className="relative grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)] lg:items-center">
+            <div className="space-y-6">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-(--text-muted)">
                 {text.hero.eyebrow}
               </p>
 
-              <div className="space-y-3">
-                <h1 className="max-w-3xl text-4xl font-black leading-none text-(--text-strong) sm:text-5xl lg:text-6xl">
+              <div className="space-y-4">
+                <h1 className="max-w-4xl text-4xl font-black leading-[0.95] text-(--text-strong) sm:text-5xl lg:text-6xl">
                   {text.hero.title}
                 </h1>
-                <p className="max-w-2xl text-sm leading-7 text-(--text-muted) sm:text-base">
+                <p className="max-w-2xl text-base leading-8 text-(--text-muted)">
                   {text.hero.description}
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <LinkButton href={periodicTableHref} variant="primary" size="lg" className="rounded-full px-5">
+                <LinkButton href={periodicTableHref} variant="primary" size="lg" className="rounded-full px-6">
                   {text.hero.primaryCta}
                 </LinkButton>
-                <LinkButton href={balanceEquationHref} variant="secondary" size="lg" className="rounded-full px-5">
+                <LinkButton href={balanceEquationHref} variant="secondary" size="lg" className="rounded-full px-6">
                   {text.hero.secondaryCta}
                 </LinkButton>
-                <LinkButton href={molecularEditorHref} variant="ghost" size="lg" className="rounded-full px-5">
+                <LinkButton href={molecularEditorHref} variant="ghost" size="lg" className="rounded-full px-6">
                   {text.hero.tertiaryCta}
                 </LinkButton>
               </div>
 
-              <div className="flex flex-wrap gap-2 pt-1">
+              <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-(--text-muted)">
                 {text.hero.highlights.map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-(--text-muted)"
-                  >
+                  <span key={item} className="inline-flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-(--accent)" aria-hidden="true" />
                     {item}
                   </span>
                 ))}
               </div>
             </div>
 
-            <aside className="grid gap-3">
-              <div className="rounded-[1.6rem] border border-white/10 bg-black/20 p-4 backdrop-blur-sm">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-(--text-muted)">
-                  {text.hero.previewTitle}
-                </p>
-                <div className="mt-4 space-y-3">
-                  {text.examples.map((example) => (
-                    <div
-                      key={example}
-                      className="rounded-2xl border border-white/8 bg-white/5 px-4 py-3"
-                    >
-                      <NoTranslateText as="p" className="text-sm font-semibold text-(--text-strong)">
-                        {example}
-                      </NoTranslateText>
-                    </div>
-                  ))}
-                </div>
+            <div className="space-y-5 lg:justify-self-end">
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-(--text-strong)">{text.hero.showcaseTitle}</p>
+                <p className="text-sm leading-7 text-(--text-muted)">{text.hero.showcaseDescription}</p>
               </div>
 
-              <div className="rounded-[1.6rem] border border-white/10 bg-[linear-gradient(135deg,rgba(45,212,191,0.14),rgba(251,191,36,0.08))] p-4">
-                <p className="text-sm font-semibold text-(--text-strong)">
-                  {text.finalCta.description}
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <LinkButton href={searchHref} variant="ghost" size="md" className="rounded-full px-4">
-                    {text.hero.quickLinks.search}
-                  </LinkButton>
-                  <LinkButton href={loginHref} variant="ghost" size="md" className="rounded-full px-4">
-                    {text.hero.quickLinks.login}
-                  </LinkButton>
-                </div>
+              <div className="space-y-3">
+                {text.examples.map((item, index) => (
+                  <div
+                    key={item.formula}
+                    className={`rounded-[1.6rem] border border-white/10 bg-white/6 px-4 py-4 backdrop-blur-sm ${
+                      index === 1 ? 'translate-x-3' : index === 2 ? 'translate-x-6' : ''
+                    }`}
+                  >
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-(--text-muted)">
+                      {item.label}
+                    </p>
+                    <NoTranslateText as="p" className="mt-2 text-lg font-semibold text-(--text-strong)">
+                      {item.formula}
+                    </NoTranslateText>
+                  </div>
+                ))}
               </div>
-            </aside>
+            </div>
           </div>
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-3">
-          {text.spotlight.items.map((item) => (
-            <article
-              key={item.href}
-              className="surface-panel rounded-[1.8rem] border border-(--border-subtle) p-5 shadow-sm"
-            >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-(--text-muted)">
-                {text.spotlight.eyebrow}
-              </p>
-              <h2 className="mt-3 text-2xl font-bold text-(--text-strong)">{item.title}</h2>
-              <p className="mt-3 text-sm leading-7 text-(--text-muted)">{item.description}</p>
-              <div className="mt-5">
-                <LinkButton href={buildLocalizedAppPath(locale, item.href)} variant="ghost" size="md" className="rounded-full px-4">
+        <section className="space-y-6">
+          <div className="max-w-3xl space-y-3">
+            <h2 className="text-3xl font-black leading-tight text-(--text-strong) md:text-4xl">
+              {text.features.title}
+            </h2>
+            <p className="text-base leading-8 text-(--text-muted)">
+              {text.features.description}
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            {text.features.items.map((item, index) => (
+              <article key={item.href} className="space-y-4">
+                <span className="text-2xl font-black text-(--accent)">{`0${index + 1}`}</span>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold text-(--text-strong)">{item.title}</h3>
+                  <p className="text-sm leading-7 text-(--text-muted)">{item.description}</p>
+                </div>
+                <LinkButton
+                  href={buildLocalizedAppPath(locale, item.href)}
+                  variant="ghost"
+                  size="md"
+                  className="rounded-full px-4"
+                >
                   {item.cta}
                 </LinkButton>
-              </div>
-            </article>
-          ))}
-        </section>
-
-        <section className="grid gap-4 rounded-[2rem] border border-(--border-subtle) bg-[linear-gradient(180deg,rgba(15,23,42,0.45),rgba(15,23,42,0.18))] p-5 md:p-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-          <div className="space-y-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-(--text-muted)">
-              {text.audience.eyebrow}
-            </p>
-            <h2 className="text-3xl font-black leading-tight text-(--text-strong)">
-              {text.audience.title}
-            </h2>
-            <p className="text-sm leading-7 text-(--text-muted)">
-              {text.audience.description}
-            </p>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-3">
-            {text.audience.items.map((item) => (
-              <article key={item.title} className="rounded-[1.4rem] border border-white/8 bg-white/5 p-4">
-                <h3 className="text-lg font-semibold text-(--text-strong)">{item.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-(--text-muted)">{item.description}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <div className="surface-panel rounded-[1.8rem] border border-(--border-subtle) p-5 shadow-sm">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-(--text-muted)">
-              {text.faq.eyebrow}
-            </p>
-            <h2 className="mt-3 text-3xl font-black leading-tight text-(--text-strong)">
+        <section className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-start">
+          <div className="space-y-6">
+            <div className="max-w-2xl space-y-3">
+              <h2 className="text-3xl font-black leading-tight text-(--text-strong) md:text-4xl">
+                {text.positioning.title}
+              </h2>
+              <p className="text-base leading-8 text-(--text-muted)">
+                {text.positioning.description}
+              </p>
+            </div>
+
+            <div className="space-y-5 border-l border-(--border-subtle) pl-5">
+              {text.positioning.items.map((item) => (
+                <div key={item.title} className="space-y-2">
+                  <h3 className="text-xl font-semibold text-(--text-strong)">{item.title}</h3>
+                  <p className="text-sm leading-7 text-(--text-muted)">{item.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-5">
+            <h2 className="text-2xl font-black leading-tight text-(--text-strong)">
               {text.faq.title}
             </h2>
-          </div>
-
-          <div className="grid gap-3">
-            {text.faq.items.map((item) => (
-              <article key={item.question} className="surface-panel rounded-[1.4rem] border border-(--border-subtle) p-5 shadow-sm">
-                <h3 className="text-lg font-semibold text-(--text-strong)">{item.question}</h3>
-                <p className="mt-2 text-sm leading-7 text-(--text-muted)">{item.answer}</p>
-              </article>
-            ))}
+            <div className="space-y-4">
+              {text.faq.items.map((item) => (
+                <article key={item.question} className="border-t border-(--border-subtle) pt-4 first:border-t-0 first:pt-0">
+                  <h3 className="text-lg font-semibold text-(--text-strong)">{item.question}</h3>
+                  <p className="mt-2 text-sm leading-7 text-(--text-muted)">{item.answer}</p>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
 
-        <section className="rounded-[2rem] border border-(--border-subtle) bg-[linear-gradient(135deg,rgba(20,184,166,0.12),rgba(251,191,36,0.12))] p-5 shadow-sm md:p-6">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_auto] lg:items-center">
+        <section className="rounded-[2.4rem] bg-[linear-gradient(135deg,rgba(251,191,36,0.14),rgba(20,184,166,0.14))] px-5 py-8 md:px-8">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_auto] lg:items-center">
             <div className="space-y-3">
-              <h2 className="text-3xl font-black leading-tight text-(--text-strong)">
+              <h2 className="max-w-3xl text-3xl font-black leading-tight text-(--text-strong) md:text-4xl">
                 {text.finalCta.title}
               </h2>
-              <p className="text-sm leading-7 text-(--text-muted)">
+              <p className="max-w-2xl text-base leading-8 text-(--text-muted)">
                 {text.finalCta.description}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <LinkButton href={periodicTableHref} variant="primary" size="lg" className="rounded-full px-5">
+              <LinkButton href={periodicTableHref} variant="primary" size="lg" className="rounded-full px-6">
                 {text.finalCta.primary}
               </LinkButton>
-              <LinkButton href={balanceEquationHref} variant="secondary" size="lg" className="rounded-full px-5">
+              <LinkButton href={balanceEquationHref} variant="secondary" size="lg" className="rounded-full px-6">
                 {text.finalCta.secondary}
               </LinkButton>
             </div>
           </div>
         </section>
 
-        <footer className="px-1 pt-1 text-center text-xs text-(--text-muted)">
-          <p>{text.footer.note}</p>
-          <div className="mt-3 flex flex-wrap justify-center gap-4">
+        <footer className="flex flex-col gap-4 pb-2 text-sm text-(--text-muted) md:flex-row md:items-center md:justify-between">
+          <p className="max-w-2xl">{text.footer.note}</p>
+          <div className="flex flex-wrap gap-4">
             <Link href={periodicTableHref} className="hover:text-(--text-strong)">
               {text.hero.primaryCta}
             </Link>

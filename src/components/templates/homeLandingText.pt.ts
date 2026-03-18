@@ -1,105 +1,95 @@
 export const homeLandingTextPt = {
   hero: {
-    eyebrow: 'Plataforma de química',
-    title: 'Uma home mais clara para explorar química online.',
+    eyebrow: 'Uma nova forma de apresentar química',
+    title: 'Uma experiência de química feita para prender o olhar.',
     description:
-      'Abra a tabela periódica, balanceie equações e monte moléculas em um só lugar, com um fluxo mais leve para estudo, ensino e descoberta do produto.',
-    primaryCta: 'Abrir tabela periódica',
+      'Visual forte, leitura fácil e caminhos claros para transformar curiosidade em vontade de explorar.',
+    primaryCta: 'Ver tabela periódica',
     secondaryCta: 'Balancear equação',
-    tertiaryCta: 'Testar editor molecular',
+    tertiaryCta: 'Abrir editor molecular',
     highlights: [
-      'Experiência localizada',
-      'Ferramentas no navegador',
-      'Exploração mais clara',
+      'Visual marcante',
+      'Navegação imediata',
+      'Em português e inglês',
     ],
-    previewTitle: 'Prévia da plataforma',
-    quickLinks: {
-      search: 'Pesquisar',
-      login: 'Entrar',
-    },
+    showcaseTitle: 'Tudo conversa na mesma experiência',
+    showcaseDescription:
+      'Elementos, equações e moléculas aparecem como partes do mesmo universo, não como telas soltas.',
   },
-  spotlight: {
-    eyebrow: 'Ferramentas',
-    title: 'O que você pode fazer aqui',
-    items: [
-      {
-        title: 'Explorar dados dos elementos',
-        description:
-          'Pesquise por nome, símbolo, fase ou categoria e abra uma visualização mais limpa do elemento com imagens, classificações e dados centrais.',
-        href: '/search',
-        cta: 'Explorar elementos',
-      },
-      {
-        title: 'Balancear equações químicas',
-        description:
-          'Verifique equações no navegador, compare a forma original com o resultado balanceado e veja análises extras quando fizer sentido.',
-        href: '/balance-equation',
-        cta: 'Abrir balanceador',
-      },
-      {
-        title: 'Montar e editar moléculas',
-        description:
-          'Crie estruturas moleculares, confira fórmulas e continue depois a partir da galeria quando quiser retomar o trabalho.',
-        href: '/molecular-editor',
-        cta: 'Abrir editor',
-      },
-    ],
-  },
-  audience: {
-    eyebrow: 'Para quem serve',
-    title: 'Feito para fluxos reais de química',
+  features: {
+    title: 'Quem chega aqui entende rápido por onde começar.',
     description:
-      'Esta home foi pensada para ajudar futuros clientes a entender o produto rápido, sem precisar abrir várias ferramentas antes.',
+      'A home aponta os caminhos principais com leveza, sem virar uma vitrine pesada ou cheia de texto interno.',
     items: [
       {
-        title: 'Estudantes',
-        description: 'Passe da consulta da tabela periódica para o balanceamento e a prática estrutural sem perder contexto.',
+        title: 'Tabela periódica',
+        description: 'Descubra elementos com uma leitura mais agradável, visual forte e navegação simples.',
+        href: '/periodic-table',
+        cta: 'Explorar',
       },
       {
-        title: 'Professores',
-        description: 'Use uma superfície mais clara para demonstrar elementos, equações e construção molecular na mesma sessão.',
+        title: 'Equações químicas',
+        description: 'Mostre resultados rapidamente com uma experiência mais direta e fácil de acompanhar.',
+        href: '/balance-equation',
+        cta: 'Testar',
       },
       {
-        title: 'Times de produto',
-        description: 'Avalie a experiência química, o comportamento real do produto e o fluxo entre ferramentas antes de discutir integração.',
+        title: 'Editor molecular',
+        description: 'Abra uma área interativa que transforma curiosidade em experimentação imediata.',
+        href: '/molecular-editor',
+        cta: 'Experimentar',
+      },
+    ],
+  },
+  positioning: {
+    title: 'Bonita para apresentar. Clara para usar. Forte para continuar.',
+    description:
+      'A proposta aqui é abrir conversa, sustentar uma boa demonstração e deixar vontade de seguir explorando.',
+    items: [
+      {
+        title: 'Primeira impressão',
+        description: 'Quando a entrada é boa, a confiança aparece antes mesmo do segundo clique.',
+      },
+      {
+        title: 'Navegação natural',
+        description: 'A pessoa entende rápido onde tocar, o que ver e para onde seguir depois.',
+      },
+      {
+        title: 'Próximo passo claro',
+        description: 'Depois da curiosidade inicial, os caminhos principais já estão na mão e sem fricção.',
       },
     ],
   },
   faq: {
-    eyebrow: 'FAQ',
-    title: 'Perguntas frequentes',
+    title: 'Perguntas que costumam aparecer logo no começo.',
     items: [
       {
-        question: 'O que já dá para fazer no Clean Periodic Table?',
-        answer:
-          'Hoje já é possível explorar elementos, balancear equações químicas localmente no navegador e montar estruturas moleculares com um editor interativo.',
+        question: 'Dá para usar direto no navegador?',
+        answer: 'Sim. A experiência principal já começa ali mesmo, sem exigir instalação para mostrar valor.',
       },
       {
-        question: 'Preciso de conta para usar tudo?',
-        answer:
-          'Você pode abrir a home e o balanceador de equações sem entrar. Alguns fluxos sincronizados, como salvar moléculas, ainda dependem de autenticação.',
+        question: 'Preciso criar conta para começar?',
+        answer: 'Não para conhecer a experiência. A conta entra melhor quando a pessoa decide continuar e salvar o que fez.',
       },
       {
-        question: 'O balanceamento funciona no navegador?',
-        answer:
-          'Sim. A arquitetura atual mantém o balanceamento disponível direto no navegador, com enriquecimento remoto opcional apenas quando estiver disponível.',
-      },
-      {
-        question: 'Consigo voltar para minhas moléculas depois?',
-        answer:
-          'Sim. Usuários autenticados podem salvar moléculas e continuar a edição mais tarde pela galeria e pelo editor.',
+        question: 'A plataforma serve só para estudo?',
+        answer: 'Não. Ela também funciona bem como demonstração, vitrine de experiência e ponto de partida para uma conversa comercial.',
       },
     ],
   },
   finalCta: {
-    title: 'Comece pelo fluxo que faz mais sentido para você',
+    title: 'A primeira visita precisa convidar a continuar.',
     description:
-      'Se você está avaliando o produto, os três melhores pontos de entrada são a tabela periódica, o balanceador e o editor molecular.',
-    primary: 'Ir para a tabela periódica',
-    secondary: 'Ir para o balanceador',
+      'Se a entrada for boa, o visitante encontra sozinho o próximo passo e a experiência faz o resto.',
+    primary: 'Começar pela tabela',
+    secondary: 'Abrir equações',
   },
   footer: {
-    note: 'Clean Periodic Table reúne ferramentas de química em uma interface mais calma e mais legível.',
+    note: 'Uma entrada mais leve, mais elegante e mais preparada para transformar visita em interesse.',
   },
-  examples: ['H2 + O2 -> H2O', 'N2O4 <-> 2 NO2', 'C6H6'],
+  examples: [
+    { label: 'Elementos', formula: 'Na · Fe · Cl' },
+    { label: 'Equações', formula: 'H2 + O2 -> H2O' },
+    { label: 'Moléculas', formula: 'C6H6' },
+  ],
 } as const;

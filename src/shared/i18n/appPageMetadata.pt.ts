@@ -3,8 +3,8 @@ export const appPageMetadataPt = {
   brandDescription: 'Explore elementos, balanceie equações e monte moléculas em um só lugar.',
   pages: {
     home: {
-      title: 'Plataforma de Química',
-      description: 'Explore a tabela periódica, balanceie equações e monte moléculas em uma plataforma de química feita para aprendizado claro e uso prático.',
+      title: 'Experiência Interativa de Química',
+      description: 'Explore química com uma home mais envolvente, uma tabela periódica marcante, equações rápidas e um editor molecular fácil de abrir.',
       keywords: [
         'plataforma de química',
         'tabela periódica online',

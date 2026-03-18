@@ -1,105 +1,95 @@
 export const homeLandingTextEn = {
   hero: {
-    eyebrow: 'Chemistry workspace',
-    title: 'A clearer home for exploring chemistry online.',
+    eyebrow: 'A new way to present chemistry',
+    title: 'A chemistry experience built to catch attention fast.',
     description:
-      'Open the periodic table, balance equations, and build molecules in one place with a faster, calmer workflow for study, teaching, and product discovery.',
-    primaryCta: 'Open periodic table',
+      'Strong visuals, easy reading, and clear paths that turn curiosity into the urge to keep exploring.',
+    primaryCta: 'View periodic table',
     secondaryCta: 'Balance an equation',
-    tertiaryCta: 'Try molecular editor',
+    tertiaryCta: 'Open molecular editor',
     highlights: [
-      'Localized experience',
-      'Browser-based chemistry tools',
-      'Built for clear exploration',
+      'Stronger first impression',
+      'Easy to navigate',
+      'English and Portuguese',
     ],
-    previewTitle: 'Workspace preview',
-    quickLinks: {
-      search: 'Search',
-      login: 'Login',
-    },
+    showcaseTitle: 'Everything feels part of the same experience',
+    showcaseDescription:
+      'Elements, equations, and molecules feel connected from the first glance instead of looking like separate screens.',
   },
-  spotlight: {
-    eyebrow: 'Tools',
-    title: 'What you can do here',
-    items: [
-      {
-        title: 'Explore element data',
-        description:
-          'Search by name, symbol, phase, or category and open a cleaner element view with visuals, classifications, and core data.',
-        href: '/search',
-        cta: 'Explore elements',
-      },
-      {
-        title: 'Balance chemical equations',
-        description:
-          'Check equations in the browser, compare the original form with the balanced result, and review extra analysis when it helps.',
-        href: '/balance-equation',
-        cta: 'Open balancer',
-      },
-      {
-        title: 'Build and edit molecules',
-        description:
-          'Create molecular structures, inspect formulas, and keep working from your saved gallery when you want to continue later.',
-        href: '/molecular-editor',
-        cta: 'Open editor',
-      },
-    ],
-  },
-  audience: {
-    eyebrow: 'Who it helps',
-    title: 'Made for real chemistry workflows',
+  features: {
+    title: 'Visitors understand where to start right away.',
     description:
-      'This home page is designed to help future customers understand the product quickly without digging through multiple tools first.',
+      'The homepage points to the main experiences without feeling crowded or weighed down by internal language.',
     items: [
       {
-        title: 'Students',
-        description: 'Move from periodic table lookups to equation balancing and molecular structure practice without changing context.',
+        title: 'Periodic table',
+        description: 'Present elements through a friendlier reading experience, stronger visuals, and simpler navigation.',
+        href: '/periodic-table',
+        cta: 'Explore',
       },
       {
-        title: 'Teachers',
-        description: 'Use a cleaner surface to demonstrate element data, equation balancing, and molecule building in one browser session.',
+        title: 'Chemical equations',
+        description: 'Show results quickly through a cleaner experience that is easier to follow from the first click.',
+        href: '/balance-equation',
+        cta: 'Try it',
       },
       {
-        title: 'Product teams',
-        description: 'Evaluate the chemistry UX, real product behavior, and the flow between tools before deeper integration discussions.',
+        title: 'Molecular editor',
+        description: 'Open an interactive space that turns curiosity into hands-on exploration right away.',
+        href: '/molecular-editor',
+        cta: 'Experiment',
+      },
+    ],
+  },
+  positioning: {
+    title: 'Made to look strong in a demo and feel easy in real use.',
+    description:
+      'The goal here is to open the conversation, support a strong walkthrough, and make people want to continue.',
+    items: [
+      {
+        title: 'First impression',
+        description: 'When the entrance feels polished, trust starts showing up before the second click.',
+      },
+      {
+        title: 'Natural navigation',
+        description: 'People quickly understand where to click, what they will see, and what comes next.',
+      },
+      {
+        title: 'Clear next step',
+        description: 'After the first spark of curiosity, the main paths are already in front of them.',
       },
     ],
   },
   faq: {
-    eyebrow: 'FAQ',
-    title: 'Frequently asked questions',
+    title: 'Questions people usually ask at the beginning.',
     items: [
       {
-        question: 'What can I do on Clean Periodic Table today?',
-        answer:
-          'You can explore elements, balance chemical equations locally in the browser, and build molecular structures with an interactive editor.',
+        question: 'Does it work directly in the browser?',
+        answer: 'Yes. The main experience starts right there in the browser, with no installation needed to show value.',
       },
       {
-        question: 'Do I need an account to use everything?',
-        answer:
-          'You can open the landing page and the equation balancer without signing in. Some synced flows, such as saved molecule workspaces, still depend on authentication.',
+        question: 'Do I need an account to begin?',
+        answer: 'Not to discover the experience. An account makes more sense once the visitor decides to continue and save progress.',
       },
       {
-        question: 'Does equation balancing work in the browser?',
-        answer:
-          'Yes. The current architecture keeps balancing available directly in the browser, with optional remote enrichment added only when available.',
-      },
-      {
-        question: 'Can I come back to molecules later?',
-        answer:
-          'Yes. Signed-in users can save molecules and continue editing them later from the gallery and editor flows.',
+        question: 'Is this only for studying?',
+        answer: 'No. It also works well as a demo, an experience showcase, and a starting point for commercial conversations.',
       },
     ],
   },
   finalCta: {
-    title: 'Start with the workflow that fits you best',
+    title: 'The first visit should make people want to stay.',
     description:
-      'If you are evaluating the product, the three best entry points are the periodic table, the equation balancer, and the molecular editor.',
-    primary: 'Go to periodic table',
-    secondary: 'Go to equation balancer',
+      'If the entry feels right, visitors will find the next step on their own and the experience can take over.',
+    primary: 'Start with the table',
+    secondary: 'Open equations',
   },
   footer: {
-    note: 'Clean Periodic Table keeps chemistry tools in one calmer, more readable interface.',
+    note: 'A cleaner, more memorable entry point for people who are still discovering what this experience can become.',
   },
-  examples: ['H2 + O2 -> H2O', 'N2O4 <-> 2 NO2', 'C6H6'],
+  examples: [
+    { label: 'Elements', formula: 'Na · Fe · Cl' },
+    { label: 'Equations', formula: 'H2 + O2 -> H2O' },
+    { label: 'Molecules', formula: 'C6H6' },
+  ],
 } as const;
