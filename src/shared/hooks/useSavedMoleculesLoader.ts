@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 
 import { listSavedMolecules } from '@/shared/api/moleculeApi';
 import { executeWithFreshToken, isUnauthorizedError } from '@/shared/hooks/authRequestUtils';
+import { SESSION_EXPIRED_ERROR_MESSAGE } from '@/shared/hooks/hookErrorMessages';
 import type { SavedMolecule } from '@/shared/types/molecule';
 
 type SavedMoleculesSnapshot = {
@@ -68,7 +69,7 @@ export default function useSavedMoleculesLoader({
           setSnapshot({
             token,
             data: [],
-            error: 'Your session expired. Please login again.',
+            error: SESSION_EXPIRED_ERROR_MESSAGE,
           });
           return;
         }

@@ -8,6 +8,10 @@ import ElementsState from '@/components/organisms/elements/ElementsState';
 import type { AuthModalMode } from '@/components/organisms/auth/AuthModal';
 import usePeriodicTableText from '@/components/organisms/periodic-table/usePeriodicTableText';
 import AppShell from '@/components/templates/AppShell';
+import {
+  resolveElementsWorkspaceMessage,
+  resolveSessionWorkspaceMessage,
+} from '@/components/templates/workspaceErrorCopy';
 import type { TokenStatusType } from '@/components/molecules/TokenStatus';
 import type { PeriodicTableMode } from '@/components/organisms/periodic-table/PeriodicTable';
 import { logoutSession } from '@/shared/api/authApi';
@@ -51,6 +55,8 @@ function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
 
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const resolvedSessionMessage = resolveSessionWorkspaceMessage(authSession.message, text);
+  const resolvedElementsError = resolveElementsWorkspaceMessage(error, text);
 
   const onLogout = useCallback(() => {
     void logoutSession().catch(() => undefined);
@@ -98,7 +104,7 @@ function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
         ) : authSession.status === 'unverified' ? (
           <ElementsState
             tone="error"
-            message={authSession.message ?? text.workspace.sessionVerificationFailed}
+            message={resolvedSessionMessage}
             actionLabel={text.common.tryAgain}
             onAction={authSession.revalidate}
           />
@@ -115,8 +121,8 @@ function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
             message={text.workspace.loadingPeriodicTable}
             showProgress
           />
-        ) : error !== null ? (
-          <ElementsState tone="error" message={error} />
+        ) : resolvedElementsError !== null ? (
+          <ElementsState tone="error" message={resolvedElementsError} />
         ) : (
           <PeriodicTable elements={data} mode={tableMode} />
         )}
