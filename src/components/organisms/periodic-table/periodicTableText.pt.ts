@@ -18,6 +18,22 @@ export const periodicTableTextPt = {
       gas: 'Gasoso',
     },
   },
+  taxonomy: {
+    categories: {
+      alkaliMetal: 'Metal alcalino',
+      alkalineEarthMetal: 'Metal alcalino-terroso',
+      transitionMetal: 'Metal de transição',
+      postTransitionMetal: 'Metal pós-transição',
+      metalloid: 'Semimetal',
+      nonmetal: 'Não metal',
+      halogen: 'Halogênio',
+      nobleGas: 'Gás nobre',
+      lanthanide: 'Lantanídeo',
+      actinide: 'Actinídeo',
+      unknown: 'Desconhecida',
+      other: 'Outra',
+    },
+  },
   explore: {
     searchLabel: 'Pesquisar',
     searchPlaceholder: 'Nome, símbolo, número, fase, categoria...',

@@ -5,7 +5,10 @@ import usePeriodicTableText from '@/components/organisms/periodic-table/usePerio
 
 import ElementDetailsBadge from './ElementDetailsBadge';
 import type { ViewerMode } from './elementDetails.types';
-import { formatNullableValue } from './elementDetailsUtils';
+import {
+  formatElementCategoryLabel,
+  formatElementPhaseLabel,
+} from './periodicTableText';
 import ElementDetailsViewerModeControls from './ElementDetailsViewerModeControls';
 
 type ElementDetailsMediaHeaderProps = {
@@ -26,11 +29,7 @@ export default function ElementDetailsMediaHeader({
   onViewerModeChange,
 }: ElementDetailsMediaHeaderProps) {
   const text = usePeriodicTableText();
-  const nullableValueText = {
-    fallbackText: text.details.fields.notInformed,
-    yesText: text.common.yes,
-    noText: text.common.no,
-  };
+  const fallbackText = text.details.fields.notInformed;
 
   return (
     <section className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 max-[344px]:grid-cols-1">
@@ -38,8 +37,8 @@ export default function ElementDetailsMediaHeader({
         <p className="text-xs uppercase tracking-[0.15em] text-[var(--text-muted)]">{text.details.sectionTitle}</p>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           {isRadioactive ? <ElementDetailsBadge label={text.details.badges.radioactive} tone="radioactive" /> : null}
-          <ElementDetailsBadge label={formatNullableValue(element.category, nullableValueText)} />
-          <ElementDetailsBadge label={formatNullableValue(element.phase, nullableValueText)} />
+          <ElementDetailsBadge label={formatElementCategoryLabel(text, element.category, fallbackText)} />
+          <ElementDetailsBadge label={formatElementPhaseLabel(text, element.phase, fallbackText)} />
         </div>
       </div>
 

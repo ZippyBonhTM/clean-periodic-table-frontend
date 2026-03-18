@@ -24,8 +24,8 @@ export default function useElementDetailsRows({
       return [];
     }
 
-    return buildElementRows(element, text.details.fields, text.common);
-  }, [element, text.common, text.details.fields]);
+    return buildElementRows(element, text, text.details.fields, text.common);
+  }, [element, text]);
 
   const cardRows = useMemo(() => {
     return buildCardOptimizedRows(dataRows);

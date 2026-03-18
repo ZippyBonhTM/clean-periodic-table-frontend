@@ -1,6 +1,12 @@
 import type { ChemicalElement } from '@/shared/types/element';
 import type { PeriodicTableTextCatalog } from '@/components/organisms/periodic-table/periodicTableText';
-import { formatAtomicMass } from '@/shared/utils/elementPresentation';
+import {
+  formatAtomicMass,
+} from '@/shared/utils/elementPresentation';
+import {
+  formatElementCategoryLabel,
+  formatElementPhaseLabel,
+} from '@/components/organisms/periodic-table/periodicTableText';
 
 import type { ElementMetaRow } from './elementDetails.types';
 import { formatNullableValue } from './elementDetailsText';
@@ -10,6 +16,7 @@ type ElementDetailsCommonLabels = Pick<PeriodicTableTextCatalog['common'], 'yes'
 
 export function buildElementRows(
   element: ChemicalElement,
+  text: PeriodicTableTextCatalog,
   fieldLabels: ElementDetailsFieldLabels,
   commonLabels: ElementDetailsCommonLabels,
 ): ElementMetaRow[] {
@@ -28,8 +35,8 @@ export function buildElementRows(
     { key: 'symbol', label: fieldLabels.symbol, value: formatNullableValue(element.symbol, nullableValueText) },
     { key: 'atomicNumber', label: fieldLabels.atomicNumber, value: String(element.number) },
     { key: 'atomicMass', label: fieldLabels.atomicMass, value: formatAtomicMass(element.atomic_mass) },
-    { key: 'category', label: fieldLabels.category, value: formatNullableValue(element.category, nullableValueText) },
-    { key: 'phase', label: fieldLabels.phase, value: formatNullableValue(element.phase, nullableValueText) },
+    { key: 'category', label: fieldLabels.category, value: formatElementCategoryLabel(text, element.category, fieldLabels.notInformed) },
+    { key: 'phase', label: fieldLabels.phase, value: formatElementPhaseLabel(text, element.phase, fieldLabels.notInformed) },
     { key: 'group', label: fieldLabels.group, value: String(element.group) },
     { key: 'period', label: fieldLabels.period, value: String(element.period) },
     { key: 'block', label: fieldLabels.block, value: formatNullableValue(element.block, nullableValueText) },

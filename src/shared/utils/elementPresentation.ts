@@ -1,68 +1,89 @@
 import type { ChemicalElement } from '@/shared/types/element';
 
+type ElementCategoryKey =
+  | 'alkaliMetal'
+  | 'alkalineEarthMetal'
+  | 'transitionMetal'
+  | 'postTransitionMetal'
+  | 'metalloid'
+  | 'nonmetal'
+  | 'halogen'
+  | 'nobleGas'
+  | 'lanthanide'
+  | 'actinide'
+  | 'unknown'
+  | 'other';
+
 type CategoryColor = {
-  label: string;
+  key: ElementCategoryKey;
   rgb: string;
 };
 
 const CATEGORY_COLORS: Array<{ keywords: string[]; color: CategoryColor }> = [
   {
     keywords: ['alkali metal'],
-    color: { label: 'alkali metal', rgb: '251,146,60' },
+    color: { key: 'alkaliMetal', rgb: '251,146,60' },
   },
   {
     keywords: ['alkaline earth metal'],
-    color: { label: 'alkaline earth metal', rgb: '253,224,71' },
+    color: { key: 'alkalineEarthMetal', rgb: '253,224,71' },
   },
   {
     keywords: ['transition metal'],
-    color: { label: 'transition metal', rgb: '56,189,248' },
+    color: { key: 'transitionMetal', rgb: '56,189,248' },
   },
   {
     keywords: ['post-transition metal'],
-    color: { label: 'post-transition metal', rgb: '244,114,182' },
+    color: { key: 'postTransitionMetal', rgb: '244,114,182' },
   },
   {
     keywords: ['metalloid'],
-    color: { label: 'metalloid', rgb: '34,197,94' },
+    color: { key: 'metalloid', rgb: '34,197,94' },
   },
   {
     keywords: ['diatomic nonmetal', 'polyatomic nonmetal', 'nonmetal'],
-    color: { label: 'nonmetal', rgb: '45,212,191' },
+    color: { key: 'nonmetal', rgb: '45,212,191' },
   },
   {
     keywords: ['halogen'],
-    color: { label: 'halogen', rgb: '129,140,248' },
+    color: { key: 'halogen', rgb: '129,140,248' },
   },
   {
     keywords: ['noble gas'],
-    color: { label: 'noble gas', rgb: '192,132,252' },
+    color: { key: 'nobleGas', rgb: '192,132,252' },
   },
   {
     keywords: ['lanthanide'],
-    color: { label: 'lanthanide', rgb: '248,113,113' },
+    color: { key: 'lanthanide', rgb: '248,113,113' },
   },
   {
     keywords: ['actinide'],
-    color: { label: 'actinide', rgb: '236,72,153' },
+    color: { key: 'actinide', rgb: '236,72,153' },
   },
   {
     keywords: ['unknown'],
-    color: { label: 'unknown', rgb: '148,163,184' },
+    color: { key: 'unknown', rgb: '148,163,184' },
   },
 ];
 
 const DEFAULT_COLOR: CategoryColor = {
-  label: 'other',
+  key: 'other',
   rgb: '148,163,184',
 };
 
-function resolveCategoryColor(category: string): CategoryColor {
+function resolveElementCategoryKey(category: string): ElementCategoryKey {
   const normalized = category.toLowerCase();
 
   const matched = CATEGORY_COLORS.find((entry) => {
     return entry.keywords.some((keyword) => normalized.includes(keyword));
   });
+
+  return matched?.color.key ?? DEFAULT_COLOR.key;
+}
+
+function resolveCategoryColor(category: string): CategoryColor {
+  const key = resolveElementCategoryKey(category);
+  const matched = CATEGORY_COLORS.find((entry) => entry.color.key === key);
 
   return matched?.color ?? DEFAULT_COLOR;
 }
@@ -176,7 +197,8 @@ export {
   isElementRadioactive,
   matchesElementQuery,
   resolveElementQueryRank,
+  resolveElementCategoryKey,
   resolveCategoryColor,
   sortElements,
 };
-export type { CategoryColor };
+export type { CategoryColor, ElementCategoryKey };
