@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 
 import { preserveViewportAcrossModelChange } from '@/components/organisms/molecular-editor/moleculeCanvasViewport';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type {
   MoleculeEditorStructureActions,
   UseMoleculeEditorActionsOptions,
@@ -42,9 +43,11 @@ export default function useMoleculeEditorRemoveAtomAction<Snapshot>({
   MoleculeEditorStructureActions,
   'onRemoveSelectedAtom'
 > {
+  const text = useMolecularEditorText();
+
   const onRemoveSelectedAtom = useCallback(() => {
     if (selectedAtomId === null) {
-      setEditorNotice('Select an atom before removing it.');
+      setEditorNotice(text.notices.selectAtomBeforeRemoving);
       return;
     }
 
@@ -78,7 +81,7 @@ export default function useMoleculeEditorRemoveAtomAction<Snapshot>({
     pushHistorySnapshot(buildHistorySnapshot());
     setMolecule(sanitizedMolecule);
     setSelectedAtomId(null);
-    setEditorNotice('Selected atom removed.');
+    setEditorNotice(text.notices.selectedAtomRemoved);
   }, [
     buildHistorySnapshot,
     canvasFrameAspectRatio,
@@ -90,6 +93,8 @@ export default function useMoleculeEditorRemoveAtomAction<Snapshot>({
     setEditorNotice,
     setMolecule,
     setSelectedAtomId,
+    text.notices.selectAtomBeforeRemoving,
+    text.notices.selectedAtomRemoved,
   ]);
 
   return {

@@ -5,6 +5,10 @@ import type { ComponentProps } from 'react';
 
 import type MoleculeEditorOverlays from '@/components/organisms/molecular-editor/MoleculeEditorOverlays';
 import type { GalleryFeedback } from '@/components/organisms/molecular-editor/moleculeEditorSession';
+import {
+  formatMolecularEditorComponentLabel,
+} from '@/components/organisms/molecular-editor/molecularEditorText';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type { ChemicalElement } from '@/shared/types/element';
 
 type MoleculeEditorOverlaysProps = ComponentProps<typeof MoleculeEditorOverlays>;
@@ -64,9 +68,13 @@ export default function useMoleculeEditorOverlayProps({
   onUpdateSelected,
   pageMode,
 }: UseMoleculeEditorOverlayPropsOptions): MoleculeEditorOverlaysProps {
+  const text = useMolecularEditorText();
   const focusedComponentLabel = useMemo(
-    () => (componentCount > 1 ? `Mol ${focusedComponentIndex + 1} / ${componentCount}` : null),
-    [componentCount, focusedComponentIndex],
+    () =>
+      componentCount > 1
+        ? `${formatMolecularEditorComponentLabel(text, focusedComponentIndex)} / ${componentCount}`
+        : null,
+    [componentCount, focusedComponentIndex, text],
   );
 
   return useMemo(

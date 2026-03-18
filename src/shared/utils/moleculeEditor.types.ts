@@ -2,6 +2,14 @@ import type { ChemicalElement } from '@/shared/types/element';
 
 export type BondOrder = 1 | 2 | 3;
 
+export type MoleculeEditorIssue =
+  | { code: 'missingSourceAtom' }
+  | { code: 'bondLimitReached'; symbol: string; limit: number }
+  | { code: 'targetBondOrderUnsupported'; symbol: string; order: BondOrder }
+  | { code: 'noAttachmentPoint' }
+  | { code: 'sameAtomBond' }
+  | { code: 'missingBondAtom' };
+
 export type MoleculeElementSnapshot = Pick<
   ChemicalElement,
   'number' | 'symbol' | 'name' | 'category' | 'group' | 'shells'

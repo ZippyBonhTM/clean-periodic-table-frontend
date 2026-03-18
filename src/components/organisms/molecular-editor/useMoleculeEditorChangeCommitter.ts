@@ -2,12 +2,16 @@
 
 import { useCallback } from 'react';
 
+import {
+  formatMolecularEditorIssueMessage,
+} from '@/components/organisms/molecular-editor/molecularEditorText';
 import { preserveViewportAcrossModelChange } from '@/components/organisms/molecular-editor/moleculeCanvasViewport';
 import type {
   MoleculeChangeResult,
   MoleculeEditorChangeCommitter,
   UseMoleculeEditorActionsOptions,
 } from '@/components/organisms/molecular-editor/moleculeEditorActions.types';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import { dedupeBondConnections } from '@/shared/utils/moleculeEditor';
 
 type UseMoleculeEditorChangeCommitterOptions<Snapshot> = Pick<
@@ -42,6 +46,8 @@ export default function useMoleculeEditorChangeCommitter<Snapshot>({
   setNomenclatureFallback,
   setSelectedAtomId,
 }: UseMoleculeEditorChangeCommitterOptions<Snapshot>): MoleculeEditorChangeCommitter<Snapshot> {
+  const text = useMolecularEditorText();
+
   return useCallback(
     (
       previousMolecule: UseMoleculeEditorActionsOptions<Snapshot>['molecule'],
@@ -78,7 +84,7 @@ export default function useMoleculeEditorChangeCommitter<Snapshot>({
         setSelectedAtomId(nextSelectedAtomId);
       }
 
-      setEditorNotice(result.error ?? successMessage);
+      setEditorNotice(result.issue !== undefined ? formatMolecularEditorIssueMessage(text, result.issue) : successMessage);
     },
     [
       buildHistorySnapshot,
@@ -94,6 +100,7 @@ export default function useMoleculeEditorChangeCommitter<Snapshot>({
       setMolecule,
       setNomenclatureFallback,
       setSelectedAtomId,
+      text,
     ],
   );
 }

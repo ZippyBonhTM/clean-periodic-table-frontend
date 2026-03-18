@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
+
 const CANVAS_DOUBLE_PRESS_DELAY_MS = 320;
 
 type UseCanvasSelectionClearTimeoutOptions = {
@@ -17,6 +19,7 @@ export default function useCanvasSelectionClearTimeout({
   setEditorNotice,
   setSelectedAtomId,
 }: UseCanvasSelectionClearTimeoutOptions) {
+  const text = useMolecularEditorText();
   const selectedAtomIdRef = useRef<string | null>(null);
   const pendingCanvasSelectionClearTimeoutRef = useRef<number | null>(null);
 
@@ -48,10 +51,10 @@ export default function useCanvasSelectionClearTimeout({
         }
 
         setSelectedAtomId(null);
-        setEditorNotice('Selection cleared.');
+        setEditorNotice(text.notices.selectionCleared);
       }, CANVAS_DOUBLE_PRESS_DELAY_MS);
     },
-    [onSelectionClearTimeout, setEditorNotice, setSelectedAtomId],
+    [onSelectionClearTimeout, setEditorNotice, setSelectedAtomId, text.notices.selectionCleared],
   );
 
   return {
