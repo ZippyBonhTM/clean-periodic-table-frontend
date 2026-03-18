@@ -11,6 +11,7 @@ type EditorViewMode = SavedMoleculeEditorState['activeView'];
 
 type UseMoleculeEditorLayoutOptions = {
   activeView: EditorViewMode;
+  compactEditorNotice: string | null;
   componentCount: number;
   isFloatingSaveShortcutExpanded: boolean;
   isFormulaPanelOpen: boolean;
@@ -23,6 +24,7 @@ type UseMoleculeEditorLayoutOptions = {
 
 export default function useMoleculeEditorLayout({
   activeView,
+  compactEditorNotice,
   componentCount,
   isFloatingSaveShortcutExpanded,
   isFormulaPanelOpen,
@@ -58,6 +60,7 @@ export default function useMoleculeEditorLayout({
         activeView,
         bottomNoticeHeight,
         canvasFrameSize,
+        compactEditorNotice,
         componentCount,
         isFloatingSaveShortcutExpanded,
         isFormulaPanelOpen,
@@ -76,6 +79,7 @@ export default function useMoleculeEditorLayout({
     bottomNoticeRef,
     canvasFrameRef,
     canvasFrameSize,
+    compactEditorNotice,
     componentCount,
     isFloatingSaveShortcutExpanded,
     isFormulaPanelOpen,

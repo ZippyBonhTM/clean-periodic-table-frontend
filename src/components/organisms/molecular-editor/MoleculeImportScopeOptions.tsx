@@ -1,23 +1,7 @@
 'use client';
 
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type { PubChemImportMode } from '@/shared/api/pubchemApi';
-
-const IMPORT_MODE_OPTIONS = [
-  {
-    mode: 'main' as const,
-    title: 'Main component',
-    description: 'Keeps the dominant connected component and omits detached salts or companion fragments.',
-  },
-  {
-    mode: 'all' as const,
-    title: 'All components',
-    description: 'Keeps every disconnected component in the same canvas as one multi-component work.',
-  },
-] satisfies Array<{
-  mode: PubChemImportMode;
-  title: string;
-  description: string;
-}>;
 
 type MoleculeImportScopeOptionsProps = {
   importMode: PubChemImportMode;
@@ -28,16 +12,34 @@ export default function MoleculeImportScopeOptions({
   importMode,
   onImportModeChange,
 }: MoleculeImportScopeOptionsProps) {
+  const text = useMolecularEditorText();
+  const importModeOptions = [
+    {
+      mode: 'main' as const,
+      title: text.importModal.mainComponent,
+      description: text.importModal.mainComponentDescription,
+    },
+    {
+      mode: 'all' as const,
+      title: text.importModal.allComponents,
+      description: text.importModal.allComponentsDescription,
+    },
+  ] satisfies Array<{
+    mode: PubChemImportMode;
+    title: string;
+    description: string;
+  }>;
+
   return (
     <div className="space-y-2">
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">Import Scope</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">{text.importModal.importScope}</p>
         <p className="mt-1 text-sm leading-relaxed text-(--text-muted)">
-          Choose between the main component or the full imported record.
+          {text.importModal.importScopeDescription}
         </p>
       </div>
       <div className="grid gap-2">
-        {IMPORT_MODE_OPTIONS.map((option) => {
+        {importModeOptions.map((option) => {
           const isActive = importMode === option.mode;
 
           return (

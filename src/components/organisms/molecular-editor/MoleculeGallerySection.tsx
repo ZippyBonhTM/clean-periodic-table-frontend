@@ -4,6 +4,7 @@ import Button from '@/components/atoms/Button';
 import MoleculeGalleryCard from '@/components/molecules/chemistry/MoleculeGalleryCard';
 import MoleculeGallerySectionHeader from '@/components/organisms/molecular-editor/MoleculeGallerySectionHeader';
 import MoleculeGallerySyncStatus from '@/components/organisms/molecular-editor/MoleculeGallerySyncStatus';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type { SavedMolecule } from '@/shared/types/molecule';
 
 type GalleryFeedback = {
@@ -38,6 +39,7 @@ export default function MoleculeGallerySection({
   savedMolecules,
   savedMoleculesError,
 }: MoleculeGallerySectionProps) {
+  const text = useMolecularEditorText();
   const hasCurrentSavedSelection = activeSavedMoleculeId !== null;
   const galleryGridClassName =
     savedMolecules.length <= 1
@@ -67,20 +69,20 @@ export default function MoleculeGallerySection({
 
         {isSavedMoleculesLoading ? (
           <div className="mt-4 rounded-[1.5rem] border border-dashed border-(--border-subtle) bg-(--surface-overlay-subtle) px-4 py-8 text-center text-sm text-(--text-muted)">
-            Loading your saved molecules...
+            {text.gallery.loading}
           </div>
         ) : savedMoleculesError !== null ? (
           <div className="mt-4 rounded-[1.5rem] border border-rose-400/30 bg-rose-500/10 px-4 py-5 text-sm text-rose-100">
             <p>{savedMoleculesError}</p>
             <Button variant="ghost" size="sm" className="mt-3" onClick={onReloadSavedMolecules}>
-              Try Again
+              {text.gallery.retrySync}
             </Button>
           </div>
         ) : savedMolecules.length === 0 ? (
           <div className="mt-4 rounded-[1.5rem] border border-dashed border-(--border-subtle) bg-(--surface-overlay-subtle) px-4 py-8 text-center">
-            <p className="text-sm font-semibold text-foreground">Your gallery is empty.</p>
+            <p className="text-sm font-semibold text-foreground">{text.gallery.emptyTitle}</p>
             <p className="mt-2 text-sm text-(--text-muted)">
-              Save molecules from the editor to build this stick-view library.
+              {text.gallery.emptyDescription}
             </p>
           </div>
         ) : (

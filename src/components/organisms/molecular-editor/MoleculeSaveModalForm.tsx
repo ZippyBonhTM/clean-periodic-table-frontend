@@ -1,6 +1,7 @@
 'use client';
 
 import Button from '@/components/atoms/Button';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 
 type MoleculeSaveModalFormProps = {
   atomCount: number;
@@ -32,18 +33,19 @@ export default function MoleculeSaveModalForm({
   onUpdateSelected,
 }: MoleculeSaveModalFormProps) {
   const isGalleryContext = context === 'gallery';
+  const text = useMolecularEditorText();
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.4rem] border border-(--border-subtle) bg-(--surface-overlay-subtle) px-4 py-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-(--text-muted)">
-            {isGalleryContext ? 'Gallery Record' : 'Gallery Save'}
+            {isGalleryContext ? text.saveModal.galleryRecord : text.saveModal.gallerySave}
           </p>
           <p className="mt-1 text-sm leading-relaxed text-(--text-muted)">
             {isGalleryContext
-              ? 'Edit the title and educational description of the selected gallery item.'
-              : 'Save the current canvas as a new card, or update the linked gallery item when needed.'}
+              ? text.saveModal.galleryRecordDescription
+              : text.saveModal.gallerySaveDescription}
           </p>
         </div>
         <span
@@ -53,7 +55,7 @@ export default function MoleculeSaveModalForm({
               : 'border-(--border-subtle) bg-(--surface-overlay-soft) text-(--text-muted)'
           }`}
         >
-          {hasLinkedSelection ? 'Linked record' : 'New draft'}
+          {hasLinkedSelection ? text.saveModal.linkedRecord : text.saveModal.newDraft}
         </span>
       </div>
 
@@ -63,7 +65,7 @@ export default function MoleculeSaveModalForm({
             htmlFor="molecule-save-modal-name"
             className="text-[11px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)"
           >
-            Title
+            {text.saveModal.title}
           </label>
           <input
             id="molecule-save-modal-name"
@@ -71,7 +73,7 @@ export default function MoleculeSaveModalForm({
             type="text"
             value={moleculeTitle}
             onChange={(event) => onMoleculeTitleChange(event.target.value)}
-            placeholder="Benzeno"
+            placeholder={text.saveModal.titlePlaceholder}
             className="w-full rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-soft) px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-(--accent)"
           />
         </div>
@@ -81,17 +83,17 @@ export default function MoleculeSaveModalForm({
             htmlFor="molecule-save-modal-description"
             className="text-[11px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)"
           >
-            Educational Description
+            {text.saveModal.description}
           </label>
           <p className="text-xs leading-relaxed text-(--text-muted)">
-            Markdown supported. Example: `**bold**`, lists, links, and inline code.
+            {text.saveModal.markdownHint}
           </p>
           <textarea
             id="molecule-save-modal-description"
             name="molecule-save-modal-description"
             value={educationalDescription}
             onChange={(event) => onEducationalDescriptionChange(event.target.value)}
-            placeholder="Explain why this molecule matters, where it appears, or what concept it teaches."
+            placeholder={text.saveModal.descriptionPlaceholder}
             rows={6}
             className="w-full resize-none rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-soft) px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-(--accent)"
           />
@@ -105,15 +107,15 @@ export default function MoleculeSaveModalForm({
           disabled={!hasLinkedSelection || atomCount === 0 || isMutating}
           onClick={onUpdateSelected}
         >
-          Update Selected
+          {text.saveModal.updateSelected}
         </Button>
         {!isGalleryContext ? (
           <>
             <Button variant="secondary" size="sm" disabled={atomCount === 0 || isMutating} onClick={onSaveAsNew}>
-              Save As New
+              {text.saveModal.saveAsNew}
             </Button>
             <Button variant="ghost" size="sm" disabled={!hasLinkedSelection} onClick={onDetachSelection}>
-              New Draft
+              {text.saveModal.newDraft}
             </Button>
           </>
         ) : null}
@@ -124,7 +126,7 @@ export default function MoleculeSaveModalForm({
           className="text-rose-200 hover:text-rose-100"
           onClick={onDeleteSelected}
         >
-          Delete
+          {text.saveModal.delete}
         </Button>
       </div>
     </div>

@@ -3,6 +3,8 @@
 import { memo } from 'react';
 import type { CSSProperties } from 'react';
 
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
+
 type MoleculeSummaryRow = {
   label: string;
   compactLabel: string;
@@ -26,6 +28,7 @@ const MoleculeSummaryPanel = memo(function MoleculeSummaryPanel({
   style,
   onToggle,
 }: MoleculeSummaryPanelProps) {
+  const text = useMolecularEditorText();
   const heightClassName =
     rows.length > 5 ? (isCompact ? 'h-[84px]' : 'h-[108px] sm:h-[124px]') : isCompact ? 'h-[72px]' : 'h-[92px] sm:h-[108px]';
   const collapsedWidthClassName = isCompact ? 'w-7' : 'w-8 sm:w-9';
@@ -79,10 +82,10 @@ const MoleculeSummaryPanel = memo(function MoleculeSummaryPanel({
             onClick={onToggle}
             className={`inline-flex h-full shrink-0 items-center justify-center border-l border-(--border-subtle)/70 font-semibold uppercase tracking-[0.2em] text-(--text-muted) transition-colors hover:text-foreground ${buttonClassName}`}
             style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
-            aria-label={isOpen ? 'Hide summary' : 'Show summary'}
-            title={isOpen ? 'Hide summary' : 'Show summary'}
+            aria-label={isOpen ? text.summary.hide : text.summary.show}
+            title={isOpen ? text.summary.hide : text.summary.show}
           >
-            SUMMARY
+            {text.summary.title}
           </button>
         </div>
       </div>

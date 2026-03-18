@@ -2,6 +2,7 @@
 
 import MoleculeImportRelatedTerms from '@/components/organisms/molecular-editor/MoleculeImportRelatedTerms';
 import MoleculeImportScopeOptions from '@/components/organisms/molecular-editor/MoleculeImportScopeOptions';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type { PubChemImportMode } from '@/shared/api/pubchemApi';
 
 type MoleculeImportSidebarProps = {
@@ -27,15 +28,17 @@ export default function MoleculeImportSidebar({
   searchInputRef,
   suggestions,
 }: MoleculeImportSidebarProps) {
+  const text = useMolecularEditorText();
+
   return (
     <aside className="space-y-3 rounded-[1.5rem] border border-(--border-subtle) bg-(--surface-overlay-soft) p-4">
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-(--text-muted)">
-          Search Source
+          {text.importModal.sourceLabel}
         </p>
-        <h3 className="mt-1 text-lg font-black text-foreground">PubChem</h3>
+        <h3 className="mt-1 text-lg font-black text-foreground">{text.importModal.sourceName}</h3>
         <p className="mt-2 text-sm leading-relaxed text-(--text-muted)">
-          Search PubChem, preview matches, and import one into the editor.
+          {text.importModal.intro}
         </p>
       </div>
 
@@ -44,7 +47,7 @@ export default function MoleculeImportSidebar({
           htmlFor="molecule-import-search"
           className="text-[11px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)"
         >
-          Search
+          {text.importModal.search}
         </label>
         <input
           ref={searchInputRef}
@@ -55,7 +58,7 @@ export default function MoleculeImportSidebar({
           onChange={(event) => {
             onQueryChange(event.target.value);
           }}
-          placeholder="caffeine, aspirin, benzene..."
+          placeholder={text.importModal.searchPlaceholder}
           className="w-full rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-faint) px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-(--accent)"
         />
       </div>

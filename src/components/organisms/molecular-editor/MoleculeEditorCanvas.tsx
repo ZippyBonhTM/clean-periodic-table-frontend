@@ -12,6 +12,7 @@ import type { MoleculeModel } from '@/shared/utils/moleculeEditor';
 import MoleculeCanvasAtomLayer from '@/components/organisms/molecular-editor/MoleculeCanvasAtomLayer';
 import MoleculeCanvasBondLayer from '@/components/organisms/molecular-editor/MoleculeCanvasBondLayer';
 import { resolveModelCenter, type EditorViewMode } from '@/components/organisms/molecular-editor/moleculeCanvasRenderUtils';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 
 type EditorCanvasProps = {
   model: MoleculeModel;
@@ -44,12 +45,14 @@ export default function EditorCanvas({
   onAtomPointerDown,
   interactive = true,
   showGrid = true,
-  ariaLabel = 'Molecule editor canvas',
+  ariaLabel,
 }: EditorCanvasProps) {
+  const text = useMolecularEditorText();
   const atomById = useMemo(() => {
     return new Map(model.atoms.map((atom) => [atom.id, atom]));
   }, [model.atoms]);
   const modelCenter = useMemo(() => resolveModelCenter(model), [model]);
+  const resolvedAriaLabel = ariaLabel ?? text.canvas.ariaLabel;
 
   return (
     <svg
@@ -58,7 +61,7 @@ export default function EditorCanvas({
       className={`absolute inset-0 h-full w-full select-none ${interactive ? 'touch-none' : 'pointer-events-none'}`}
       style={{ touchAction: interactive ? 'none' : 'auto', userSelect: 'none' }}
       role="img"
-      aria-label={ariaLabel}
+      aria-label={resolvedAriaLabel}
       onPointerDown={interactive ? onCanvasPointerDown : undefined}
       onPointerMove={interactive ? onCanvasPointerMove : undefined}
       onPointerUp={interactive ? onCanvasPointerUp : undefined}

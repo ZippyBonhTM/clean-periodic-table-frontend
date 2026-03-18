@@ -2,6 +2,12 @@
 
 import { memo } from 'react';
 
+import {
+  formatMolecularEditorComponentCount,
+  formatMolecularEditorComponentFocusTitle,
+  formatMolecularEditorComponentLabel,
+} from '@/components/organisms/molecular-editor/molecularEditorText';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import { buildMolecularFormula, type MoleculeComponent } from '@/shared/utils/moleculeEditor';
 
 type MoleculeComponentFocusRailProps = {
@@ -17,12 +23,13 @@ const MoleculeComponentFocusRail = memo(function MoleculeComponentFocusRail({
   isCompact,
   onFocusComponent,
 }: MoleculeComponentFocusRailProps) {
+  const text = useMolecularEditorText();
   const railClassName = isCompact ? 'flex flex-wrap items-center gap-1.5' : 'flex flex-wrap items-center gap-2';
 
   return (
     <div className={railClassName}>
       <span className="rounded-full border border-(--border-subtle) bg-(--surface-overlay-soft) px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)">
-        {components.length} components
+        {formatMolecularEditorComponentCount(text, components.length)}
       </span>
       {components.map((component, index) => {
         const isFocused = index === focusedComponentIndex;
@@ -38,9 +45,9 @@ const MoleculeComponentFocusRail = memo(function MoleculeComponentFocusRail({
                 ? 'border-(--accent) bg-(--accent)/18 text-foreground'
                 : 'border-(--border-subtle) bg-(--surface-overlay-mid) text-(--text-muted) hover:border-(--accent) hover:text-foreground'
             }`}
-            title={`Focus Mol ${index + 1}${componentFormula.length > 0 ? ` (${componentFormula})` : ''}`}
+            title={formatMolecularEditorComponentFocusTitle(text, index, componentFormula)}
           >
-            Mol {index + 1}
+            {formatMolecularEditorComponentLabel(text, index)}
           </button>
         );
       })}

@@ -5,6 +5,7 @@ import { memo } from 'react';
 import FloatingModal from '@/components/molecules/FloatingModal';
 import MoleculeSaveModalForm from '@/components/organisms/molecular-editor/MoleculeSaveModalForm';
 import MoleculeSaveModalSummary from '@/components/organisms/molecular-editor/MoleculeSaveModalSummary';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 
 type MoleculeSaveModalProps = {
   context: 'editor' | 'gallery';
@@ -51,18 +52,20 @@ function MoleculeSaveModal({
   onDetachSelection,
   onDeleteSelected,
 }: MoleculeSaveModalProps) {
+  const text = useMolecularEditorText();
   const isGalleryContext = context === 'gallery';
   const modalTitle = hasLinkedSelection
     ? currentSaveLabel
     : isGalleryContext
-      ? 'Edit Gallery Record'
-      : 'Save Molecule to Gallery';
+      ? text.saveModal.editGalleryRecord
+      : text.saveModal.saveMoleculeToGallery;
 
   return (
     <FloatingModal
       isOpen={isOpen}
       title={modalTitle}
       onClose={onClose}
+      closeLabel={text.common.close}
       panelClassName="max-w-3xl self-start mt-1 sm:mt-3"
       bodyClassName="pr-1 pb-1"
     >

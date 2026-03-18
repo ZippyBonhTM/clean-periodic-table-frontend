@@ -9,6 +9,7 @@ type ResolveMoleculeEditorLayoutStylesOptions = {
     width: number;
     height: number;
   };
+  compactEditorNotice: string | null;
   componentCount: number;
   isFloatingSaveShortcutExpanded: boolean;
   isFormulaPanelOpen: boolean;
@@ -29,6 +30,7 @@ export default function resolveMoleculeEditorLayoutStyles({
   activeView,
   bottomNoticeHeight,
   canvasFrameSize,
+  compactEditorNotice,
   componentCount,
   isFloatingSaveShortcutExpanded,
   isFormulaPanelOpen,
@@ -167,10 +169,9 @@ export default function resolveMoleculeEditorLayoutStyles({
   const compactBottomNoticeClassName = isLandscapeCompactCanvas
     ? 'pointer-events-auto max-w-[min(84vw,320px)] rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-panel) px-2 py-1.5 text-[10px] leading-[1.2] text-(--text-muted) shadow-lg backdrop-blur-xl'
     : 'pointer-events-auto max-w-[min(92vw,620px)] rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-panel) px-3 py-2 text-xs text-(--text-muted) shadow-lg backdrop-blur-xl sm:text-[13px]';
-  const compactDisplayedEditorNotice =
-    isLandscapeCompactCanvas && resolvedEditorNotice === 'Select an element, then double-click or double-tap the canvas to place it.'
-      ? 'Select an element, then double-tap to place it.'
-      : resolvedEditorNotice;
+  const compactDisplayedEditorNotice = isLandscapeCompactCanvas
+    ? (compactEditorNotice ?? resolvedEditorNotice)
+    : resolvedEditorNotice;
   const toolRailBodyClassName = effectiveToolRailCollapsed
     ? 'flex flex-1 flex-col items-center gap-2 overflow-y-auto px-1.5 py-2'
     : 'flex-1 space-y-2.5 overflow-y-auto p-2';

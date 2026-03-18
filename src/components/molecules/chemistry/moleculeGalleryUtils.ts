@@ -1,20 +1,17 @@
 'use client';
 
-const SAVED_AT_FORMATTER = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-});
+import {
+  formatMolecularEditorSavedAtLabel,
+  type MolecularEditorTextCatalog,
+} from '@/components/organisms/molecular-editor/molecularEditorText';
+import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
-export function formatSavedAtLabel(value: string): string {
-  const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return 'Unknown sync time';
-  }
-
-  return SAVED_AT_FORMATTER.format(parsed);
+export function formatSavedAtLabel(
+  text: MolecularEditorTextCatalog,
+  locale: AppLocale,
+  value: string,
+): string {
+  return formatMolecularEditorSavedAtLabel(text, locale, value);
 }
 
 export function stripMarkdownForPreview(value: string): string {

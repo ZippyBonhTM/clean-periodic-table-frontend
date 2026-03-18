@@ -1,5 +1,6 @@
 'use client';
 
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type { ChemicalElement } from '@/shared/types/element';
 import { resolveCategoryColor } from '@/shared/utils/elementPresentation';
 import { resolveMaxBondSlots } from '@/shared/utils/moleculeEditor';
@@ -21,6 +22,7 @@ export default function MoleculePaletteTile({
   isSelected,
   paletteIndex,
 }: MoleculePaletteTileProps) {
+  const text = useMolecularEditorText();
   const color = resolveCategoryColor(element.category).rgb;
   const atomicNumberLabel = String(element.number);
   const atomicNumberBadgeClassName = element.number >= 100 ? 'min-w-[18px] text-[6px]' : 'min-w-[16px] text-[7px]';
@@ -76,7 +78,7 @@ export default function MoleculePaletteTile({
             ? `0 0 0 1px var(--neon-border), 0 0 12px rgba(${color}, 0.2)`
             : `0 0 0 1px var(--neon-border), 0 0 8px rgba(${color}, 0.18)`,
       }}
-      aria-label={`Select ${element.name}`}
+      aria-label={`${text.palette.selectElementPrefix} ${element.name}`}
     >
       <span
         className={`absolute left-0.5 top-0.5 inline-flex items-center justify-center rounded-full border px-1 py-px font-semibold leading-none tabular-nums text-(--text-muted) ${atomicNumberBadgeClassName} ${

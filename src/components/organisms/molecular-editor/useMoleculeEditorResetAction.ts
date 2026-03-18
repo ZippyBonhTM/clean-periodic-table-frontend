@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type {
   MoleculeEditorStructureActions,
   UseMoleculeEditorActionsOptions,
@@ -52,6 +53,8 @@ export default function useMoleculeEditorResetAction<Snapshot>({
   MoleculeEditorStructureActions,
   'onResetMolecule'
 > {
+  const text = useMolecularEditorText();
+
   const onResetMolecule = useCallback(() => {
     const isAlreadyPristine =
       molecule.atoms.length === 0 &&
@@ -63,7 +66,7 @@ export default function useMoleculeEditorResetAction<Snapshot>({
       canvasViewport.scale === defaultCanvasViewport.scale;
 
     if (isAlreadyPristine) {
-      setEditorNotice('Editor already reset.');
+      setEditorNotice(text.notices.editorAlreadyReset);
       return;
     }
 
@@ -76,7 +79,7 @@ export default function useMoleculeEditorResetAction<Snapshot>({
     setActiveView('editor');
     setBondOrder(1);
     setCanvasViewport(defaultCanvasViewport);
-    setEditorNotice('Editor reset.');
+    setEditorNotice(text.notices.editorReset);
   }, [
     activeView,
     bondOrder,
@@ -98,6 +101,8 @@ export default function useMoleculeEditorResetAction<Snapshot>({
     setMolecule,
     setNomenclatureFallback,
     setSelectedAtomId,
+    text.notices.editorAlreadyReset,
+    text.notices.editorReset,
   ]);
 
   return {

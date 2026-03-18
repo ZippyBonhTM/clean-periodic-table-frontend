@@ -1,5 +1,6 @@
 'use client';
 
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import MoleculeEditorToolRailButton from '@/components/organisms/molecular-editor/MoleculeEditorToolRailButton';
 import {
   AddAtomIcon,
@@ -48,12 +49,14 @@ export default function MoleculeEditorToolRailActions({
   selectedAtomId,
   summaryAtomCount,
 }: MoleculeEditorToolRailActionsProps) {
+  const text = useMolecularEditorText();
+
   return (
     <div className={effectiveToolRailCollapsed ? collapsedSectionClassName : expandedSectionClassName}>
       <MoleculeEditorToolRailButton
         icon={<SaveGalleryIcon />}
-        label="Save as New"
-        title="Open gallery save dialog"
+        label={text.toolRail.saveAsNew}
+        title={text.toolRail.saveDialog}
         collapsed={effectiveToolRailCollapsed}
         active={isSaveModalOpen}
         disabled={summaryAtomCount === 0}
@@ -61,44 +64,44 @@ export default function MoleculeEditorToolRailActions({
       />
       <MoleculeEditorToolRailButton
         icon={<UndoIcon />}
-        label="Undo"
-        title="Undo change (Ctrl/Cmd+Z)"
+        label={text.toolRail.undo}
+        title={text.toolRail.undoTitle}
         collapsed={effectiveToolRailCollapsed}
         disabled={!canUndo}
         onClick={onUndo}
       />
       <MoleculeEditorToolRailButton
         icon={<RedoIcon />}
-        label="Redo"
-        title="Redo change (Ctrl/Cmd+Shift+Z)"
+        label={text.toolRail.redo}
+        title={text.toolRail.redoTitle}
         collapsed={effectiveToolRailCollapsed}
         disabled={!canRedo}
         onClick={onRedo}
       />
       <MoleculeEditorToolRailButton
         icon={<AddAtomIcon />}
-        label="Add selected element"
+        label={text.toolRail.addSelectedElement}
         collapsed={effectiveToolRailCollapsed}
         disabled={activeElementSymbol === null}
         onClick={onAddSelectedElement}
       />
       <MoleculeEditorToolRailButton
         icon={<RemoveAtomIcon />}
-        label="Remove selected atom"
+        label={text.toolRail.removeSelectedAtom}
         collapsed={effectiveToolRailCollapsed}
         disabled={selectedAtomId === null}
         onClick={onRemoveSelectedAtom}
       />
       <MoleculeEditorToolRailButton
         icon={<ClearSelectionIcon />}
-        label="Clear selection"
+        label={text.toolRail.clearSelection}
         collapsed={effectiveToolRailCollapsed}
         disabled={selectedAtomId === null}
         onClick={onClearSelection}
       />
       <MoleculeEditorToolRailButton
         icon={<ResetEditorIcon />}
-        label="Reset editor"
+        label={text.toolRail.resetEditor}
         collapsed={effectiveToolRailCollapsed}
         danger
         onClick={onResetMolecule}

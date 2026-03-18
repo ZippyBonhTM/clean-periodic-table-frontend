@@ -3,6 +3,7 @@
 import type { CSSProperties, RefObject } from 'react';
 
 import MoleculePaletteSearchField from '@/components/organisms/molecular-editor/MoleculePaletteSearchField';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 
 function SearchIcon() {
   return (
@@ -59,6 +60,8 @@ export default function MoleculePaletteSearchRail({
   searchInputRef,
   shouldShowActivePaletteFilter,
 }: MoleculePaletteSearchRailProps) {
+  const text = useMolecularEditorText();
+
   return (
     <div ref={paletteSearchRailRef} style={paletteSearchRailStyle} className="absolute z-20">
       <div
@@ -73,8 +76,8 @@ export default function MoleculePaletteSearchRail({
               type="button"
               onClick={onTogglePaletteSearch}
               className="inline-flex h-full w-full items-center justify-center text-(--text-muted) transition-colors hover:text-foreground"
-              aria-label={isPaletteSearchOpen ? 'Close element search' : 'Open element search'}
-              title={isPaletteSearchOpen ? 'Close element search' : 'Open element search'}
+              aria-label={isPaletteSearchOpen ? text.palette.closeSearch : text.palette.openSearch}
+              title={isPaletteSearchOpen ? text.palette.closeSearch : text.palette.openSearch}
             >
               <SearchIcon />
             </button>
