@@ -1,9 +1,9 @@
 export const homeLandingTextPt = {
   hero: {
-    eyebrow: 'Química para explorar',
-    title: 'Um jeito mais envolvente de descobrir a química.',
+    eyebrow: 'Descubra, teste, crie',
+    title: 'A química pode ser tão fascinante quanto visual.',
     description:
-      'Explore elementos, teste equações e abra estruturas moleculares em uma experiência mais bonita, mais leve e mais convidativa.',
+      'Da tabela periódica ao editor molecular, tudo aqui convida você a explorar, experimentar e ver a química ganhar forma.',
     primaryCta: 'Ver tabela periódica',
     secondaryCta: 'Balancear equação',
     tertiaryCta: 'Abrir editor molecular',
@@ -12,55 +12,55 @@ export const homeLandingTextPt = {
       'Navegação imediata',
       'Em português e inglês',
     ],
-    showcaseIdleLabel: 'Escolha um elemento',
+    showcaseIdleLabel: 'Toque para descobrir',
     showcaseOpenTableCta: 'Abrir tabela completa',
   },
   features: {
-    title: 'Três caminhos para começar do jeito que fizer mais sentido.',
+    title: 'Veja a química por mais de um ângulo.',
     description:
-      'Escolha por onde entrar e deixe a própria experiência mostrar o valor.',
+      'Elementos, equações e estruturas moleculares reunidos em uma experiência que prende a atenção.',
     items: [
       {
         title: 'Tabela periódica',
-        description: 'Descubra elementos com uma leitura mais agradável, visual forte e navegação simples.',
+        description: 'Navegue pelos elementos com um visual forte e detalhes que despertam curiosidade.',
         href: '/periodic-table',
         cta: 'Explorar',
       },
       {
         title: 'Equações químicas',
-        description: 'Mostre resultados rapidamente com uma experiência mais direta e fácil de acompanhar.',
+        description: 'Balanceie reações em segundos e acompanhe o resultado de um jeito claro e direto.',
         href: '/balance-equation',
         cta: 'Testar',
       },
       {
         title: 'Editor molecular',
-        description: 'Abra uma área interativa que transforma curiosidade em experimentação imediata.',
+        description: 'Monte estruturas, ajuste detalhes e transforme ideias em algo visível.',
         href: '/molecular-editor',
         cta: 'Experimentar',
       },
     ],
   },
   positioning: {
-    title: 'Feita para despertar curiosidade logo de cara.',
+    title: 'Feita para encantar quem chega e agradar quem fica.',
     description:
-      'Tudo aqui foi pensado para parecer claro, agradável e fácil de explorar desde o primeiro toque.',
+      'Bonita de abrir, intuitiva de usar e rica o bastante para continuar despertando interesse.',
     items: [
       {
-        title: 'Visual que convida',
-        description: 'A página abre com mais presença e menos ruído, deixando a experiência respirar.',
+        title: 'Impacto imediato',
+        description: 'A primeira impressão já mostra que existe algo especial para explorar.',
       },
       {
-        title: 'Leitura mais simples',
-        description: 'As escolhas principais aparecem com clareza, sem excesso de blocos ou distrações.',
+        title: 'Interação que prende',
+        description: 'Sempre existe algo para tocar, abrir e descobrir sem esforço.',
       },
       {
-        title: 'Exploração imediata',
-        description: 'Quem chega já encontra algo para tocar, abrir e experimentar sem demora.',
+        title: 'Exploração contínua',
+        description: 'Cada área convida a seguir para a próxima sem quebrar o ritmo da descoberta.',
       },
     ],
   },
   faq: {
-    title: 'O básico que quase todo visitante quer saber.',
+    title: 'Perguntas que surgem naturalmente.',
     items: [
       {
         question: 'Dá para usar direto no navegador?',
@@ -77,13 +77,13 @@ export const homeLandingTextPt = {
     ],
   },
   finalCta: {
-    title: 'Comece pelo que mais chamar sua atenção.',
+    title: 'Entre por onde a curiosidade mandar.',
     description:
-      'A tabela periódica, as equações e o editor já estão prontos para serem explorados no seu ritmo.',
+      'A tabela, as equações e o editor já estão abertos para quem quiser explorar sem esperar.',
     primary: 'Começar pela tabela',
     secondary: 'Abrir equações',
   },
   footer: {
-    note: 'Química com mais clareza, mais presença e mais espaço para explorar.',
+    note: 'Uma experiência de química feita para surpreender logo no primeiro contato.',
   },
 } as const;

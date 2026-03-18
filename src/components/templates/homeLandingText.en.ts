@@ -1,9 +1,9 @@
 export const homeLandingTextEn = {
   hero: {
-    eyebrow: 'Chemistry to explore',
-    title: 'A more engaging way to discover chemistry.',
+    eyebrow: 'Discover, test, create',
+    title: 'Chemistry can be as captivating as it is visual.',
     description:
-      'Explore elements, try equations, and open molecular structures through an experience that feels lighter, clearer, and more inviting.',
+      'From the periodic table to the molecular editor, everything here invites people to explore, experiment, and watch chemistry take shape.',
     primaryCta: 'View periodic table',
     secondaryCta: 'Balance an equation',
     tertiaryCta: 'Open molecular editor',
@@ -12,55 +12,55 @@ export const homeLandingTextEn = {
       'Easy to navigate',
       'English and Portuguese',
     ],
-    showcaseIdleLabel: 'Pick an element',
+    showcaseIdleLabel: 'Tap to discover',
     showcaseOpenTableCta: 'Open full table',
   },
   features: {
-    title: 'Three ways to begin, depending on what draws attention first.',
+    title: 'See chemistry from more than one angle.',
     description:
-      'Pick a direction and let the experience speak for itself.',
+      'Elements, equations, and molecular structures brought together in an experience that holds attention.',
     items: [
       {
         title: 'Periodic table',
-        description: 'Present elements through a friendlier reading experience, stronger visuals, and simpler navigation.',
+        description: 'Browse elements through bold visuals and details that make people want to keep exploring.',
         href: '/periodic-table',
         cta: 'Explore',
       },
       {
         title: 'Chemical equations',
-        description: 'Show results quickly through a cleaner experience that is easier to follow from the first click.',
+        description: 'Balance reactions in seconds and follow the result through a clearer, more direct experience.',
         href: '/balance-equation',
         cta: 'Try it',
       },
       {
         title: 'Molecular editor',
-        description: 'Open an interactive space that turns curiosity into hands-on exploration right away.',
+        description: 'Build structures, refine details, and turn ideas into something visible.',
         href: '/molecular-editor',
         cta: 'Experiment',
       },
     ],
   },
   positioning: {
-    title: 'Made to spark curiosity from the very first glance.',
+    title: 'Made to delight first-time visitors and keep people engaged.',
     description:
-      'Everything here is meant to feel clear, pleasant, and easy to explore from the first tap.',
+      'Beautiful to open, intuitive to use, and rich enough to keep sparking interest.',
     items: [
       {
-        title: 'Inviting visual language',
-        description: 'The page opens with more presence and less noise, giving the experience room to breathe.',
+        title: 'Immediate impact',
+        description: 'The first impression already suggests there is something worth exploring here.',
       },
       {
-        title: 'Easier reading',
-        description: 'The main choices appear clearly, without too many blocks or competing distractions.',
+        title: 'Engaging interaction',
+        description: 'There is always something to tap, open, and discover without effort.',
       },
       {
-        title: 'Immediate exploration',
-        description: 'Visitors find something to tap, open, and try almost right away.',
+        title: 'Ongoing discovery',
+        description: 'Each area naturally invites the next one without breaking the rhythm of curiosity.',
       },
     ],
   },
   faq: {
-    title: 'What most visitors want to know first.',
+    title: 'Questions that come up naturally.',
     items: [
       {
         question: 'Does it work directly in the browser?',
@@ -77,13 +77,13 @@ export const homeLandingTextEn = {
     ],
   },
   finalCta: {
-    title: 'Start with whatever catches your attention first.',
+    title: 'Start wherever curiosity pulls you first.',
     description:
-      'The periodic table, equations, and editor are already waiting to be explored at your own pace.',
+      'The table, equations, and editor are already open for anyone ready to explore.',
     primary: 'Start with the table',
     secondary: 'Open equations',
   },
   footer: {
-    note: 'Chemistry with more clarity, more presence, and more room to explore.',
+    note: 'A chemistry experience designed to surprise people from the very first contact.',
   },
 } as const;
