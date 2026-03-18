@@ -9,7 +9,6 @@ import ChemistryBalanceComparisonPanel from '@/components/templates/ChemistryBal
 import ChemistryBalanceEnginePanel from '@/components/templates/ChemistryBalanceEnginePanel';
 import ChemistryBalanceExamplesPanel from '@/components/templates/ChemistryBalanceExamplesPanel';
 import ChemistryBalanceHistoryPanel from '@/components/templates/ChemistryBalanceHistoryPanel';
-import ChemistryBalancePipelinePanel from '@/components/templates/ChemistryBalancePipelinePanel';
 import ChemistryBalanceResultPanel from '@/components/templates/ChemistryBalanceResultPanel';
 import useChemistryBalanceText from '@/components/templates/useChemistryBalanceText';
 import useChemistryBalanceWorkspaceState from '@/components/templates/useChemistryBalanceWorkspaceState';
@@ -51,9 +50,11 @@ export default function ChemistryBalanceWorkspace() {
             <h1 className="text-2xl font-black text-[var(--text-strong)] sm:text-3xl">
               {text.workspace.title}
             </h1>
-            <p className="max-w-3xl text-sm leading-6 text-[var(--text-muted)] sm:text-base">
-              {text.workspace.description}
-            </p>
+            {text.workspace.description.length > 0 ? (
+              <p className="max-w-3xl text-sm leading-6 text-[var(--text-muted)] sm:text-base">
+                {text.workspace.description}
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-3">
@@ -104,8 +105,6 @@ export default function ChemistryBalanceWorkspace() {
               onSelect={applyEquationInput}
               onClear={clearHistory}
             />
-
-            <ChemistryBalancePipelinePanel />
           </div>
         </div>
       </section>
