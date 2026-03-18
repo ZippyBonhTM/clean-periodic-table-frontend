@@ -2,6 +2,11 @@
 
 import { useState } from 'react';
 
+import {
+  formatElementImageUnavailableMessage,
+} from '@/components/organisms/periodic-table/periodicTableText';
+import usePeriodicTableText from '@/components/organisms/periodic-table/usePeriodicTableText';
+
 type NativeElementImageProps = {
   src: string;
   alt: string;
@@ -13,9 +18,11 @@ type NativeElementImageProps = {
 };
 
 function ImageUnavailableState({ elementName }: { elementName: string }) {
+  const text = usePeriodicTableText();
+
   return (
     <div className="flex h-56 items-center justify-center rounded-xl border border-dashed border-[var(--border-subtle)] px-4 text-center text-sm text-[var(--text-muted)] md:h-72">
-      {`Image of element ${elementName}; Not available.`}
+      {formatElementImageUnavailableMessage(text, elementName)}
     </div>
   );
 }

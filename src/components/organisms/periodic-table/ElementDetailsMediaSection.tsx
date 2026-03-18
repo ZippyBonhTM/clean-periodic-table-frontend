@@ -1,6 +1,7 @@
 'use client';
 
 import type { ChemicalElement } from '@/shared/types/element';
+import usePeriodicTableText from '@/components/organisms/periodic-table/usePeriodicTableText';
 
 import ElementDetailsExternalLinks from './ElementDetailsExternalLinks';
 import ElementDetailsMediaHeader from './ElementDetailsMediaHeader';
@@ -39,13 +40,19 @@ export default function ElementDetailsMediaSection({
   onViewerModeChange,
   onOpenExpandedImage,
 }: ElementDetailsMediaSectionProps) {
+  const text = usePeriodicTableText();
+  const nullableValueText = {
+    fallbackText: text.details.fields.notInformed,
+    yesText: text.common.yes,
+    noText: text.common.no,
+  };
   const { is3DViewerReady, isImageFailed, onImageLoadError } = useElementDetailsMediaState({
     elementNumber: element.number,
     has3D,
     viewerMode,
   });
 
-  const elementName = formatNullableValue(element.name);
+  const elementName = formatNullableValue(element.name, nullableValueText);
 
   return (
     <>

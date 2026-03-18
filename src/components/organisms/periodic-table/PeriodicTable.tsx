@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useRef, useState, useTransition } from 'react';
+import { memo, useMemo, useRef, useState, useTransition } from 'react';
 
 import type { ChemicalElement } from '@/shared/types/element';
 
@@ -14,9 +14,14 @@ import {
   type PeriodicViewMode,
   type SortMode,
 } from './periodicTable.types';
+import {
+  getPeriodicSortLabel,
+  getPeriodicViewLabel,
+} from './periodicTableText';
 import useFloatingMenuPosition from './useFloatingMenuPosition';
 import usePeriodicTableElements from './usePeriodicTableElements';
 import usePeriodicTableFullscreen from './usePeriodicTableFullscreen';
+import usePeriodicTableText from './usePeriodicTableText';
 
 type PeriodicTableProps = {
   elements: ChemicalElement[];
@@ -24,6 +29,7 @@ type PeriodicTableProps = {
 };
 
 function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
+  const text = usePeriodicTableText();
   const [viewMode, setViewMode] = useState<PeriodicViewMode>('classic');
   const [classicZoomPercent, setClassicZoomPercent] = useState(100);
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
@@ -78,6 +84,24 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
       onClassicZoomChange: setClassicZoomPercent,
     });
 
+  const localizedSortOptions = useMemo(
+    () =>
+      SORT_OPTIONS.map((option) => ({
+        mode: option.mode,
+        label: getPeriodicSortLabel(text, option.mode),
+      })),
+    [text],
+  );
+
+  const localizedViewOptions = useMemo(
+    () =>
+      VIEW_OPTIONS.map((option) => ({
+        mode: option.mode,
+        label: getPeriodicViewLabel(text, option.mode),
+      })),
+    [text],
+  );
+
   return (
     <section className="space-y-4">
       {isExploreMode ? (
@@ -90,7 +114,7 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
           viewMode={viewMode}
           isViewMenuOpen={isViewMenuOpen}
           isSortMenuOpen={isSortMenuOpen}
-          currentSortLabel={currentSortOption.label}
+          currentSortLabel={getPeriodicSortLabel(text, currentSortOption.mode)}
           onQueryChange={setQuery}
           onToggleSortMenu={() => {
             setIsSortMenuOpen((previous) => {
@@ -127,15 +151,15 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
         />
       ) : (
         <div className="surface-panel rounded-2xl border border-[var(--border-subtle)] px-4 py-3 text-xs text-[var(--text-muted)] shadow-sm">
-          Dedicated periodic table mode. Click an element to open full details.
+          {text.explore.dedicatedModeMessage}
         </div>
       )}
 
       <PeriodicTableOptionMenu
         isOpen={isSortMenuOpen}
         position={sortMenuPosition}
-        ariaLabel="Sort options"
-        options={SORT_OPTIONS}
+        ariaLabel={text.menus.sortOptions}
+        options={localizedSortOptions}
         selectedMode={sortMode}
         onClose={() => setIsSortMenuOpen(false)}
         onSelect={(nextSortMode) => {
@@ -150,8 +174,8 @@ function PeriodicTable({ elements, mode = 'explore' }: PeriodicTableProps) {
       <PeriodicTableOptionMenu
         isOpen={isViewMenuOpen}
         position={viewMenuPosition}
-        ariaLabel="View options"
-        options={VIEW_OPTIONS}
+        ariaLabel={text.menus.viewOptions}
+        options={localizedViewOptions}
         selectedMode={viewMode}
         onClose={() => setIsViewMenuOpen(false)}
         onSelect={(nextViewMode) => {

@@ -1,5 +1,7 @@
 'use client';
 
+import usePeriodicTableText from '@/components/organisms/periodic-table/usePeriodicTableText';
+
 const INTERNAL_ZOOM_MIN_PERCENT = 25;
 const INTERNAL_ZOOM_MAX_PERCENT = 175;
 const INTERNAL_ZOOM_STEP_PERCENT = 5;
@@ -50,6 +52,7 @@ export default function ClassicPeriodicControls({
   onZoomChange,
   onToggleFullscreen,
 }: ClassicPeriodicControlsProps) {
+  const text = usePeriodicTableText();
   const isZoomMin = zoomPercent <= INTERNAL_ZOOM_MIN_PERCENT;
   const isZoomMax = zoomPercent >= INTERNAL_ZOOM_MAX_PERCENT;
 
@@ -62,7 +65,7 @@ export default function ClassicPeriodicControls({
             onZoomChange(Math.max(INTERNAL_ZOOM_MIN_PERCENT, zoomPercent - INTERNAL_ZOOM_STEP_PERCENT));
           }}
           disabled={isZoomMin}
-          aria-label="Reduce table zoom"
+          aria-label={text.fullscreen.zoomOut}
           className="rounded border border-[var(--border-subtle)] px-1.5 py-1 text-[10px] font-semibold text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)] disabled:cursor-not-allowed disabled:opacity-45"
         >
           -
@@ -76,7 +79,7 @@ export default function ClassicPeriodicControls({
             onZoomChange(Math.min(INTERNAL_ZOOM_MAX_PERCENT, zoomPercent + INTERNAL_ZOOM_STEP_PERCENT));
           }}
           disabled={isZoomMax}
-          aria-label="Increase table zoom"
+          aria-label={text.fullscreen.zoomIn}
           className="rounded border border-[var(--border-subtle)] px-1.5 py-1 text-[10px] font-semibold text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)] disabled:cursor-not-allowed disabled:opacity-45"
         >
           +
@@ -84,8 +87,8 @@ export default function ClassicPeriodicControls({
         <button
           type="button"
           onClick={onToggleFullscreen}
-          aria-label={isFullscreen ? 'Exit fullscreen table' : 'Enter fullscreen table'}
-          title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen table'}
+          aria-label={isFullscreen ? text.fullscreen.exitTable : text.fullscreen.enterTable}
+          title={isFullscreen ? text.fullscreen.exit : text.fullscreen.enter}
           className="inline-flex h-7 w-7 items-center justify-center rounded border border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
         >
           <FullscreenIcon isActive={isFullscreen} />

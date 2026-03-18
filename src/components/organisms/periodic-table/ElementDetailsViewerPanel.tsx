@@ -1,6 +1,11 @@
 'use client';
 
 import type { ChemicalElement } from '@/shared/types/element';
+import {
+  formatBohrImageAlt,
+  formatElementImageAlt,
+} from '@/components/organisms/periodic-table/periodicTableText';
+import usePeriodicTableText from '@/components/organisms/periodic-table/usePeriodicTableText';
 
 import ElementDetails3DViewer from './ElementDetails3DViewer';
 import ElementDetailsStaticImagePanel from './ElementDetailsStaticImagePanel';
@@ -39,11 +44,13 @@ export default function ElementDetailsViewerPanel({
   twoDImageUrl,
   viewerMode,
 }: ElementDetailsViewerPanelProps) {
+  const text = usePeriodicTableText();
+
   return (
     <section className="surface-panel rounded-2xl border border-[var(--border-subtle)] p-3">
       {viewerMode === '2d' ? (
         <ElementDetailsStaticImagePanel
-          altText={`2D Bohr model of ${elementName}`}
+          altText={formatBohrImageAlt(text, elementName)}
           elementName={elementName}
           imageKind="bohr"
           imageUrl={has2D ? twoDImageUrl : ''}
@@ -53,7 +60,7 @@ export default function ElementDetailsViewerPanel({
         />
       ) : viewerMode === 'image' ? (
         <ElementDetailsStaticImagePanel
-          altText={`Image of ${elementName}`}
+          altText={formatElementImageAlt(text, elementName)}
           elementName={elementName}
           imageKind="element"
           imageUrl={hasElementImage ? elementImageUrl : ''}
