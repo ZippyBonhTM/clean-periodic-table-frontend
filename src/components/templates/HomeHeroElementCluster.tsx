@@ -64,6 +64,7 @@ export default function HomeHeroElementCluster({
   openTableLabel,
 }: HomeHeroElementClusterProps) {
   const text = usePeriodicTableText();
+  const clusterRef = useRef<HTMLDivElement | null>(null);
   const [activeElements, setActiveElements] = useState<HomeHeroElement[]>(() =>
     HOME_HERO_ELEMENTS.slice(0, HOME_HERO_SLOT_COUNT),
   );
@@ -74,6 +75,13 @@ export default function HomeHeroElementCluster({
   const selectedSlotIndex = selectedElement === null
     ? -1
     : activeElements.findIndex((element) => element.number === selectedElement.number);
+  const clusterSurfaceStyle = {
+    background: 'color-mix(in oklab, var(--surface-1) 88%, transparent)',
+  } as const;
+  const summarySurfaceStyle = {
+    background:
+      'linear-gradient(160deg, color-mix(in oklab, var(--surface-2) 96%, var(--background-top)), color-mix(in oklab, var(--surface-1) 88%, var(--background-base)))',
+  } as const;
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
@@ -133,8 +141,36 @@ export default function HomeHeroElementCluster({
     };
   }, []);
 
+  useEffect(() => {
+    if (selectedElement === null) {
+      return;
+    }
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!(event.target instanceof Node)) {
+        return;
+      }
+
+      if (clusterRef.current?.contains(event.target)) {
+        return;
+      }
+
+      setSelectedElement(null);
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [selectedElement]);
+
   return (
-    <div className="relative rounded-[2.2rem] border border-white/10 bg-black/16 p-4 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.95)] backdrop-blur-sm md:p-5">
+    <div
+      ref={clusterRef}
+      className="relative rounded-[2.2rem] border border-white/10 p-4 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.45)] backdrop-blur-sm md:p-5"
+      style={clusterSurfaceStyle}
+    >
       <div className="relative h-[18.75rem] overflow-visible md:h-[20rem]">
         {activeElements.map((element, index) => {
           const isAnimating = animatingSlotIndex === index;
@@ -180,13 +216,14 @@ export default function HomeHeroElementCluster({
 
         {selectedElement !== null && selectedSlotIndex >= 0 ? (
           <div
-            className={`absolute z-30 w-[14.5rem] overflow-hidden rounded-[1.45rem] border border-white/12 bg-[linear-gradient(160deg,rgba(15,23,42,0.94),rgba(15,23,42,0.82))] p-4 shadow-[0_30px_80px_-45px_rgba(15,23,42,1)] backdrop-blur-md transition-all duration-300 ${
+            className={`absolute z-30 w-[14.5rem] overflow-hidden rounded-[1.45rem] border border-white/12 p-4 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.55)] backdrop-blur-md transition-all duration-300 ${
               selectedSlotIndex === 0
                 ? 'left-[5.75rem] top-3 md:left-[7rem] md:top-2'
                 : selectedSlotIndex === 1
                   ? 'right-[5.75rem] top-12 md:right-[7rem] md:top-12'
                   : 'left-4 top-[9.25rem] md:left-6 md:top-[10.75rem]'
             }`}
+            style={summarySurfaceStyle}
           >
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-3">
