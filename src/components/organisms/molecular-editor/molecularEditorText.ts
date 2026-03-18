@@ -1,7 +1,7 @@
 import { molecularEditorTextEn } from '@/components/organisms/molecular-editor/molecularEditorText.en';
 import { molecularEditorTextPt } from '@/components/organisms/molecular-editor/molecularEditorText.pt';
 import type { SavedMoleculeEditorState } from '@/shared/types/molecule';
-import type { BondOrder } from '@/shared/utils/moleculeEditor';
+import type { BondOrder, MoleculeEditorIssue } from '@/shared/utils/moleculeEditor';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
 const MOLECULAR_EDITOR_TEXT_BY_LOCALE = {
@@ -158,4 +158,42 @@ export function formatMolecularEditorBondDisabledTitle(
   }
 
   return bondLabel;
+}
+
+export function formatMolecularEditorBondUpdatedNotice(
+  text: MolecularEditorTextCatalog,
+  bondOrder: BondOrder,
+): string {
+  return `${text.notices.bondUpdatedPrefix} ${bondOrder}.`;
+}
+
+export function formatMolecularEditorComponentFocusedNotice(
+  text: MolecularEditorTextCatalog,
+  componentIndex: number,
+): string {
+  return `${text.notices.componentFocusedPrefix} ${componentIndex + 1} ${text.notices.componentFocusedSuffix}`.trim();
+}
+
+export function formatMolecularEditorIssueMessage(
+  text: MolecularEditorTextCatalog,
+  issue: MoleculeEditorIssue,
+): string {
+  switch (issue.code) {
+    case 'sameAtomBond':
+      return text.notices.issueSameAtomBond;
+    case 'missingBondAtom':
+      return text.notices.issueMissingBondAtom;
+    case 'missingSourceAtom':
+      return text.notices.issueMissingSourceAtom;
+    case 'noAttachmentPoint':
+      return text.notices.issueNoAttachmentPoint;
+    case 'bondLimitReached': {
+      const slotLabel = issue.limit === 1 ? text.notices.issueBondLimitReachedSingle : text.notices.issueBondLimitReachedPlural;
+      return `${issue.symbol} ${text.notices.issueBondLimitReachedMiddle} ${issue.limit} ${slotLabel}`.trim();
+    }
+    case 'targetBondOrderUnsupported':
+      return `${issue.symbol} ${text.notices.issueTargetBondOrderUnsupportedMiddle} ${issue.order} ${text.notices.issueTargetBondOrderUnsupportedSuffix}`.trim();
+    default:
+      return text.common.unavailable;
+  }
 }

@@ -1,5 +1,6 @@
 export type {
   BondOrder,
+  MoleculeEditorIssue,
   MoleculeAtom,
   MoleculeBond,
   MoleculeComponent,

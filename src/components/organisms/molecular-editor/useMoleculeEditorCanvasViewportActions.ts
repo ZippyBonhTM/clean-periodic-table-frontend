@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import type { WheelEvent as ReactWheelEvent } from 'react';
 
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type {
   MoleculeEditorViewportActions,
   UseMoleculeEditorActionsOptions,
@@ -38,6 +39,8 @@ export default function useMoleculeEditorCanvasViewportActions({
   MoleculeEditorViewportActions,
   'onCanvasWheel' | 'onResetCanvasView' | 'onZoomIn' | 'onZoomOut'
 > {
+  const text = useMolecularEditorText();
+
   const resolveFrameAspectRatio = useCallback(
     () =>
       canvasFrameSize.width > 0 && canvasFrameSize.height > 0
@@ -118,8 +121,8 @@ export default function useMoleculeEditorCanvasViewportActions({
 
   const onResetCanvasView = useCallback(() => {
     setCanvasViewport(defaultCanvasViewport);
-    setEditorNotice('Canvas view reset.');
-  }, [defaultCanvasViewport, setCanvasViewport, setEditorNotice]);
+    setEditorNotice(text.notices.canvasViewReset);
+  }, [defaultCanvasViewport, setCanvasViewport, setEditorNotice, text.notices.canvasViewReset]);
 
   return {
     onCanvasWheel,

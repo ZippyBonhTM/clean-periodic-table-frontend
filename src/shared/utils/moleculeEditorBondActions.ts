@@ -19,7 +19,7 @@ export function connectAtoms(model: MoleculeModel, firstAtomId: string, secondAt
     return {
       molecule: sanitizedModel,
       selectedAtomId: firstAtomId,
-      error: validation.message,
+      issue: validation.issue,
     };
   }
 

@@ -1,5 +1,10 @@
 import { findAtom } from '@/shared/utils/moleculeGraph';
-import type { BondOrder, MoleculeElementSnapshot, MoleculeModel } from '@/shared/utils/moleculeEditor';
+import type {
+  BondOrder,
+  MoleculeEditorIssue,
+  MoleculeElementSnapshot,
+  MoleculeModel,
+} from '@/shared/utils/moleculeEditor.types';
 
 const COMMON_VALENCE_OVERRIDES: Record<string, number> = {
   H: 1,
@@ -81,16 +86,16 @@ function canApplyBondOrder(
   firstAtomId: string,
   secondAtomId: string,
   nextOrder: BondOrder,
-): { ok: boolean; message?: string } {
+): { ok: boolean; issue?: MoleculeEditorIssue } {
   if (firstAtomId === secondAtomId) {
-    return { ok: false, message: 'Choose two different atoms to create a bond.' };
+    return { ok: false, issue: { code: 'sameAtomBond' } };
   }
 
   const firstAtom = findAtom(model, firstAtomId);
   const secondAtom = findAtom(model, secondAtomId);
 
   if (firstAtom === null || secondAtom === null) {
-    return { ok: false, message: 'One of the selected atoms no longer exists.' };
+    return { ok: false, issue: { code: 'missingBondAtom' } };
   }
 
   const existingBond = model.bonds.find((bond) => {
@@ -114,14 +119,14 @@ function canApplyBondOrder(
   if (firstUsed + delta > firstLimit) {
     return {
       ok: false,
-      message: `${firstAtom.element.symbol} commonly supports up to ${firstLimit} bond slot${firstLimit === 1 ? '' : 's'}.`,
+      issue: { code: 'bondLimitReached', symbol: firstAtom.element.symbol, limit: firstLimit },
     };
   }
 
   if (secondUsed + delta > secondLimit) {
     return {
       ok: false,
-      message: `${secondAtom.element.symbol} commonly supports up to ${secondLimit} bond slot${secondLimit === 1 ? '' : 's'}.`,
+      issue: { code: 'bondLimitReached', symbol: secondAtom.element.symbol, limit: secondLimit },
     };
   }
 

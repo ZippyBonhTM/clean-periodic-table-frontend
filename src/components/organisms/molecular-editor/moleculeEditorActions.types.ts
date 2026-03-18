@@ -10,7 +10,7 @@ import type {
 import type { ResolvedImportedPubChemCompound } from '@/shared/api/pubchemApi';
 import type { ChemicalElement } from '@/shared/types/element';
 import type { SavedMoleculeEditorState } from '@/shared/types/molecule';
-import type { BondOrder, MoleculeComponent, MoleculeModel } from '@/shared/utils/moleculeEditor';
+import type { BondOrder, MoleculeComponent, MoleculeEditorIssue, MoleculeModel } from '@/shared/utils/moleculeEditor';
 
 export type EditorViewMode = SavedMoleculeEditorState['activeView'];
 
@@ -25,7 +25,7 @@ export type GalleryFeedbackTone = 'info' | 'success' | 'error';
 export type MoleculeChangeResult = {
   molecule: MoleculeModel;
   selectedAtomId: string | null;
-  error?: string;
+  issue?: MoleculeEditorIssue;
 };
 
 export type MoleculeEditorChangeCommitter<Snapshot> = (

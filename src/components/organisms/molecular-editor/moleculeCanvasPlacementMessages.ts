@@ -1,13 +1,15 @@
 'use client';
 
-export function resolveCanvasSelectionClearNotice(pointerType: string) {
+import type { MolecularEditorTextCatalog } from '@/components/organisms/molecular-editor/molecularEditorText';
+
+export function resolveCanvasSelectionClearNotice(text: MolecularEditorTextCatalog, pointerType: string) {
   return pointerType === 'touch'
-    ? 'Double-tap again to attach the active element, or wait to clear the selection.'
-    : 'Double-click again to attach the active element, or wait to clear the selection.';
+    ? text.notices.doubleTapSelectionClear
+    : text.notices.doubleClickSelectionClear;
 }
 
-export function resolveCanvasPlacementNotice(pointerType: string) {
+export function resolveCanvasPlacementNotice(text: MolecularEditorTextCatalog, pointerType: string) {
   return pointerType === 'touch'
-    ? 'Double-tap the canvas to place the active element.'
-    : 'Double-click the canvas to place the active element.';
+    ? text.notices.doubleTapPlacement
+    : text.notices.doubleClickPlacement;
 }

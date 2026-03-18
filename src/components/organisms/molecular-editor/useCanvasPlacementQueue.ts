@@ -6,6 +6,7 @@ import {
   resolveCanvasPlacementNotice,
   resolveCanvasSelectionClearNotice,
 } from '@/components/organisms/molecular-editor/moleculeCanvasPlacementMessages';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import useCanvasSelectionClearTimeout from '@/components/organisms/molecular-editor/useCanvasSelectionClearTimeout';
 
 const CANVAS_DOUBLE_PRESS_DELAY_MS = 320;
@@ -24,6 +25,7 @@ export default function useCanvasPlacementQueue({
   setEditorNotice,
   setSelectedAtomId,
 }: UseCanvasPlacementQueueOptions) {
+  const text = useMolecularEditorText();
   const pendingCanvasPlacementRef = useRef<{
     timestamp: number;
     clientX: number;
@@ -74,11 +76,11 @@ export default function useCanvasPlacementQueue({
 
       if (selectedAtomId !== null) {
         scheduleCanvasSelectionClear(selectedAtomId);
-        setEditorNotice(resolveCanvasSelectionClearNotice(pointerType));
+        setEditorNotice(resolveCanvasSelectionClearNotice(text, pointerType));
         return;
       }
 
-      setEditorNotice(resolveCanvasPlacementNotice(pointerType));
+      setEditorNotice(resolveCanvasPlacementNotice(text, pointerType));
     },
     [
       clearPendingCanvasPlacement,
@@ -87,6 +89,7 @@ export default function useCanvasPlacementQueue({
       scheduleCanvasSelectionClear,
       selectedAtomId,
       setEditorNotice,
+      text,
     ],
   );
 

@@ -2,6 +2,10 @@
 
 import { useCallback } from 'react';
 
+import {
+  formatMolecularEditorBondUpdatedNotice,
+} from '@/components/organisms/molecular-editor/molecularEditorText';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type {
   MoleculeEditorChangeCommitter,
   MoleculeEditorStructureActions,
@@ -33,11 +37,13 @@ export default function useMoleculeEditorSelectionActions<Snapshot>({
   MoleculeEditorStructureActions,
   'handleAtomActivate' | 'onClearSelection'
 > {
+  const text = useMolecularEditorText();
+
   const onClearSelection = useCallback(() => {
     clearPendingCanvasPlacementRef.current();
     setSelectedAtomId(null);
-    setEditorNotice('Selection cleared.');
-  }, [clearPendingCanvasPlacementRef, setEditorNotice, setSelectedAtomId]);
+    setEditorNotice(text.notices.selectionCleared);
+  }, [clearPendingCanvasPlacementRef, setEditorNotice, setSelectedAtomId, text.notices.selectionCleared]);
 
   const handleAtomActivate = useCallback(
     (atomId: string) => {
@@ -45,7 +51,7 @@ export default function useMoleculeEditorSelectionActions<Snapshot>({
 
       if (selectedAtomId === null) {
         setSelectedAtomId(atomId);
-        setEditorNotice('Atom selected. Tap another atom to create a bond, or use the tools to attach the active element.');
+        setEditorNotice(text.notices.atomSelected);
         return;
       }
 
@@ -55,7 +61,7 @@ export default function useMoleculeEditorSelectionActions<Snapshot>({
       }
 
       const result = connectAtoms(molecule, selectedAtomId, atomId, bondOrder);
-      commitMoleculeChange(molecule, result, `Bond updated to order ${bondOrder}.`);
+      commitMoleculeChange(molecule, result, formatMolecularEditorBondUpdatedNotice(text, bondOrder));
     },
     [
       bondOrder,
@@ -66,6 +72,7 @@ export default function useMoleculeEditorSelectionActions<Snapshot>({
       selectedAtomId,
       setEditorNotice,
       setSelectedAtomId,
+      text,
     ],
   );
 

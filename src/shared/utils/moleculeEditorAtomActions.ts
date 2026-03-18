@@ -13,6 +13,7 @@ import {
 import { getUsedBondSlots, resolveMaxBondSlots } from '@/shared/utils/moleculeValence';
 import type {
   BondOrder,
+  MoleculeEditorIssue,
   MoleculeAtom,
   MoleculeModel,
 } from '@/shared/utils/moleculeEditor.types';
@@ -47,7 +48,7 @@ export function addAttachedAtom(model: MoleculeModel, sourceAtomId: string, elem
     return {
       molecule: sanitizedModel,
       selectedAtomId: null,
-      error: 'Select an atom before attaching a new one.',
+      issue: { code: 'missingSourceAtom' } satisfies MoleculeEditorIssue,
     };
   }
 
@@ -58,7 +59,7 @@ export function addAttachedAtom(model: MoleculeModel, sourceAtomId: string, elem
     return {
       molecule: sanitizedModel,
       selectedAtomId: sourceAtomId,
-      error: `${sourceAtom.element.symbol} already reached its common bond limit of ${sourceLimit}.`,
+      issue: { code: 'bondLimitReached', symbol: sourceAtom.element.symbol, limit: sourceLimit } satisfies MoleculeEditorIssue,
     };
   }
 
@@ -68,7 +69,7 @@ export function addAttachedAtom(model: MoleculeModel, sourceAtomId: string, elem
     return {
       molecule: sanitizedModel,
       selectedAtomId: sourceAtomId,
-      error: `${element.symbol} cannot start with a bond order of ${order} using the current valence rule.`,
+      issue: { code: 'targetBondOrderUnsupported', symbol: element.symbol, order } satisfies MoleculeEditorIssue,
     };
   }
 
@@ -78,7 +79,7 @@ export function addAttachedAtom(model: MoleculeModel, sourceAtomId: string, elem
     return {
       molecule: sanitizedModel,
       selectedAtomId: sourceAtomId,
-      error: 'Could not find a good place for the new atom.',
+      issue: { code: 'noAttachmentPoint' } satisfies MoleculeEditorIssue,
     };
   }
 

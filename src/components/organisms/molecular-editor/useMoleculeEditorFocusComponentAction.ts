@@ -2,7 +2,11 @@
 
 import { useCallback } from 'react';
 
+import {
+  formatMolecularEditorComponentFocusedNotice,
+} from '@/components/organisms/molecular-editor/molecularEditorText';
 import { resolveScaledViewBoxMetrics } from '@/components/organisms/molecular-editor/moleculeCanvasViewport';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type {
   MoleculeEditorViewportActions,
   UseMoleculeEditorActionsOptions,
@@ -33,6 +37,8 @@ export default function useMoleculeEditorFocusComponentAction({
   MoleculeEditorViewportActions,
   'onFocusComponent'
 > {
+  const text = useMolecularEditorText();
+
   const onFocusComponent = useCallback(
     (componentIndex: number) => {
       const component = moleculeComponents[componentIndex];
@@ -43,7 +49,7 @@ export default function useMoleculeEditorFocusComponentAction({
 
       setFocusedComponentIndex(componentIndex);
       setSelectedAtomId(null);
-      setEditorNotice(`Mol ${componentIndex + 1} focused.`);
+      setEditorNotice(formatMolecularEditorComponentFocusedNotice(text, componentIndex));
 
       const nextViewportMetrics = resolveScaledViewBoxMetrics(
         molecule,
@@ -66,6 +72,7 @@ export default function useMoleculeEditorFocusComponentAction({
       setEditorNotice,
       setFocusedComponentIndex,
       setSelectedAtomId,
+      text,
     ],
   );
 
