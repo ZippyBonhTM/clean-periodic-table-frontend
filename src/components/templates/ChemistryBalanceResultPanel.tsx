@@ -1,5 +1,6 @@
 'use client';
 
+import NoTranslateText from '@/components/atoms/NoTranslateText';
 import Panel from '@/components/atoms/Panel';
 import useChemistryBalanceText from '@/components/templates/useChemistryBalanceText';
 import type { BalanceChemicalEquationFlowResult } from '@/shared/chemistry/analysis';
@@ -41,9 +42,12 @@ function ChemistryBalanceResultPanel({
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
               {text.workspace.formattedLabel}
             </p>
-            <p className="mt-2 break-words text-lg font-black text-[var(--text-strong)] sm:text-xl">
+            <NoTranslateText
+              as="p"
+              className="mt-2 break-words text-lg font-black text-[var(--text-strong)] sm:text-xl"
+            >
               {result.value.formatted}
-            </p>
+            </NoTranslateText>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
@@ -67,16 +71,16 @@ function ChemistryBalanceResultPanel({
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
                 {text.workspace.vectorLabel}
               </p>
-              <p className="mt-1 text-lg font-black text-[var(--text-strong)]">
+              <NoTranslateText as="p" className="mt-1 text-lg font-black text-[var(--text-strong)]">
                 [{result.value.balancedReaction.coefficientVector.join(', ')}]
-              </p>
+              </NoTranslateText>
             </div>
           </div>
         </div>
       ) : (
         <div className="space-y-3 rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.08)] px-4 py-4">
           <p className="text-sm font-semibold text-[var(--text-strong)]">
-            {text.workspace.failurePrefix} <code>{result.stage}</code>
+            {text.workspace.failurePrefix} <NoTranslateText as="code">{result.stage}</NoTranslateText>
             {text.workspace.failureSuffix}
           </p>
           <ul className="space-y-2 text-sm leading-6 text-[var(--text-muted)]">
@@ -85,7 +89,9 @@ function ChemistryBalanceResultPanel({
                 key={`${issue.stage}-${issue.code}-${index}`}
                 className="rounded-xl bg-black/5 px-3 py-2"
               >
-                <span className="font-semibold text-[var(--text-strong)]">{issue.code}</span>
+                <NoTranslateText as="span" className="font-semibold text-[var(--text-strong)]">
+                  {issue.code}
+                </NoTranslateText>
                 : {issue.message}
               </li>
             ))}

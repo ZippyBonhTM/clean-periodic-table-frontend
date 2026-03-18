@@ -1,5 +1,6 @@
 'use client';
 
+import NoTranslateText from '@/components/atoms/NoTranslateText';
 import Panel from '@/components/atoms/Panel';
 import {
   formatChemistryBalanceCoefficientDelta,
@@ -79,18 +80,24 @@ function ChemistryBalanceComparisonPanel({
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
             {text.comparison.originalLabel}
           </p>
-          <p className="mt-2 break-words text-sm font-semibold text-[var(--text-strong)] sm:text-base">
+          <NoTranslateText
+            as="p"
+            className="mt-2 break-words text-sm font-semibold text-[var(--text-strong)] sm:text-base"
+          >
             {value.equation.normalized}
-          </p>
+          </NoTranslateText>
         </div>
 
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-soft)] px-4 py-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
             {text.comparison.balancedLabel}
           </p>
-          <p className="mt-2 break-words text-sm font-semibold text-[var(--text-strong)] sm:text-base">
+          <NoTranslateText
+            as="p"
+            className="mt-2 break-words text-sm font-semibold text-[var(--text-strong)] sm:text-base"
+          >
             {value.formatted}
-          </p>
+          </NoTranslateText>
         </div>
       </div>
 
@@ -107,9 +114,9 @@ function ChemistryBalanceComparisonPanel({
                     ? text.comparison.reactantLabel
                     : text.comparison.productLabel}
                 </p>
-                <p className="mt-1 text-sm font-semibold text-[var(--text-strong)]">
+                <NoTranslateText as="p" className="mt-1 text-sm font-semibold text-[var(--text-strong)]">
                   {comparison.label}
-                </p>
+                </NoTranslateText>
               </div>
               <span className="rounded-full border border-[var(--border-subtle)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
                 {formatChemistryBalanceCoefficientDelta(

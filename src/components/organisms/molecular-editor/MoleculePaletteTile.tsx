@@ -1,5 +1,6 @@
 'use client';
 
+import NoTranslateText from '@/components/atoms/NoTranslateText';
 import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type { ChemicalElement } from '@/shared/types/element';
 import { resolveCategoryColor } from '@/shared/utils/elementPresentation';
@@ -93,13 +94,14 @@ export default function MoleculePaletteTile({
         <>
           <div className={selectedLeftRailClassName}>
             <div className={selectedLeftContentClassName}>
-              <p
+              <NoTranslateText
+                as="p"
                 className={
                   isCompact ? 'text-[11px] font-black leading-none tracking-tight' : 'text-xs font-black leading-none tracking-tight sm:text-sm lg:text-base'
                 }
               >
                 {element.symbol}
-              </p>
+              </NoTranslateText>
               <p className={selectedNameClassName}>{element.name}</p>
             </div>
           </div>
@@ -109,7 +111,9 @@ export default function MoleculePaletteTile({
               <tbody>
                 <tr className="bg-(--surface-row-soft)">
                   <th className={selectedKeyClassName}>Sh</th>
-                  <td className={selectedValueClassName}>{element.shells.join('-')}</td>
+                  <td className={selectedValueClassName}>
+                    <NoTranslateText>{element.shells.join('-')}</NoTranslateText>
+                  </td>
                 </tr>
                 <tr className="bg-(--surface-row-strong)">
                   <th className={selectedKeyClassName}>B</th>
@@ -121,13 +125,14 @@ export default function MoleculePaletteTile({
         </>
       ) : (
         <div className={idleContentClassName}>
-          <p
+          <NoTranslateText
+            as="p"
             className={
               isCompact ? 'text-[11px] font-black leading-none tracking-tight' : 'text-xs font-black leading-none tracking-tight sm:text-sm lg:text-base'
             }
           >
             {element.symbol}
-          </p>
+          </NoTranslateText>
           <p className={idleNameClassName}>{element.name}</p>
         </div>
       )}

@@ -3,6 +3,7 @@
 import { memo } from 'react';
 
 import Button from '@/components/atoms/Button';
+import NoTranslateText from '@/components/atoms/NoTranslateText';
 import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type { PubChemCompoundSearchResult } from '@/shared/api/pubchemApi';
 
@@ -23,7 +24,8 @@ const MoleculeImportResultCard = memo(function MoleculeImportResultCard({
     <article className="rounded-[1.5rem] border border-(--border-subtle) bg-(--surface-overlay-soft) p-4 shadow-sm">
       <div className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
-          <p
+          <NoTranslateText
+            as="p"
             className="min-w-0 flex-1 text-lg font-black leading-tight text-foreground"
             style={{
               display: '-webkit-box',
@@ -33,7 +35,7 @@ const MoleculeImportResultCard = memo(function MoleculeImportResultCard({
             }}
           >
             {result.title}
-          </p>
+          </NoTranslateText>
           <Button
             variant="primary"
             size="sm"
@@ -59,14 +61,14 @@ const MoleculeImportResultCard = memo(function MoleculeImportResultCard({
             <span className="rounded-full border border-(--border-subtle) bg-(--surface-overlay-faint) px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)">
               CID {result.cid}
             </span>
-            <p className="text-sm font-semibold text-foreground/90">
+            <NoTranslateText as="p" className="text-sm font-semibold text-foreground/90">
               {result.molecularFormula ?? text.importModal.formulaUnavailable}
-            </p>
+            </NoTranslateText>
           </div>
 
-          <p className="text-sm leading-relaxed text-(--text-muted)">
+          <NoTranslateText as="p" className="text-sm leading-relaxed text-(--text-muted)">
             {result.iupacName ?? text.importModal.noIupac}
-          </p>
+          </NoTranslateText>
         </div>
       </div>
     </article>
