@@ -1,5 +1,7 @@
 'use client';
 
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
+
 type GalleryFeedback = {
   tone: 'info' | 'success' | 'error';
   message: string;
@@ -16,6 +18,8 @@ export default function MoleculeGallerySyncStatus({
   onReloadSavedMolecules,
   savedMoleculesError,
 }: MoleculeGallerySyncStatusProps) {
+  const text = useMolecularEditorText();
+
   if (galleryFeedback === null && savedMoleculesError === null) {
     return null;
   }
@@ -39,7 +43,7 @@ export default function MoleculeGallerySyncStatus({
               : 'text-(--text-muted)'
         }`}
       >
-        {galleryFeedback?.tone === 'success' ? 'Saved' : 'Sync Status'}
+        {galleryFeedback?.tone === 'success' ? text.gallery.savedStatus : text.gallery.syncStatus}
       </p>
       <p
         className={`mt-1 text-sm leading-relaxed ${
@@ -58,7 +62,7 @@ export default function MoleculeGallerySyncStatus({
           onClick={onReloadSavedMolecules}
           className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-(--accent) transition-colors hover:text-foreground"
         >
-          Retry gallery sync
+          {text.gallery.retrySync}
         </button>
       ) : null}
     </div>

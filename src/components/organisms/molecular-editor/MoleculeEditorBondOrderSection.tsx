@@ -2,6 +2,11 @@
 
 import type { BondOrder } from '@/shared/utils/moleculeEditor';
 
+import {
+  formatMolecularEditorBondDisabledTitle,
+  getMolecularEditorBondOrderLabel,
+} from '@/components/organisms/molecular-editor/molecularEditorText';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import { BondOrderIcon } from '@/components/organisms/molecular-editor/moleculeEditorToolRailIcons';
 
 type MoleculeEditorBondOrderSectionProps = {
@@ -29,12 +34,14 @@ export default function MoleculeEditorBondOrderSection({
   selectedAtomId,
   showExpandedContent,
 }: MoleculeEditorBondOrderSectionProps) {
+  const text = useMolecularEditorText();
+
   return (
     <div className={isCollapsed ? collapsedSectionClassName : expandedSectionClassName}>
       {showExpandedContent ? (
         <div className="flex items-center gap-2 px-1">
           <BondOrderIcon />
-          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)">Bond Order</p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)">{text.toolRail.bondOrder}</p>
         </div>
       ) : null}
       <div className={`grid ${isCollapsed ? 'w-full grid-cols-1 place-items-center gap-2' : 'grid-cols-3 gap-1.5'}`}>
@@ -43,12 +50,13 @@ export default function MoleculeEditorBondOrderSection({
             selectedAtomId === null &&
             activeElementMaxBondSlots !== null &&
             option.order > activeElementMaxBondSlots;
-          const disabledTitle =
-            activeElementSymbol !== null && activeElementMaxBondSlots !== null
-              ? `${activeElementSymbol} commonly supports up to ${activeElementMaxBondSlots} bond slot${
-                  activeElementMaxBondSlots === 1 ? '' : 's'
-                }.`
-              : `${option.label} bond`;
+          const bondLabel = getMolecularEditorBondOrderLabel(text, option.order);
+          const disabledTitle = formatMolecularEditorBondDisabledTitle(
+            text,
+            activeElementSymbol,
+            activeElementMaxBondSlots,
+            bondLabel,
+          );
 
           return (
             <button
@@ -56,8 +64,8 @@ export default function MoleculeEditorBondOrderSection({
               type="button"
               onClick={() => onSetBondOrder(option.order)}
               disabled={isDisabled}
-              title={isDisabled ? disabledTitle : `${option.label} bond`}
-              aria-label={isDisabled ? disabledTitle : `${option.label} bond`}
+              title={isDisabled ? disabledTitle : bondLabel}
+              aria-label={isDisabled ? disabledTitle : bondLabel}
               className={`border transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
                 isDisabled
                   ? 'border-(--border-subtle) bg-(--surface-2)/55 text-(--text-muted)'

@@ -5,6 +5,7 @@ import { memo } from 'react';
 import FloatingModal from '@/components/molecules/FloatingModal';
 import MoleculeImportResultsPanel from '@/components/organisms/molecular-editor/MoleculeImportResultsPanel';
 import MoleculeImportSidebar from '@/components/organisms/molecular-editor/MoleculeImportSidebar';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import useMoleculeImportWorkflow from '@/components/organisms/molecular-editor/useMoleculeImportWorkflow';
 import { type ResolvedImportedPubChemCompound } from '@/shared/api/pubchemApi';
 import type { ChemicalElement } from '@/shared/types/element';
@@ -22,6 +23,7 @@ function MoleculeImportModal({
   onClose,
   onImport,
 }: MoleculeImportModalProps) {
+  const text = useMolecularEditorText();
   const {
     activeTerm,
     debouncedQuery,
@@ -49,8 +51,9 @@ function MoleculeImportModal({
   return (
     <FloatingModal
       isOpen={isOpen}
-      title="Import Molecule from PubChem"
+      title={text.importModal.title}
       onClose={onClose}
+      closeLabel={text.common.close}
       panelClassName="max-w-5xl self-start mt-1 sm:mt-3"
       bodyClassName="pr-1 pb-1"
     >

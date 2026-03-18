@@ -2,6 +2,10 @@
 
 import { useMemo } from 'react';
 
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
+import {
+  formatMolecularEditorComponentLabel,
+} from '@/components/organisms/molecular-editor/molecularEditorText';
 import type { SavedMolecule } from '@/shared/types/molecule';
 import type { ChemicalElement } from '@/shared/types/element';
 import {
@@ -37,6 +41,7 @@ export default function useMoleculeEditorDerivedState({
   savedMolecules,
   selectedAtomId,
 }: UseMoleculeEditorDerivedStateOptions) {
+  const text = useMolecularEditorText();
   const activeElementMaxBondSlots = activeElement === null ? null : resolveMaxBondSlots(activeElement);
   const summary = useMemo(() => summarizeMolecule(molecule), [molecule]);
   const formula = useMemo(() => buildMolecularFormula(molecule), [molecule]);
@@ -62,38 +67,37 @@ export default function useMoleculeEditorDerivedState({
     (moleculeComponents.length === 1 && nomenclatureFallback !== null
       ? normalizeOptionalText(nomenclatureFallback)
       : null);
-  const formulaDisplayValue = focusedSummary.atomCount === 0 ? 'N/A' : focusedFormula;
+  const formulaDisplayValue = focusedSummary.atomCount === 0 ? text.common.notAvailable : focusedFormula;
   const systematicNameDisplayValue =
-    focusedSummary.atomCount === 0 ? 'N/A' : (resolvedNomenclatureValue ?? 'Unavailable');
-  const compactSystematicNameDisplayValue =
-    systematicNameDisplayValue === 'Unavailable' ? 'Unavail.' : systematicNameDisplayValue;
+    focusedSummary.atomCount === 0 ? text.common.notAvailable : (resolvedNomenclatureValue ?? text.common.unavailable);
+  const compactSystematicNameDisplayValue = systematicNameDisplayValue;
   const formulaStatsRows = useMemo(() => {
     const baseRows = [
       {
-        label: 'Nomen.',
-        compactLabel: 'Nomen.',
-        title: 'Nomenclature',
+        label: text.summary.nomenclatureShort,
+        compactLabel: text.summary.nomenclatureShort,
+        title: text.summary.nomenclature,
         value: systematicNameDisplayValue,
         compactValue: compactSystematicNameDisplayValue,
       },
       {
-        label: 'Formula',
-        compactLabel: 'Formula',
+        label: text.summary.formula,
+        compactLabel: text.summary.formula,
         value: formulaDisplayValue,
       },
       {
-        label: 'Atoms',
-        compactLabel: 'Atoms',
+        label: text.summary.atoms,
+        compactLabel: text.summary.atoms,
         value: String(focusedSummary.atomCount),
       },
       {
-        label: 'Bonds',
-        compactLabel: 'Bonds',
+        label: text.summary.bonds,
+        compactLabel: text.summary.bonds,
         value: String(focusedSummary.bondCount),
       },
       {
-        label: 'Slots',
-        compactLabel: 'Slots',
+        label: text.summary.slots,
+        compactLabel: text.summary.slots,
         value: String(focusedSummary.totalBondOrder),
       },
     ];
@@ -104,10 +108,10 @@ export default function useMoleculeEditorDerivedState({
 
     return [
       {
-        label: 'Comp.',
-        compactLabel: 'Comp.',
-        title: 'Component',
-        value: `Mol ${resolvedFocusedComponentIndex + 1} / ${moleculeComponents.length}`,
+        label: text.summary.componentShort,
+        compactLabel: text.summary.componentShort,
+        title: text.summary.component,
+        value: `${formatMolecularEditorComponentLabel(text, resolvedFocusedComponentIndex)} / ${moleculeComponents.length}`,
         compactValue: `${resolvedFocusedComponentIndex + 1}/${moleculeComponents.length}`,
       },
       ...baseRows,
@@ -121,6 +125,7 @@ export default function useMoleculeEditorDerivedState({
     moleculeComponents.length,
     resolvedFocusedComponentIndex,
     systematicNameDisplayValue,
+    text,
   ]);
   const compositionRows = useMemo(() => buildCompositionRows(focusedComponentModel), [focusedComponentModel]);
   const normalizedSavedMolecules = useMemo(

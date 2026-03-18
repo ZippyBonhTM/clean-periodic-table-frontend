@@ -7,9 +7,12 @@ import MoleculeEditorOverlays from '@/components/organisms/molecular-editor/Mole
 import MoleculeEditorSection from '@/components/organisms/molecular-editor/MoleculeEditorSection';
 import {
   BOND_ORDER_OPTIONS,
-  DEFAULT_EDITOR_NOTICE,
   VIEW_OPTIONS,
 } from '@/components/organisms/molecular-editor/moleculeEditorConfig';
+import {
+  getMolecularEditorBondOrderLabel,
+  getMolecularEditorViewLabel,
+} from '@/components/organisms/molecular-editor/molecularEditorText';
 import useMoleculeEditorLayout from '@/components/organisms/molecular-editor/useMoleculeEditorLayout';
 import useMoleculeEditorOverlayProps from '@/components/organisms/molecular-editor/useMoleculeEditorOverlayProps';
 import {
@@ -22,6 +25,7 @@ import useMoleculeEditorState from '@/components/organisms/molecular-editor/useM
 import useMoleculeEditorSectionProps from '@/components/organisms/molecular-editor/useMoleculeEditorSectionProps';
 import useMoleculeGallerySectionProps from '@/components/organisms/molecular-editor/useMoleculeGallerySectionProps';
 import useSavedMoleculeEditorWorkflow from '@/components/organisms/molecular-editor/useSavedMoleculeEditorWorkflow';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type {
   SaveMoleculeInput,
   SavedMolecule,
@@ -53,6 +57,7 @@ function MolecularEditor({
   onUpdateSavedMolecule,
   onDeleteSavedMolecule,
 }: MolecularEditorProps) {
+  const text = useMolecularEditorText();
   const {
     activeSavedMoleculeId,
     activeView,
@@ -213,8 +218,28 @@ function MolecularEditor({
     !hasPendingSavedMolecule &&
     summary.atomCount === 0 &&
     selectedAtomId === null
-      ? DEFAULT_EDITOR_NOTICE
+      ? text.notices.defaultEditorNotice
       : null);
+  const compactEditorNotice =
+    resolvedEditorNotice === text.notices.defaultEditorNotice
+      ? text.notices.compactDefaultEditorNotice
+      : resolvedEditorNotice;
+  const localizedBondOrderOptions = useMemo(
+    () =>
+      BOND_ORDER_OPTIONS.map((option) => ({
+        ...option,
+        label: getMolecularEditorBondOrderLabel(text, option.order),
+      })),
+    [text],
+  );
+  const localizedViewOptions = useMemo(
+    () =>
+      VIEW_OPTIONS.map((option) => ({
+        ...option,
+        label: getMolecularEditorViewLabel(text, option.mode),
+      })),
+    [text],
+  );
   const {
     bottomNoticeRef,
     canvasFrameAspectRatio,
@@ -271,6 +296,7 @@ function MolecularEditor({
     isToolRailCollapsed,
     pageMode,
     paletteSearchRailRef,
+    compactEditorNotice,
     resolvedEditorNotice,
   });
   const interactiveViewBox = useMemo(
@@ -341,7 +367,7 @@ function MolecularEditor({
     activeElementSymbol: activeElement?.symbol ?? null,
     activeView,
     bondOrder,
-    bondOrderOptions: BOND_ORDER_OPTIONS,
+    bondOrderOptions: localizedBondOrderOptions,
     bottomNoticeRef,
     canRedo,
     canUndo,
@@ -449,7 +475,7 @@ function MolecularEditor({
     topControlsRowClassName,
     viewModeButtonClassName,
     viewModeTabsClassName,
-    viewOptions: VIEW_OPTIONS,
+    viewOptions: localizedViewOptions,
     zoomControlsClassName,
     zoomControlsVisibilityClassName,
     zoomPercent,

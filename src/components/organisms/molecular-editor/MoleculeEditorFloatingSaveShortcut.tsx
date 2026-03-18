@@ -3,6 +3,7 @@
 import type { CSSProperties } from 'react';
 
 import { SaveGalleryIcon } from '@/components/organisms/molecular-editor/moleculeEditorToolRailIcons';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 
 type MoleculeEditorFloatingSaveShortcutProps = {
   floatingSaveShortcutInnerStyle: CSSProperties;
@@ -31,6 +32,8 @@ export default function MoleculeEditorFloatingSaveShortcut({
   summaryAtomCount,
   toolRailStyle,
 }: MoleculeEditorFloatingSaveShortcutProps) {
+  const text = useMolecularEditorText();
+
   if (!shouldShow) {
     return null;
   }
@@ -48,8 +51,8 @@ export default function MoleculeEditorFloatingSaveShortcut({
         onFocus={() => onExpandedChange(true)}
         onBlur={() => onExpandedChange(false)}
         disabled={summaryAtomCount === 0}
-        title="Open gallery save dialog"
-        aria-label="Save as new"
+        title={text.toolRail.saveDialog}
+        aria-label={text.toolRail.saveAsNew}
         style={floatingSaveShortcutPanelStyle}
         className={`flex overflow-hidden border shadow-xl backdrop-blur-xl origin-left transition-[width,border-color,color,background-color] duration-200 disabled:cursor-not-allowed disabled:opacity-45 ${
           isSaveModalOpen
@@ -70,7 +73,7 @@ export default function MoleculeEditorFloatingSaveShortcut({
             aria-hidden={!isExpanded}
           >
             <span className={`truncate font-semibold text-foreground ${isLandscapeCompactCanvas ? 'text-[10px]' : 'text-[11px]'}`}>
-              Save as New
+              {text.toolRail.saveAsNew}
             </span>
           </div>
         </div>

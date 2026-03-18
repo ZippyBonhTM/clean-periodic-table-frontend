@@ -1,6 +1,7 @@
 'use client';
 
 import { resolveSavedMoleculeEditorStatus } from '@/components/organisms/molecular-editor/savedMoleculeEditorStatus';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type { ShowGalleryFeedback } from '@/components/organisms/molecular-editor/savedMoleculeWorkflow.types';
 import type {
   SavedMoleculeEditorBridgeOptions,
@@ -48,6 +49,7 @@ export default function useSavedMoleculeEditorWorkflow({
   showGalleryFeedback,
   summaryAtomCount,
 }: UseSavedMoleculeEditorWorkflowOptions) {
+  const text = useMolecularEditorText();
   const applySavedMolecule = useApplySavedMoleculeToEditor({
     applyEditorSnapshot,
     clearHistory,
@@ -82,6 +84,7 @@ export default function useSavedMoleculeEditorWorkflow({
     moleculeName,
     resolvedActiveSavedMoleculeId: workflow.resolvedActiveSavedMoleculeId,
     summaryAtomCount,
+    text,
   });
 
   return {

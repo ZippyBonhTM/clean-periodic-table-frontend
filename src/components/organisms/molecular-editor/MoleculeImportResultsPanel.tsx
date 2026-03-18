@@ -1,6 +1,7 @@
 'use client';
 
 import MoleculeImportResultCard from '@/components/molecules/chemistry/MoleculeImportResultCard';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import { type PubChemCompoundSearchResult } from '@/shared/api/pubchemApi';
 
 type MoleculeImportResultsPanelProps = {
@@ -26,20 +27,22 @@ export default function MoleculeImportResultsPanel({
   searchError,
   showEmptyState,
 }: MoleculeImportResultsPanelProps) {
+  const text = useMolecularEditorText();
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-(--border-subtle) bg-(--surface-overlay-subtle) px-4 py-3">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-(--text-muted)">Search Results</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-(--text-muted)">{text.importModal.results}</p>
           <p className="mt-1 text-sm leading-relaxed text-(--text-muted)">
             {activeTerm === null
-              ? 'Pick a term to resolve real compounds from PubChem.'
-              : `Showing compounds for "${activeTerm}".`}
+              ? text.importModal.resultsIdle
+              : `${text.importModal.resultsForPrefix} "${activeTerm}".`}
           </p>
         </div>
         {isSearchBusy ? (
           <span className="inline-flex rounded-full border border-(--border-subtle) bg-(--surface-overlay-faint) px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
-            Searching...
+            {text.importModal.searching}
           </span>
         ) : null}
       </div>
@@ -58,11 +61,11 @@ export default function MoleculeImportResultsPanel({
 
       {debouncedQuery.length === 0 ? (
         <div className="rounded-[1.5rem] border border-dashed border-(--border-subtle) bg-(--surface-overlay-faint) px-4 py-8 text-center text-sm leading-relaxed text-(--text-muted)">
-          Search by common name or IUPAC fragment to start browsing public compounds.
+          {text.importModal.searchPrompt}
         </div>
       ) : showEmptyState ? (
         <div className="rounded-[1.5rem] border border-dashed border-(--border-subtle) bg-(--surface-overlay-faint) px-4 py-8 text-center text-sm leading-relaxed text-(--text-muted)">
-          No importable compounds were found for this term yet.
+          {text.importModal.noResults}
         </div>
       ) : (
         <div className="grid gap-3">

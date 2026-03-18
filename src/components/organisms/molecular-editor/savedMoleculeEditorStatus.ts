@@ -1,5 +1,6 @@
 'use client';
 
+import type { MolecularEditorTextCatalog } from '@/components/organisms/molecular-editor/molecularEditorText';
 import type { SavedMolecule } from '@/shared/types/molecule';
 
 type ResolveSavedMoleculeEditorStatusOptions = {
@@ -8,6 +9,7 @@ type ResolveSavedMoleculeEditorStatusOptions = {
   moleculeName: string;
   resolvedActiveSavedMoleculeId: string | null;
   summaryAtomCount: number;
+  text: Pick<MolecularEditorTextCatalog, 'common'>;
 };
 
 export function resolveSavedMoleculeEditorStatus({
@@ -16,6 +18,7 @@ export function resolveSavedMoleculeEditorStatus({
   moleculeName,
   resolvedActiveSavedMoleculeId,
   summaryAtomCount,
+  text,
 }: ResolveSavedMoleculeEditorStatusOptions) {
   const hasCurrentSavedSelection = resolvedActiveSavedMoleculeId !== null;
   const trimmedMoleculeName = moleculeName.trim();
@@ -23,7 +26,7 @@ export function resolveSavedMoleculeEditorStatus({
     (trimmedMoleculeName.length > 0 ? trimmedMoleculeName : null) ??
     activeSavedMolecule?.name ??
     activeSavedMolecule?.summary.formula ??
-    (summaryAtomCount === 0 ? 'Unsaved molecule' : formula);
+    (summaryAtomCount === 0 ? text.common.unsavedMolecule : formula);
 
   return {
     currentSaveLabel,

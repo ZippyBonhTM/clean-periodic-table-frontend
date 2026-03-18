@@ -6,6 +6,7 @@ import { useCallback, useState } from 'react';
 import useAuthText from '@/components/organisms/auth/useAuthText';
 import ElementsState from '@/components/organisms/elements/ElementsState';
 import type { AuthModalMode } from '@/components/organisms/auth/AuthModal';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import AppShell from '@/components/templates/AppShell';
 import type { TokenStatusType } from '@/components/molecules/TokenStatus';
 import { logoutSession } from '@/shared/api/authApi';
@@ -14,8 +15,14 @@ import useSavedMolecules from '@/shared/hooks/useSavedMolecules';
 import useAuthToken from '@/shared/hooks/useAuthToken';
 import useElements from '@/shared/hooks/useElements';
 
+function MolecularEditorLoadingState() {
+  const text = useMolecularEditorText();
+
+  return <ElementsState tone="info" message={text.workspace.loadingEditor} showProgress />;
+}
+
 const MolecularEditor = dynamic(() => import('@/components/organisms/molecular-editor/MolecularEditor'), {
-  loading: () => <ElementsState tone="info" message="Loading..." showProgress />,
+  loading: MolecularEditorLoadingState,
 });
 
 const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'));

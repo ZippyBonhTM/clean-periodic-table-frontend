@@ -2,6 +2,11 @@
 
 import type { CSSProperties } from 'react';
 
+import {
+  formatMolecularEditorSimplifiedDescription,
+} from '@/components/organisms/molecular-editor/molecularEditorText';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
+
 type CompositionRow = {
   symbol: string;
   name: string;
@@ -23,20 +28,20 @@ export default function MoleculeSimplifiedCanvasView({
   moleculeComponentsCount,
   simplifiedViewStyle,
 }: MoleculeSimplifiedCanvasViewProps) {
+  const text = useMolecularEditorText();
+
   return (
     <div className="absolute inset-0 overflow-y-auto overscroll-contain" style={simplifiedViewStyle}>
       <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col justify-start gap-2.5 sm:gap-4 lg:justify-center">
         <div className="rounded-[24px] border border-(--border-subtle) bg-(--surface-overlay-soft) px-3.5 py-4 text-center shadow-sm backdrop-blur-sm sm:px-6 sm:py-7 lg:px-7 lg:py-8">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-(--text-muted) sm:text-[11px]">
-            Simplified
+            {text.simplifiedView.title}
           </p>
           <p className="mt-2.5 wrap-break-word text-[clamp(1.5rem,8vw,4.5rem)] font-black leading-[0.96] tracking-[0.03em] text-foreground">
             {formulaDisplayValue}
           </p>
           <p className="mx-auto mt-2.5 max-w-2xl text-[11px] leading-relaxed text-(--text-muted) sm:mt-4 sm:text-sm">
-            {moleculeComponentsCount > 1
-              ? `Compact composition view for Mol ${focusedComponentIndex + 1}.`
-              : 'Compact composition view for the current molecule.'}
+            {formatMolecularEditorSimplifiedDescription(text, focusedComponentIndex, moleculeComponentsCount)}
           </p>
         </div>
 
@@ -59,7 +64,7 @@ export default function MoleculeSimplifiedCanvasView({
           </dl>
         ) : (
           <div className="rounded-2xl border border-dashed border-(--border-subtle) bg-(--surface-overlay-subtle) px-4 py-5 text-center text-sm text-(--text-muted)">
-            Add atoms to generate a simplified formula.
+            {text.simplifiedView.empty}
           </div>
         )}
       </div>

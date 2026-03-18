@@ -1,5 +1,7 @@
 'use client';
 
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
+
 type MoleculeImportRelatedTermsProps = {
   activeTerm: string | null;
   isSuggestionsLoading: boolean;
@@ -16,15 +18,16 @@ export default function MoleculeImportRelatedTerms({
   suggestions,
 }: MoleculeImportRelatedTermsProps) {
   const debouncedQuery = query.trim();
+  const text = useMolecularEditorText();
 
   return (
     <div className="space-y-2">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">Related Terms</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">{text.importModal.relatedTerms}</p>
       {debouncedQuery.length === 0 ? (
-        <p className="text-sm leading-relaxed text-(--text-muted)">Start typing to see matching PubChem terms.</p>
+        <p className="text-sm leading-relaxed text-(--text-muted)">{text.importModal.relatedTermsIdle}</p>
       ) : suggestions.length === 0 && !isSuggestionsLoading ? (
         <p className="text-sm leading-relaxed text-(--text-muted)">
-          No related terms were found for this query yet.
+          {text.importModal.relatedTermsEmpty}
         </p>
       ) : (
         <div className="flex flex-wrap gap-2">

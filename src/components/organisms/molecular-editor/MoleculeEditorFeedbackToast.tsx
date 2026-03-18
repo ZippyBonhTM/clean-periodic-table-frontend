@@ -1,6 +1,7 @@
 'use client';
 
 import type { GalleryFeedback } from '@/components/organisms/molecular-editor/moleculeEditorSession';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 
 type MoleculeEditorFeedbackToastProps = {
   feedback: GalleryFeedback | null;
@@ -11,20 +12,22 @@ export default function MoleculeEditorFeedbackToast({
   feedback,
   pageMode,
 }: MoleculeEditorFeedbackToastProps) {
+  const text = useMolecularEditorText();
+
   if (feedback === null) {
     return null;
   }
 
   const label =
     feedback.tone === 'error'
-      ? 'Sync issue'
+      ? text.feedback.syncIssue
       : feedback.tone === 'success'
         ? pageMode === 'editor'
-          ? 'Work saved'
-          : 'Gallery ready'
+          ? text.feedback.workSaved
+          : text.feedback.galleryReady
         : pageMode === 'editor'
-          ? 'Saving'
-          : 'Gallery';
+          ? text.feedback.saving
+          : text.feedback.gallery;
 
   return (
     <div className="pointer-events-none fixed bottom-4 right-4 z-[100] w-[min(22rem,calc(100vw-2rem))]">

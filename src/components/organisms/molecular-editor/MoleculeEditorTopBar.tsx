@@ -3,6 +3,7 @@
 import type { SavedMoleculeEditorState } from '@/shared/types/molecule';
 import MoleculeEditorViewModeTabs from '@/components/organisms/molecular-editor/MoleculeEditorViewModeTabs';
 import MoleculeEditorZoomControls from '@/components/organisms/molecular-editor/MoleculeEditorZoomControls';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 
 type EditorViewMode = SavedMoleculeEditorState['activeView'];
 
@@ -67,6 +68,8 @@ export default function MoleculeEditorTopBar({
   zoomControlsVisibilityClassName,
   zoomPercent,
 }: MoleculeEditorTopBarProps) {
+  const text = useMolecularEditorText();
+
   return (
     <div className={topControlsRowClassName}>
       <div className={topControlsLeadingGroupClassName}>
@@ -82,11 +85,11 @@ export default function MoleculeEditorTopBar({
           type="button"
           onClick={onOpenImportModal}
           className={importButtonClassName}
-          aria-label="Import another molecule"
-          title="Import another molecule from PubChem"
+          aria-label={text.topBar.importAnotherMolecule}
+          title={text.topBar.importFromPubChem}
         >
           <ImportMoleculeIcon />
-          <span className="hidden sm:inline">Import Other</span>
+          <span className="hidden sm:inline">{text.topBar.importOther}</span>
         </button>
       </div>
 

@@ -4,6 +4,7 @@ import type { PointerEventHandler, Ref } from 'react';
 
 import MoleculePaletteRailNavigation from '@/components/organisms/molecular-editor/MoleculePaletteRailNavigation';
 import MoleculePaletteTile from '@/components/organisms/molecular-editor/MoleculePaletteTile';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type { ChemicalElement } from '@/shared/types/element';
 
 type MoleculePaletteRailProps = {
@@ -51,6 +52,8 @@ export default function MoleculePaletteRail({
   onNext,
   onItemRef,
 }: MoleculePaletteRailProps) {
+  const text = useMolecularEditorText();
+
   return (
     <div ref={overlayRef} className={overlayClassName}>
       <div className={wrapperClassName}>
@@ -95,7 +98,7 @@ export default function MoleculePaletteRail({
           direction="left"
           disabled={elements.length === 0}
           isCompact={isCompact}
-          label="Select previous element"
+          label={text.palette.previousElement}
           onClick={onPrevious}
           side="left"
         />
@@ -104,7 +107,7 @@ export default function MoleculePaletteRail({
           direction="right"
           disabled={elements.length === 0}
           isCompact={isCompact}
-          label="Select next element"
+          label={text.palette.nextElement}
           onClick={onNext}
           side="right"
         />

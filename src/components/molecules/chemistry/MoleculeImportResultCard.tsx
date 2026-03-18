@@ -3,6 +3,7 @@
 import { memo } from 'react';
 
 import Button from '@/components/atoms/Button';
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type { PubChemCompoundSearchResult } from '@/shared/api/pubchemApi';
 
 type MoleculeImportResultCardProps = {
@@ -16,6 +17,8 @@ const MoleculeImportResultCard = memo(function MoleculeImportResultCard({
   onImport,
   result,
 }: MoleculeImportResultCardProps) {
+  const text = useMolecularEditorText();
+
   return (
     <article className="rounded-[1.5rem] border border-(--border-subtle) bg-(--surface-overlay-soft) p-4 shadow-sm">
       <div className="flex flex-col gap-3">
@@ -41,11 +44,11 @@ const MoleculeImportResultCard = memo(function MoleculeImportResultCard({
             }}
           >
             {isImporting ? (
-              'Importing...'
+              text.importModal.importing
             ) : (
               <>
-                <span className="sm:hidden">Import</span>
-                <span className="hidden sm:inline">Import into Editor</span>
+                <span className="sm:hidden">{text.importModal.import}</span>
+                <span className="hidden sm:inline">{text.importModal.importIntoEditor}</span>
               </>
             )}
           </Button>
@@ -57,12 +60,12 @@ const MoleculeImportResultCard = memo(function MoleculeImportResultCard({
               CID {result.cid}
             </span>
             <p className="text-sm font-semibold text-foreground/90">
-              {result.molecularFormula ?? 'Formula unavailable'}
+              {result.molecularFormula ?? text.importModal.formulaUnavailable}
             </p>
           </div>
 
           <p className="text-sm leading-relaxed text-(--text-muted)">
-            {result.iupacName ?? 'No IUPAC name returned for this record.'}
+            {result.iupacName ?? text.importModal.noIupac}
           </p>
         </div>
       </div>

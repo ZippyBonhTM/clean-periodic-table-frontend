@@ -1,5 +1,7 @@
 'use client';
 
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
+
 type MoleculeEditorZoomControlsProps = {
   isLandscapeCompactCanvas: boolean;
   isSimplifiedView: boolean;
@@ -23,6 +25,8 @@ export default function MoleculeEditorZoomControls({
   zoomControlsVisibilityClassName,
   zoomPercent,
 }: MoleculeEditorZoomControlsProps) {
+  const text = useMolecularEditorText();
+
   return (
     <div className={`${zoomControlsClassName} ${zoomControlsVisibilityClassName}`} aria-hidden={isSimplifiedView}>
       <button
@@ -35,8 +39,8 @@ export default function MoleculeEditorZoomControls({
               ? 'h-6 min-w-5.5 text-[12px]'
               : 'h-7 min-w-7 text-sm'
         }`}
-        aria-label="Zoom out"
-        title="Zoom out"
+        aria-label={text.topBar.zoomOut}
+        title={text.topBar.zoomOut}
       >
         -
       </button>
@@ -50,8 +54,8 @@ export default function MoleculeEditorZoomControls({
               ? 'h-6 min-w-8 text-[8px]'
               : 'h-7 min-w-10 text-[10px]'
         }`}
-        aria-label="Reset zoom"
-        title="Reset zoom"
+        aria-label={text.topBar.resetZoom}
+        title={text.topBar.resetZoom}
       >
         {zoomPercent}%
       </button>
@@ -65,8 +69,8 @@ export default function MoleculeEditorZoomControls({
               ? 'h-6 min-w-5.5 text-[12px]'
               : 'h-7 min-w-7 text-sm'
         }`}
-        aria-label="Zoom in"
-        title="Zoom in"
+        aria-label={text.topBar.zoomIn}
+        title={text.topBar.zoomIn}
       >
         +
       </button>
@@ -78,7 +82,7 @@ export default function MoleculeEditorZoomControls({
             responsiveLayoutWidth < 430 ? 'h-6 text-[8px]' : 'h-7 text-[10px]'
           }`}
         >
-          FIT
+          {text.topBar.fit}
         </button>
       )}
     </div>

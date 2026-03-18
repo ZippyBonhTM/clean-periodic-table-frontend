@@ -2,6 +2,8 @@
 
 import type { RefObject } from 'react';
 
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
+
 function CloseChipIcon() {
   return (
     <svg
@@ -41,6 +43,8 @@ export default function MoleculePaletteSearchField({
   paletteSearchButtonClassName,
   searchInputRef,
 }: MoleculePaletteSearchFieldProps) {
+  const text = useMolecularEditorText();
+
   return (
     <div
       className={`flex min-w-0 flex-1 flex-nowrap items-center gap-1 overflow-hidden pr-1.5 ${
@@ -63,7 +67,7 @@ export default function MoleculePaletteSearchField({
           }
         }}
         tabIndex={isPaletteSearchOpen ? undefined : -1}
-        placeholder="Search"
+        placeholder={text.palette.searchPlaceholder}
         className={`w-full min-w-0 bg-transparent text-foreground outline-none placeholder:text-(--text-muted) ${
           isLandscapeCompactCanvas ? 'text-[11px]' : 'text-[13px]'
         }`}
@@ -74,8 +78,8 @@ export default function MoleculePaletteSearchField({
           type="button"
           onClick={onClearPaletteSearch}
           className={`inline-flex shrink-0 items-center justify-center rounded-full text-(--text-muted) transition-colors hover:text-foreground ${paletteSearchButtonClassName}`}
-          aria-label="Clear element search"
-          title="Clear element search"
+          aria-label={text.palette.clearSearch}
+          title={text.palette.clearSearch}
         >
           <CloseChipIcon />
         </button>

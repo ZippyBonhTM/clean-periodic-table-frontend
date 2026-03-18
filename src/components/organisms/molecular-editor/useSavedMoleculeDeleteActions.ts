@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 
+import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 import type { ShowGalleryFeedback } from '@/components/organisms/molecular-editor/savedMoleculeWorkflow.types';
 import type { SavedMoleculeDeleteHandler } from '@/components/organisms/molecular-editor/savedMoleculeWorkflowOptions.types';
 import { mapSavedMoleculesErrorMessage } from '@/shared/hooks/useSavedMolecules';
@@ -23,18 +24,20 @@ export default function useSavedMoleculeDeleteActions({
   setIsSaveModalOpen,
   showGalleryFeedback,
 }: UseSavedMoleculeDeleteActionsOptions) {
+  const text = useMolecularEditorText();
+
   const onDeleteCurrentSavedMolecule = useCallback(async () => {
     if (resolvedActiveSavedMoleculeId === null) {
-      showGalleryFeedback('error', 'Select a saved molecule before deleting it.');
+      showGalleryFeedback('error', text.notices.selectSavedBeforeDeleting);
       return;
     }
 
     try {
-      showGalleryFeedback('info', 'Delete request sent.', { persist: true });
+      showGalleryFeedback('info', text.notices.deleteRequestSent, { persist: true });
       await onDeleteSavedMolecule(resolvedActiveSavedMoleculeId);
       setActiveSavedMoleculeId(null);
       setIsSaveModalOpen(false);
-      showGalleryFeedback('success', 'Saved work deleted.');
+      showGalleryFeedback('success', text.notices.savedWorkDeleted);
     } catch (caughtError: unknown) {
       showGalleryFeedback('error', mapSavedMoleculesErrorMessage(caughtError));
     }
@@ -44,23 +47,32 @@ export default function useSavedMoleculeDeleteActions({
     setActiveSavedMoleculeId,
     setIsSaveModalOpen,
     showGalleryFeedback,
+    text.notices.deleteRequestSent,
+    text.notices.savedWorkDeleted,
+    text.notices.selectSavedBeforeDeleting,
   ]);
 
   const onDeleteCurrentSavedMoleculeFromGallery = useCallback(async () => {
     if (activeSavedMolecule === null) {
-      showGalleryFeedback('error', 'Select a saved molecule before deleting it.');
+      showGalleryFeedback('error', text.notices.selectSavedBeforeDeleting);
       return;
     }
 
     const label = activeSavedMolecule.name ?? activeSavedMolecule.summary.formula;
-    const shouldDelete = window.confirm(`Delete "${label}" from your gallery?`);
+    const shouldDelete = window.confirm(`${text.gallery.delete} "${label}"?`);
 
     if (!shouldDelete) {
       return;
     }
 
     await onDeleteCurrentSavedMolecule();
-  }, [activeSavedMolecule, onDeleteCurrentSavedMolecule, showGalleryFeedback]);
+  }, [
+    activeSavedMolecule,
+    onDeleteCurrentSavedMolecule,
+    showGalleryFeedback,
+    text.gallery.delete,
+    text.notices.selectSavedBeforeDeleting,
+  ]);
 
   return {
     onDeleteCurrentSavedMolecule,
