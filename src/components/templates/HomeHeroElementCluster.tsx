@@ -23,6 +23,9 @@ type HomeHeroElementClusterProps = {
 
 const HOME_HERO_SLOT_COUNT = 3;
 const HOME_HERO_ROTATION_MS = 5600;
+const HOME_HERO_SLOT_STAGGER_MS = 420;
+const HOME_HERO_REPLACE_DELAY_MS = 180;
+const HOME_HERO_CLEAR_ANIMATION_MS = 620;
 
 const slotClassNames = [
   'absolute left-0 top-0 w-[8.25rem] rotate-[-6deg] md:w-[9.5rem]',
@@ -99,47 +102,49 @@ export default function HomeHeroElementCluster({
       timeoutIdsRef.current = [];
     };
 
-    const intervalId = window.setInterval(() => {
-      const slotIndex = Math.floor(Math.random() * HOME_HERO_SLOT_COUNT);
+    if (selectedElement !== null) {
+      return () => {
+        clearRegisteredTimeouts();
+      };
+    }
 
-      setAnimatingSlotIndex(slotIndex);
+    const runRotationSequence = () => {
+      Array.from({ length: HOME_HERO_SLOT_COUNT }, (_, slotIndex) => slotIndex).forEach((slotIndex) => {
+        const sequenceDelay = slotIndex * HOME_HERO_SLOT_STAGGER_MS;
 
-      const replaceTimeoutId = window.setTimeout(() => {
-        setActiveElements((currentElements) => {
-          const nextElements = [...currentElements];
-          const replacementElement = pickReplacementElement(currentElements);
-          const replacedElement = nextElements[slotIndex];
+        const startAnimationTimeoutId = window.setTimeout(() => {
+          setAnimatingSlotIndex(slotIndex);
+        }, sequenceDelay);
 
-          nextElements[slotIndex] = replacementElement;
+        const replaceTimeoutId = window.setTimeout(() => {
+          setActiveElements((currentElements) => {
+            const nextElements = [...currentElements];
+            const replacementElement = pickReplacementElement(currentElements);
+            nextElements[slotIndex] = replacementElement;
 
-          setSelectedElement((currentSelectedElement) => {
-            if (currentSelectedElement === null) {
-              return null;
-            }
-
-            if (currentSelectedElement.number === replacedElement.number) {
-              return null;
-            }
-
-            return currentSelectedElement;
+            return nextElements;
           });
+        }, sequenceDelay + HOME_HERO_REPLACE_DELAY_MS);
 
-          return nextElements;
-        });
-      }, 180);
+        const clearAnimationTimeoutId = window.setTimeout(() => {
+          setAnimatingSlotIndex((currentIndex) => (currentIndex === slotIndex ? null : currentIndex));
+        }, sequenceDelay + HOME_HERO_CLEAR_ANIMATION_MS);
 
-      const clearAnimationTimeoutId = window.setTimeout(() => {
-        setAnimatingSlotIndex((currentIndex) => (currentIndex === slotIndex ? null : currentIndex));
-      }, 620);
+        timeoutIdsRef.current.push(
+          startAnimationTimeoutId,
+          replaceTimeoutId,
+          clearAnimationTimeoutId,
+        );
+      });
+    };
 
-      timeoutIdsRef.current.push(replaceTimeoutId, clearAnimationTimeoutId);
-    }, HOME_HERO_ROTATION_MS);
+    const intervalId = window.setInterval(runRotationSequence, HOME_HERO_ROTATION_MS);
 
     return () => {
       window.clearInterval(intervalId);
       clearRegisteredTimeouts();
     };
-  }, []);
+  }, [selectedElement]);
 
   useEffect(() => {
     if (selectedElement === null) {
@@ -173,7 +178,7 @@ export default function HomeHeroElementCluster({
     >
       <div className="relative h-[18.75rem] overflow-visible md:h-[20rem]">
         {activeElements.map((element, index) => {
-          const isAnimating = animatingSlotIndex === index;
+          const isAnimating = selectedElement === null && animatingSlotIndex === index;
           const isSelected = selectedElement?.number === element.number;
 
           return (
