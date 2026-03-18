@@ -5,7 +5,10 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import Script from 'next/script';
 
 import AppLocaleProvider from '@/shared/i18n/AppLocaleProvider';
-import { APP_LOCALE_STORAGE_KEY } from '@/shared/i18n/appLocale';
+import {
+  APP_LOCALE_COOKIE_KEY,
+  APP_LOCALE_STORAGE_KEY,
+} from '@/shared/i18n/appLocale';
 
 import './globals.css';
 
@@ -32,12 +35,14 @@ const appLocaleBootstrapScript = `
     try {
       var path = window.location.pathname || '/';
       var firstSegment = path.split('/').filter(Boolean)[0] || '';
+      var cookieMatch = document.cookie.match(new RegExp('(?:^|; )' + '${APP_LOCALE_COOKIE_KEY}' + '=([^;]*)'));
+      var cookieLocale = cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
       var storedLocale = window.localStorage.getItem('${APP_LOCALE_STORAGE_KEY}');
       var locale = firstSegment === 'pt'
         ? 'pt-BR'
         : firstSegment === 'en'
           ? 'en-US'
-          : storedLocale;
+          : cookieLocale || storedLocale;
       var htmlLang = locale === 'pt-BR' ? 'pt-BR' : 'en';
       document.documentElement.lang = htmlLang;
     } catch (error) {
