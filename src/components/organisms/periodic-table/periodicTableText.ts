@@ -5,6 +5,7 @@ import type {
   SortMode,
 } from '@/components/organisms/periodic-table/periodicTable.types';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
+import type { ChemicalElement } from '@/shared/types/element';
 import { resolveElementCategoryKey } from '@/shared/utils/elementPresentation';
 
 const PERIODIC_TABLE_TEXT_BY_LOCALE = {
@@ -122,5 +123,24 @@ export function formatElementPhaseLabel(
     return text.tile.phase.gas;
   }
 
+  if (normalizedPhase.includes('unknown')) {
+    return text.tile.phase.unknown;
+  }
+
   return phase.trim();
+}
+
+export function formatElementLocalizedSummary(
+  text: PeriodicTableTextCatalog,
+  element: Pick<ChemicalElement, 'symbol' | 'number' | 'category' | 'phase'>,
+): string {
+  const category = formatElementCategoryLabel(text, element.category, text.details.fields.notInformed);
+  const phase = formatElementPhaseLabel(text, element.phase, text.details.fields.notInformed);
+
+  return [
+    `${text.details.fields.symbol}: ${element.symbol}.`,
+    `${text.details.fields.atomicNumber}: ${element.number}.`,
+    `${text.details.fields.category}: ${category}.`,
+    `${text.details.fields.phase}: ${phase}.`,
+  ].join(' ');
 }

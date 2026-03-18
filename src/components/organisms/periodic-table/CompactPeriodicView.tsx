@@ -18,10 +18,6 @@ function CompactPeriodicView({ elements, onElementOpen }: CompactPeriodicViewPro
           </div>
         ))}
       </div>
-
-      <p className="mt-3 text-xs text-[var(--text-muted)]">
-        Compact view sorted by selected criteria for quick scanning and mobile usability.
-      </p>
     </section>
   );
 }
