@@ -9,6 +9,7 @@ import {
   APP_LOCALE_COOKIE_KEY,
   APP_LOCALE_STORAGE_KEY,
 } from '@/shared/i18n/appLocale';
+import { getAppSiteUrl } from '@/shared/seo/appSite';
 
 import './globals.css';
 
@@ -23,6 +24,7 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: getAppSiteUrl(),
   title: 'Clean Periodic Table',
   description: 'Explore elements, balance equations, and build molecules in one place.',
   other: {

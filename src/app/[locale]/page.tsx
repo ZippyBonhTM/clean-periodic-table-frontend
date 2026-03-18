@@ -3,8 +3,9 @@ import { notFound } from 'next/navigation';
 
 import HomeLandingPage from '@/components/templates/HomeLandingPage';
 import { getHomeLandingText } from '@/components/templates/homeLandingText';
-import { buildLocalizedAppPath, resolveAppLocaleFromSegment } from '@/shared/i18n/appLocaleRouting';
+import { resolveAppLocaleFromSegment } from '@/shared/i18n/appLocaleRouting';
 import { buildLocalizedPageMetadata } from '@/shared/i18n/appPageMetadata';
+import { buildLocalizedAbsoluteAppUrl } from '@/shared/seo/appSite';
 
 type LocalizedHomePageProps = {
   params: Promise<{
@@ -14,8 +15,7 @@ type LocalizedHomePageProps = {
 
 function buildHomeStructuredData(locale: 'en-US' | 'pt-BR') {
   const text = getHomeLandingText(locale);
-  const localeSegment = locale === 'pt-BR' ? 'pt' : 'en';
-  const pageUrl = `https://clean-periodic-table.vercel.app/${localeSegment}`;
+  const pageUrl = buildLocalizedAbsoluteAppUrl(locale, '/');
 
   return {
     '@context': 'https://schema.org',
@@ -53,18 +53,7 @@ export async function generateMetadata({
     return {};
   }
 
-  const localeSegment = locale === 'pt' ? 'pt' : 'en';
-
-  return {
-    ...buildLocalizedPageMetadata(resolvedLocale, 'home'),
-    alternates: {
-      canonical: `/${localeSegment}`,
-      languages: {
-        en: buildLocalizedAppPath('en-US', '/'),
-        pt: buildLocalizedAppPath('pt-BR', '/'),
-      },
-    },
-  };
+  return buildLocalizedPageMetadata(resolvedLocale, 'home');
 }
 
 export default async function LocalizedHomePage({
