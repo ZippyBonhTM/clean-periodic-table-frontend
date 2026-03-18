@@ -12,7 +12,7 @@ export const homeLandingTextPt = {
       'Navegação imediata',
       'Em português e inglês',
     ],
-    showcaseTitle: 'Elementos que vivem na própria home',
+    showcaseTitle: 'Elementos da tabela já vivos na própria home',
     showcaseDescription:
       'Toque, descubra e veja a página ganhar movimento sem sair do primeiro bloco.',
     showcaseHint: 'Toque em um elemento para abrir um resumo rápido.',
@@ -91,9 +91,4 @@ export const homeLandingTextPt = {
   footer: {
     note: 'Uma entrada mais leve, mais elegante e mais preparada para transformar visita em interesse.',
   },
-  examples: [
-    { label: 'Elementos', formula: 'Na · Fe · Cl' },
-    { label: 'Equações', formula: 'H2 + O2 -> H2O' },
-    { label: 'Moléculas', formula: 'C6H6' },
-  ],
 } as const;

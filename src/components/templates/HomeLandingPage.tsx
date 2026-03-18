@@ -79,69 +79,71 @@ export default function HomeLandingPage({ locale }: HomeLandingPageProps) {
           </div>
         </section>
 
-        <section className="grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-start">
-          <div className="space-y-6">
-            <div className="max-w-2xl space-y-3">
-              <h2 className="text-3xl font-black leading-tight text-(--text-strong) md:text-4xl">
-                {text.features.title}
-              </h2>
-              <p className="text-base leading-8 text-(--text-muted)">
-                {text.features.description}
-              </p>
-            </div>
-
-            <div className="space-y-5">
-              {text.features.items.map((item, index) => (
-                <article key={item.href} className="border-t border-(--border-subtle) pt-5 first:border-t-0 first:pt-0">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="max-w-xl space-y-2">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-(--text-muted)">
-                        {`0${index + 1}`}
-                      </p>
-                      <h3 className="text-2xl font-bold text-(--text-strong)">{item.title}</h3>
-                      <p className="text-sm leading-7 text-(--text-muted)">{item.description}</p>
-                    </div>
-                    <LinkButton
-                      href={buildLocalizedAppPath(locale, item.href)}
-                      variant="ghost"
-                      size="md"
-                      className="rounded-full px-4"
-                    >
-                      {item.cta}
-                    </LinkButton>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-8">
-            <div className="space-y-5 border-l border-(--border-subtle) pl-5">
-              <div className="space-y-3">
-                <h2 className="text-2xl font-black leading-tight text-(--text-strong) md:text-3xl">
-                  {text.positioning.title}
+        <section className="rounded-[2.4rem] border border-(--border-subtle) bg-[linear-gradient(180deg,rgba(15,23,42,0.16),rgba(15,23,42,0.04))] px-5 py-8 md:px-8">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-start">
+            <div className="space-y-6">
+              <div className="max-w-2xl space-y-3">
+                <h2 className="text-3xl font-black leading-tight text-(--text-strong) md:text-4xl">
+                  {text.features.title}
                 </h2>
                 <p className="text-base leading-8 text-(--text-muted)">
-                  {text.positioning.description}
+                  {text.features.description}
                 </p>
               </div>
 
-              {text.positioning.items.map((item) => (
-                <div key={item.title} className="space-y-2">
-                  <h3 className="text-lg font-semibold text-(--text-strong)">{item.title}</h3>
-                  <p className="text-sm leading-7 text-(--text-muted)">{item.description}</p>
-                </div>
-              ))}
+              <div className="space-y-5">
+                {text.features.items.map((item, index) => (
+                  <article key={item.href} className="border-t border-(--border-subtle) pt-5 first:border-t-0 first:pt-0">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="max-w-xl space-y-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-(--text-muted)">
+                          {`0${index + 1}`}
+                        </p>
+                        <h3 className="text-2xl font-bold text-(--text-strong)">{item.title}</h3>
+                        <p className="text-sm leading-7 text-(--text-muted)">{item.description}</p>
+                      </div>
+                      <LinkButton
+                        href={buildLocalizedAppPath(locale, item.href)}
+                        variant="ghost"
+                        size="md"
+                        className="rounded-full px-4"
+                      >
+                        {item.cta}
+                      </LinkButton>
+                    </div>
+                  </article>
+                ))}
+              </div>
             </div>
 
-            <div className="space-y-4">
-              <h2 className="text-2xl font-black leading-tight text-(--text-strong)">{text.faq.title}</h2>
-              {text.faq.items.map((item) => (
-                <article key={item.question} className="border-t border-(--border-subtle) pt-4 first:border-t-0 first:pt-0">
-                  <h3 className="text-lg font-semibold text-(--text-strong)">{item.question}</h3>
-                  <p className="mt-2 text-sm leading-7 text-(--text-muted)">{item.answer}</p>
-                </article>
-              ))}
+            <div className="space-y-8 lg:border-l lg:border-(--border-subtle) lg:pl-10">
+              <div className="space-y-5">
+                <div className="space-y-3">
+                  <h2 className="text-2xl font-black leading-tight text-(--text-strong) md:text-3xl">
+                    {text.positioning.title}
+                  </h2>
+                  <p className="text-base leading-8 text-(--text-muted)">
+                    {text.positioning.description}
+                  </p>
+                </div>
+
+                {text.positioning.items.map((item) => (
+                  <div key={item.title} className="space-y-2 border-t border-(--border-subtle) pt-4 first:border-t-0 first:pt-0">
+                    <h3 className="text-lg font-semibold text-(--text-strong)">{item.title}</h3>
+                    <p className="text-sm leading-7 text-(--text-muted)">{item.description}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-4 border-t border-(--border-subtle) pt-5">
+                <h2 className="text-2xl font-black leading-tight text-(--text-strong)">{text.faq.title}</h2>
+                {text.faq.items.map((item) => (
+                  <article key={item.question} className="border-t border-(--border-subtle) pt-4 first:border-t-0 first:pt-0">
+                    <h3 className="text-lg font-semibold text-(--text-strong)">{item.question}</h3>
+                    <p className="mt-2 text-sm leading-7 text-(--text-muted)">{item.answer}</p>
+                  </article>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -168,7 +170,7 @@ export default function HomeLandingPage({ locale }: HomeLandingPageProps) {
           </div>
         </section>
 
-        <footer className="flex flex-col gap-4 pb-2 text-sm text-(--text-muted) md:flex-row md:items-center md:justify-between">
+        <footer className="flex flex-col gap-4 border-t border-(--border-subtle) pb-2 pt-6 text-sm text-(--text-muted) md:flex-row md:items-center md:justify-between">
           <p className="max-w-2xl">{text.footer.note}</p>
           <div className="flex flex-wrap gap-4">
             <Link href={periodicTableHref} className="hover:text-(--text-strong)">

@@ -12,7 +12,7 @@ export const homeLandingTextEn = {
       'Easy to navigate',
       'English and Portuguese',
     ],
-    showcaseTitle: 'Elements already alive inside the homepage',
+    showcaseTitle: 'Periodic table elements already alive inside the homepage',
     showcaseDescription:
       'Tap, explore, and watch the page move before leaving the first scene.',
     showcaseHint: 'Tap an element to open a quick summary.',
@@ -91,9 +91,4 @@ export const homeLandingTextEn = {
   footer: {
     note: 'A cleaner, more memorable entry point for people who are still discovering what this experience can become.',
   },
-  examples: [
-    { label: 'Elements', formula: 'Na · Fe · Cl' },
-    { label: 'Equations', formula: 'H2 + O2 -> H2O' },
-    { label: 'Molecules', formula: 'C6H6' },
-  ],
 } as const;
