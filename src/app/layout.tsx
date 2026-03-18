@@ -24,7 +24,7 @@ const jetBrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'Clean Periodic Table',
-  description: 'Interactive periodic table frontend for auth + backend microservices',
+  description: 'Explore elements, balance equations, and build molecules in one place.',
   other: {
     google: 'notranslate',
   },
