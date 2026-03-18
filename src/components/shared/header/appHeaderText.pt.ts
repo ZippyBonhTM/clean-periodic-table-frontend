@@ -33,10 +33,6 @@ export const appHeaderTextPt = {
       molecularEditor: 'Editor Molecular',
       moleculeGallery: 'Galeria de Moléculas',
     },
-    badges: {
-      new: 'NOVA',
-      beta: 'BETA',
-    },
   },
   auth: {
     login: 'Entrar',

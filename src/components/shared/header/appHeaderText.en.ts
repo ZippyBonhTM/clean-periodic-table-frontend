@@ -33,10 +33,6 @@ export const appHeaderTextEn = {
       molecularEditor: 'Molecular Editor',
       moleculeGallery: 'Molecule Gallery',
     },
-    badges: {
-      new: 'NEW',
-      beta: 'BETA',
-    },
   },
   auth: {
     login: 'Login',

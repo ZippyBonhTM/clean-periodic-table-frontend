@@ -31,10 +31,7 @@ export default function AppHeaderDesktopNav({
             size="sm"
             className="rounded-lg px-2.5 text-[11px]"
           >
-            <AppHeaderNavLinkLabel
-              label={text.links[item.labelKey]}
-              badge={item.badgeKey === undefined ? undefined : text.badges[item.badgeKey]}
-            />
+            <AppHeaderNavLinkLabel label={text.links[item.labelKey]} />
           </LinkButton>
         );
       })}

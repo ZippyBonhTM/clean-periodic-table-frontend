@@ -74,10 +74,7 @@ export default function AppHeaderRouteMenu({
                 align="left"
                 className="px-3 text-[11px]"
               >
-                <AppHeaderNavLinkLabel
-                  label={text.links[item.labelKey]}
-                  badge={item.badgeKey === undefined ? undefined : text.badges[item.badgeKey]}
-                />
+                <AppHeaderNavLinkLabel label={text.links[item.labelKey]} />
               </LinkButton>
             );
           })}
