@@ -1,71 +1,91 @@
 import type { ChemicalElement } from '@/shared/types/element';
+import type { PeriodicTableTextCatalog } from '@/components/organisms/periodic-table/periodicTableText';
 import { formatAtomicMass } from '@/shared/utils/elementPresentation';
 
 import type { ElementMetaRow } from './elementDetails.types';
 import { formatNullableValue } from './elementDetailsText';
 
-export function buildElementRows(element: ChemicalElement): ElementMetaRow[] {
+type ElementDetailsFieldLabels = PeriodicTableTextCatalog['details']['fields'];
+type ElementDetailsCommonLabels = Pick<PeriodicTableTextCatalog['common'], 'yes' | 'no'>;
+
+export function buildElementRows(
+  element: ChemicalElement,
+  fieldLabels: ElementDetailsFieldLabels,
+  commonLabels: ElementDetailsCommonLabels,
+): ElementMetaRow[] {
   const ionizationEnergies = Array.isArray(element.ionization_energies)
     ? element.ionization_energies
     : [];
   const shells = Array.isArray(element.shells) ? element.shells : [];
+  const nullableValueText = {
+    fallbackText: fieldLabels.notInformed,
+    yesText: commonLabels.yes,
+    noText: commonLabels.no,
+  };
 
   return [
-    { label: 'Name', value: formatNullableValue(element.name) },
-    { label: 'Symbol', value: formatNullableValue(element.symbol) },
-    { label: 'Atomic Number', value: String(element.number) },
-    { label: 'Atomic Mass', value: formatAtomicMass(element.atomic_mass) },
-    { label: 'Category', value: formatNullableValue(element.category) },
-    { label: 'Phase', value: formatNullableValue(element.phase) },
-    { label: 'Group', value: String(element.group) },
-    { label: 'Period', value: String(element.period) },
-    { label: 'Block', value: formatNullableValue(element.block) },
-    { label: 'Appearance', value: formatNullableValue(element.appearance) },
-    { label: 'Density', value: formatNullableValue(element.density) },
-    { label: 'Boiling Point', value: formatNullableValue(element.boil) },
-    { label: 'Melting Point', value: formatNullableValue(element.melt) },
-    { label: 'Molar Heat', value: formatNullableValue(element.molar_heat) },
-    { label: 'Electron Affinity', value: formatNullableValue(element.electron_affinity) },
+    { key: 'name', label: fieldLabels.name, value: formatNullableValue(element.name, nullableValueText) },
+    { key: 'symbol', label: fieldLabels.symbol, value: formatNullableValue(element.symbol, nullableValueText) },
+    { key: 'atomicNumber', label: fieldLabels.atomicNumber, value: String(element.number) },
+    { key: 'atomicMass', label: fieldLabels.atomicMass, value: formatAtomicMass(element.atomic_mass) },
+    { key: 'category', label: fieldLabels.category, value: formatNullableValue(element.category, nullableValueText) },
+    { key: 'phase', label: fieldLabels.phase, value: formatNullableValue(element.phase, nullableValueText) },
+    { key: 'group', label: fieldLabels.group, value: String(element.group) },
+    { key: 'period', label: fieldLabels.period, value: String(element.period) },
+    { key: 'block', label: fieldLabels.block, value: formatNullableValue(element.block, nullableValueText) },
+    { key: 'appearance', label: fieldLabels.appearance, value: formatNullableValue(element.appearance, nullableValueText) },
+    { key: 'density', label: fieldLabels.density, value: formatNullableValue(element.density, nullableValueText) },
+    { key: 'boilingPoint', label: fieldLabels.boilingPoint, value: formatNullableValue(element.boil, nullableValueText) },
+    { key: 'meltingPoint', label: fieldLabels.meltingPoint, value: formatNullableValue(element.melt, nullableValueText) },
+    { key: 'molarHeat', label: fieldLabels.molarHeat, value: formatNullableValue(element.molar_heat, nullableValueText) },
+    { key: 'electronAffinity', label: fieldLabels.electronAffinity, value: formatNullableValue(element.electron_affinity, nullableValueText) },
     {
-      label: 'Electronegativity (Pauling)',
-      value: formatNullableValue(element.electronegativity_pauling),
-    },
-    { label: 'Electron Configuration', value: formatNullableValue(element.electron_configuration) },
-    {
-      label: 'Electron Config (Semantic)',
-      value: formatNullableValue(element.electron_configuration_semantic),
+      key: 'electronegativityPauling',
+      label: fieldLabels.electronegativityPauling,
+      value: formatNullableValue(element.electronegativity_pauling, nullableValueText),
     },
     {
-      label: 'Ionization Energies',
-      value: ionizationEnergies.length === 0 ? 'Not informed' : ionizationEnergies.join(', '),
+      key: 'electronConfiguration',
+      label: fieldLabels.electronConfiguration,
+      value: formatNullableValue(element.electron_configuration, nullableValueText),
     },
-    { label: 'Shells', value: shells.length === 0 ? 'Not informed' : shells.join(', ') },
-    { label: 'Discovered By', value: formatNullableValue(element.discovered_by) },
-    { label: 'Named By', value: formatNullableValue(element.named_by) },
-    { label: 'CPK Hex', value: formatNullableValue(element['cpk-hex']) },
-    { label: 'Table Position X', value: String(element.xpos) },
-    { label: 'Table Position Y', value: String(element.ypos) },
-    { label: 'Wide Position X', value: String(element.wxpos) },
-    { label: 'Wide Position Y', value: String(element.wypos) },
-    { label: 'Image Title', value: formatNullableValue(element.image?.title) },
-    { label: 'Image Attribution', value: formatNullableValue(element.image?.attribution) },
-    { label: 'Summary', value: formatNullableValue(element.summary) },
+    {
+      key: 'electronConfigSemantic',
+      label: fieldLabels.electronConfigSemantic,
+      value: formatNullableValue(element.electron_configuration_semantic, nullableValueText),
+    },
+    {
+      key: 'ionizationEnergies',
+      label: fieldLabels.ionizationEnergies,
+      value: ionizationEnergies.length === 0 ? fieldLabels.notInformed : ionizationEnergies.join(', '),
+    },
+    { key: 'shells', label: fieldLabels.shells, value: shells.length === 0 ? fieldLabels.notInformed : shells.join(', ') },
+    { key: 'discoveredBy', label: fieldLabels.discoveredBy, value: formatNullableValue(element.discovered_by, nullableValueText) },
+    { key: 'namedBy', label: fieldLabels.namedBy, value: formatNullableValue(element.named_by, nullableValueText) },
+    { key: 'cpkHex', label: fieldLabels.cpkHex, value: formatNullableValue(element['cpk-hex'], nullableValueText) },
+    { key: 'tablePositionX', label: fieldLabels.tablePositionX, value: String(element.xpos) },
+    { key: 'tablePositionY', label: fieldLabels.tablePositionY, value: String(element.ypos) },
+    { key: 'widePositionX', label: fieldLabels.widePositionX, value: String(element.wxpos) },
+    { key: 'widePositionY', label: fieldLabels.widePositionY, value: String(element.wypos) },
+    { key: 'imageTitle', label: fieldLabels.imageTitle, value: formatNullableValue(element.image?.title, nullableValueText) },
+    { key: 'imageAttribution', label: fieldLabels.imageAttribution, value: formatNullableValue(element.image?.attribution, nullableValueText) },
+    { key: 'summary', label: fieldLabels.summary, value: formatNullableValue(element.summary, nullableValueText) },
   ];
 }
 
 export function buildCardOptimizedRows(rows: ElementMetaRow[]): ElementMetaRow[] {
   const pinnedTopLabels = new Set([
-    'Name',
-    'Symbol',
-    'Atomic Number',
-    'Atomic Mass',
-    'Category',
-    'Phase',
-    'Group',
-    'Period',
-    'Block',
+    'name',
+    'symbol',
+    'atomicNumber',
+    'atomicMass',
+    'category',
+    'phase',
+    'group',
+    'period',
+    'block',
   ]);
-  const pinnedBottomLabels = new Set(['Ionization Energies']);
+  const pinnedBottomLabels = new Set(['ionizationEnergies']);
 
   const pinnedTop: ElementMetaRow[] = [];
   const compactRows: ElementMetaRow[] = [];
@@ -73,11 +93,11 @@ export function buildCardOptimizedRows(rows: ElementMetaRow[]): ElementMetaRow[]
   const pinnedBottom: ElementMetaRow[] = [];
 
   for (const row of rows) {
-    if (pinnedTopLabels.has(row.label)) {
+    if (pinnedTopLabels.has(row.key)) {
       pinnedTop.push(row);
       continue;
     }
-    if (pinnedBottomLabels.has(row.label)) {
+    if (pinnedBottomLabels.has(row.key)) {
       pinnedBottom.push(row);
       continue;
     }

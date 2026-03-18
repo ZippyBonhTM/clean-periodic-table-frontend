@@ -1,5 +1,7 @@
 'use client';
 
+import usePeriodicTableText from '@/components/organisms/periodic-table/usePeriodicTableText';
+
 import type { ViewerMode } from './elementDetails.types';
 
 type ElementDetailsViewerModeControlsProps = {
@@ -42,6 +44,8 @@ export default function ElementDetailsViewerModeControls({
   viewerMode,
   onViewerModeChange,
 }: ElementDetailsViewerModeControlsProps) {
+  const text = usePeriodicTableText();
+
   return (
     <div className="flex items-end gap-2 max-[464px]:flex-col max-[464px]:items-stretch">
       <button
@@ -54,12 +58,12 @@ export default function ElementDetailsViewerModeControls({
             : 'border-[var(--border-subtle)] bg-[var(--surface-2)] text-[var(--text-muted)] hover:text-[var(--text-strong)]'
         } disabled:cursor-not-allowed disabled:opacity-55`}
       >
-        Element Image
+        {text.details.viewer.elementImage}
       </button>
 
       <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] p-2 max-[464px]:order-2 max-[464px]:w-full">
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-          Bohr
+          {text.details.viewer.bohr}
         </p>
         <div className="flex flex-wrap gap-2">
           <ViewerModeButton

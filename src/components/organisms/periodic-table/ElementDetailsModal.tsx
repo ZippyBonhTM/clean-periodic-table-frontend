@@ -13,6 +13,10 @@ import type { DetailsViewMode, ViewerMode } from './elementDetails.types';
 import useElementDetailsExpandedImage from './useElementDetailsExpandedImage';
 import useElementDetailsMediaConfig from './useElementDetailsMediaConfig';
 import useElementDetailsRows from './useElementDetailsRows';
+import {
+  formatElementModalTitle,
+} from './periodicTableText';
+import usePeriodicTableText from './usePeriodicTableText';
 
 type ElementDetailsModalProps = {
   element: ChemicalElement | null;
@@ -33,6 +37,7 @@ function ElementDetailsModal({
   onOpenPreviousElement,
   onOpenNextElement,
 }: ElementDetailsModalProps) {
+  const text = usePeriodicTableText();
   const [viewerModeOverride, setViewerModeOverride] = useState<ViewerMode | null>(null);
   const [detailsViewMode, setDetailsViewMode] = useState<DetailsViewMode>('cards');
   const { expandedImage, onCloseExpandedImage, onOpenExpandedImage } = useElementDetailsExpandedImage();
@@ -48,9 +53,10 @@ function ElementDetailsModal({
       <FloatingModal
         isOpen={isOpen}
         onClose={onClose}
-        title="Element Details"
+        title={text.details.emptyTitle}
         panelClassName="max-w-5xl self-start mt-1 sm:mt-3"
         bodyClassName="element-modal-scroll pr-1 pb-1"
+        closeLabel={text.common.close}
       >
         {null}
       </FloatingModal>
@@ -66,9 +72,10 @@ function ElementDetailsModal({
           onCloseExpandedImage();
           onClose();
         }}
-        title={`${element.name} (${element.symbol})`}
+        title={formatElementModalTitle(text, element.name, element.symbol)}
         panelClassName="max-w-5xl self-start mt-1 sm:mt-3"
         bodyClassName="element-modal-scroll pr-1 pb-1"
+        closeLabel={text.common.close}
         headerActions={
           <ElementDetailsModalHeaderActions
             hasNextElement={hasNextElement}

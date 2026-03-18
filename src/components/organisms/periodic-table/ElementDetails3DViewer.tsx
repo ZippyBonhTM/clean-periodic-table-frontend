@@ -3,6 +3,10 @@
 import { createElement } from 'react';
 
 import type { ChemicalElement } from '@/shared/types/element';
+import {
+  formatBohrImageAlt,
+} from '@/components/organisms/periodic-table/periodicTableText';
+import usePeriodicTableText from '@/components/organisms/periodic-table/usePeriodicTableText';
 
 import ElementDetailsLinkButton from './ElementDetailsLinkButton';
 import { normalizeText } from './elementDetailsUtils';
@@ -20,10 +24,12 @@ export default function ElementDetails3DViewer({
   has3D,
   is3DViewerReady,
 }: ElementDetails3DViewerProps) {
+  const text = usePeriodicTableText();
+
   if (!has3D) {
     return (
       <div className="flex h-56 items-center justify-center rounded-xl border border-dashed border-[var(--border-subtle)] text-sm text-[var(--text-muted)] md:h-72">
-        3D model is unavailable for this element.
+        {text.details.viewer.modelUnavailable}
       </div>
     );
   }
@@ -35,7 +41,7 @@ export default function ElementDetails3DViewer({
           createElement('model-viewer', {
             src: normalizeText(element.bohr_model_3d) || undefined,
             poster: normalizeText(element.bohr_model_image) || undefined,
-            alt: `3D model of ${elementName}`,
+            alt: formatBohrImageAlt(text, elementName),
             'camera-controls': 'true',
             autoplay: 'true',
             'interaction-prompt': 'auto',
@@ -45,16 +51,13 @@ export default function ElementDetails3DViewer({
           })
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-[var(--text-muted)]">
-            Loading lightweight 3D viewer...
+            {text.details.viewer.loading3d}
           </div>
         )}
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <ElementDetailsLinkButton href={element.bohr_model_3d} label="Open 3D File in New Tab" />
-        <span className="text-xs text-[var(--text-muted)]">
-          Powered by Google model-viewer for lightweight rendering.
-        </span>
+        <ElementDetailsLinkButton href={element.bohr_model_3d} label={text.details.links.open3dFile} />
       </div>
     </div>
   );

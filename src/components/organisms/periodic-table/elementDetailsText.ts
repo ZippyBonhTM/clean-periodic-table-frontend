@@ -1,5 +1,11 @@
 const GENERIC_ELEMENT_IMAGE_PATH = '/s/transactinoid.png';
 
+type NullableValueTextOptions = {
+  fallbackText?: string;
+  yesText?: string;
+  noText?: string;
+};
+
 export function normalizeText(value: unknown): string {
   if (typeof value !== 'string') {
     return '';
@@ -26,9 +32,18 @@ export function normalizeElementImageUrl(value: unknown): string {
   return normalized;
 }
 
-export function formatNullableValue(value: unknown): string {
+export function formatNullableValue(
+  value: unknown,
+  options: NullableValueTextOptions | string = 'Not informed',
+): string {
+  const {
+    fallbackText = 'Not informed',
+    yesText = 'Yes',
+    noText = 'No',
+  } = typeof options === 'string' ? { fallbackText: options } : options;
+
   if (value === null || value === undefined) {
-    return 'Not informed';
+    return fallbackText;
   }
 
   if (typeof value === 'number') {
@@ -39,18 +54,18 @@ export function formatNullableValue(value: unknown): string {
     const trimmedValue = value.trim();
 
     if (trimmedValue.length === 0) {
-      return 'Not informed';
+      return fallbackText;
     }
 
     return trimmedValue;
   }
 
   if (typeof value === 'boolean') {
-    return value ? 'Yes' : 'No';
+    return value ? yesText : noText;
   }
 
   if (typeof value === 'object') {
-    return 'Not informed';
+    return fallbackText;
   }
 
   return String(value);

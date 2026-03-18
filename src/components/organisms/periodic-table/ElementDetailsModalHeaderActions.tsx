@@ -1,5 +1,7 @@
 'use client';
 
+import usePeriodicTableText from '@/components/organisms/periodic-table/usePeriodicTableText';
+
 type ElementDetailsModalHeaderActionsProps = {
   hasNextElement: boolean;
   hasPreviousElement: boolean;
@@ -39,10 +41,12 @@ export default function ElementDetailsModalHeaderActions({
   onOpenNextElement,
   onOpenPreviousElement,
 }: ElementDetailsModalHeaderActionsProps) {
+  const text = usePeriodicTableText();
+
   return (
     <div className="flex items-center gap-2">
       <NavigationButton
-        ariaLabel="Previous element"
+        ariaLabel={text.details.previousElement}
         disabled={!hasPreviousElement}
         onClick={() => {
           if (!hasPreviousElement || onOpenPreviousElement === undefined) {
@@ -57,7 +61,7 @@ export default function ElementDetailsModalHeaderActions({
       </NavigationButton>
 
       <NavigationButton
-        ariaLabel="Next element"
+        ariaLabel={text.details.nextElement}
         disabled={!hasNextElement}
         onClick={() => {
           if (!hasNextElement || onOpenNextElement === undefined) {

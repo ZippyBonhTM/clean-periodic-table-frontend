@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import type { ChemicalElement } from '@/shared/types/element';
 
 import type { PeriodicViewMode } from './periodicTable.types';
+import usePeriodicTableText from './usePeriodicTableText';
 
 type PeriodicTableStageProps = {
   activeViewMode: PeriodicViewMode;
@@ -53,6 +54,8 @@ export default function PeriodicTableStage({
   onOpenPreviousElement,
   onOpenNextElement,
 }: PeriodicTableStageProps) {
+  const text = usePeriodicTableText();
+
   return (
     <div
       ref={fullscreenContainerRef}
@@ -63,10 +66,10 @@ export default function PeriodicTableStage({
           <button
             type="button"
             onClick={onToggleTableFullscreen}
-            aria-label="Exit fullscreen table"
+            aria-label={text.fullscreen.exitTable}
             className="pointer-events-auto rounded-md border border-[var(--border-subtle)] bg-[var(--surface-1)]/95 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)] shadow-[0_8px_20px_rgba(0,0,0,0.35)] backdrop-blur-sm transition-colors hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
           >
-            Exit Fullscreen
+            {text.fullscreen.exit}
           </button>
         </div>
       ) : null}

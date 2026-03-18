@@ -74,10 +74,6 @@ function ClassicPeriodicView({
           </div>
         </div>
       </div>
-
-      <p className="mt-3 text-xs text-[var(--text-muted)]">
-        Classic layout by periodic position (group x period), including lanthanides and actinides on lower rows.
-      </p>
     </section>
   );
 }

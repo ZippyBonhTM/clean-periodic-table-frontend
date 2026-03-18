@@ -3,6 +3,11 @@
 import type { RefObject } from 'react';
 
 import Button from '@/components/atoms/Button';
+import {
+  formatPeriodicElementsSummary,
+  getPeriodicViewLabel,
+} from '@/components/organisms/periodic-table/periodicTableText';
+import usePeriodicTableText from '@/components/organisms/periodic-table/usePeriodicTableText';
 
 import type { PeriodicViewMode } from './periodicTable.types';
 import { VIEW_OPTIONS } from './periodicTable.types';
@@ -67,6 +72,8 @@ export default function PeriodicTableExploreControls({
   sortToggleRef,
   viewToggleRef,
 }: PeriodicTableExploreControlsProps) {
+  const text = usePeriodicTableText();
+
   return (
     <div className="surface-panel rounded-2xl border border-[var(--border-subtle)] overflow-visible [contain:none] p-4 md:p-5">
       <div className="flex flex-col gap-3 min-[768px]:flex-row min-[768px]:items-start">
@@ -75,13 +82,13 @@ export default function PeriodicTableExploreControls({
             htmlFor="element-search"
             className="mb-1 block text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]"
           >
-            Search Element
+            {text.explore.searchLabel}
           </label>
           <input
             id="element-search"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Name, symbol, number, phase, category..."
+            placeholder={text.explore.searchPlaceholder}
             className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)]"
           />
 
@@ -91,7 +98,7 @@ export default function PeriodicTableExploreControls({
                 htmlFor="sort-mode-toggle"
                 className="mb-1 block text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]"
               >
-                Sort
+                {text.explore.sortLabel}
               </label>
               <Button
                 id="sort-mode-toggle"
@@ -103,7 +110,7 @@ export default function PeriodicTableExploreControls({
                 className="min-w-[172px] whitespace-nowrap"
                 onClick={onToggleSortMenu}
                 aria-expanded={isSortMenuOpen}
-                aria-label="Toggle sort options"
+                aria-label={text.menus.toggleSort}
               >
                 <span>{currentSortLabel}</span>
                 <WideChevron isOpen={isSortMenuOpen} />
@@ -111,10 +118,10 @@ export default function PeriodicTableExploreControls({
             </div>
 
             <Button type="button" variant="ghost" size="md" onClick={onLuckySearch}>
-              Lucky Search
+              {text.explore.luckySearch}
             </Button>
             <Button type="button" variant="ghost" size="md" onClick={onClearQuery}>
-              Clear
+              {text.explore.clear}
             </Button>
 
             <div className="relative min-[768px]:hidden">
@@ -127,26 +134,26 @@ export default function PeriodicTableExploreControls({
                 className="min-w-[108px] whitespace-nowrap"
                 onClick={onToggleViewMenu}
                 aria-expanded={isViewMenuOpen}
-                aria-label="Toggle view options"
+                aria-label={text.menus.toggleView}
               >
-                View
+                {text.explore.viewLabel}
                 <WideChevron isOpen={isViewMenuOpen} />
               </Button>
             </div>
           </div>
 
           <p className="mt-3 text-xs text-[var(--text-muted)]">
-            Showing {visibleElementsCount} of {totalElements} elements.
+            {formatPeriodicElementsSummary(text, visibleElementsCount, totalElements)}
           </p>
           {query !== deferredQuery || isPendingTransition ? (
-            <p className="mt-1 text-xs text-[var(--text-muted)]">Updating view...</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">{text.explore.updatingView}</p>
           ) : null}
         </div>
 
         <div className="hidden min-[768px]:ml-auto min-[768px]:w-fit min-[768px]:shrink-0 min-[768px]:block">
           <div className="rounded-xl border border-[var(--border-subtle)] px-2.5 py-2">
             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-muted)]">
-              View
+              {text.explore.viewLabel}
             </p>
             <div className="flex flex-col items-start gap-1.5">
               {VIEW_OPTIONS.map((option) => (
@@ -159,7 +166,7 @@ export default function PeriodicTableExploreControls({
                   onClick={() => onSelectViewMode(option.mode)}
                   className="w-full"
                 >
-                  {option.label}
+                  {getPeriodicViewLabel(text, option.mode)}
                 </Button>
               ))}
             </div>

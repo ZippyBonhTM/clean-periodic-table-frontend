@@ -6,6 +6,7 @@ import { useCallback, useState } from 'react';
 import useAuthText from '@/components/organisms/auth/useAuthText';
 import ElementsState from '@/components/organisms/elements/ElementsState';
 import type { AuthModalMode } from '@/components/organisms/auth/AuthModal';
+import usePeriodicTableText from '@/components/organisms/periodic-table/usePeriodicTableText';
 import AppShell from '@/components/templates/AppShell';
 import type { TokenStatusType } from '@/components/molecules/TokenStatus';
 import type { PeriodicTableMode } from '@/components/organisms/periodic-table/PeriodicTable';
@@ -14,10 +15,14 @@ import useAuthSession from '@/shared/hooks/useAuthSession';
 import useAuthToken from '@/shared/hooks/useAuthToken';
 import useElements from '@/shared/hooks/useElements';
 
+function PeriodicTableLoadingState() {
+  const text = usePeriodicTableText();
+
+  return <ElementsState tone="info" message={text.common.loading} showProgress />;
+}
+
 const PeriodicTable = dynamic(() => import('@/components/organisms/periodic-table/PeriodicTable'), {
-  loading: () => (
-    <ElementsState tone="info" message="Loading..." showProgress />
-  ),
+  loading: PeriodicTableLoadingState,
 });
 
 const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'));
