@@ -34,6 +34,7 @@ export function resolveAppLocaleFromPathname(pathname: string | null): AppLocale
 }
 
 const LOCALIZED_APP_PATHS = new Set([
+  '/',
   '/search',
   '/periodic-table',
   '/balance-equation',
@@ -87,6 +88,10 @@ export function buildLocalizedAppPath(locale: AppLocale, pathname: string): stri
     return pathname;
   }
 
+  if (normalizedPathname === '/') {
+    return `/${APP_LOCALE_SEGMENT_BY_LOCALE[locale]}`;
+  }
+
   return `/${APP_LOCALE_SEGMENT_BY_LOCALE[locale]}${normalizedPathname}`;
 }
 
@@ -97,7 +102,7 @@ export function isLocalizedAppHrefActive(pathname: string | null, href: string):
     return false;
   }
 
-  return normalizedCurrentPath === href || (normalizedCurrentPath === '/' && href === '/search');
+  return normalizedCurrentPath === href;
 }
 
 export function buildBalanceEquationPath(locale: AppLocale): string {

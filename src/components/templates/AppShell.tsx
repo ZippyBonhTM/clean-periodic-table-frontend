@@ -12,6 +12,7 @@ type AppShellProps = {
   children: React.ReactNode;
   hasToken: boolean;
   authStatus: TokenStatusType;
+  headerShowAccountChrome?: boolean;
   onLogout?: () => void;
   authEntryMode?: AuthEntryMode;
   onRequestLogin?: () => void;
@@ -24,6 +25,7 @@ function AppShell({
   children,
   hasToken,
   authStatus,
+  headerShowAccountChrome = true,
   onLogout,
   authEntryMode = 'route',
   onRequestLogin,
@@ -110,6 +112,7 @@ function AppShell({
         <AppHeader
           hasToken={hasToken}
           authStatus={authStatus}
+          showAccountChrome={headerShowAccountChrome}
           theme={theme}
           onToggleTheme={toggleTheme}
           onLogout={onLogout}
