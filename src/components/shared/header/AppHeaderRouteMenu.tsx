@@ -1,5 +1,6 @@
 import Button from '@/components/atoms/Button';
 import LinkButton from '@/components/atoms/LinkButton';
+import type { AppHeaderTextCatalog } from '@/components/shared/header/appHeaderText';
 
 import AppHeaderNavLinkLabel from './AppHeaderNavLinkLabel';
 import { NAV_LINKS } from './appHeader.types';
@@ -9,6 +10,7 @@ type AppHeaderRouteMenuProps = {
   pathname: string | null;
   balanceEquationHref: string;
   isBalanceEquationActive: boolean;
+  text: AppHeaderTextCatalog['navigation'];
   onClose: () => void;
 };
 
@@ -17,6 +19,7 @@ export default function AppHeaderRouteMenu({
   pathname,
   balanceEquationHref,
   isBalanceEquationActive,
+  text,
   onClose,
 }: AppHeaderRouteMenuProps) {
   return (
@@ -30,7 +33,7 @@ export default function AppHeaderRouteMenu({
         type="button"
         onClick={onClose}
         className="absolute inset-0 bg-black/45"
-        aria-label="Close routes menu backdrop"
+        aria-label={text.closeMenuBackdrop}
       />
 
       <aside
@@ -39,11 +42,11 @@ export default function AppHeaderRouteMenu({
         }`}
         role="dialog"
         aria-modal="true"
-        aria-label="Routes menu"
+        aria-label={text.dialogLabel}
       >
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-(--text-muted)">
-            Routes
+            {text.menuTitle}
           </p>
           <Button
             type="button"
@@ -51,9 +54,9 @@ export default function AppHeaderRouteMenu({
             size="sm"
             className="px-2"
             onClick={onClose}
-            aria-label="Close routes menu"
+            aria-label={text.closeMenu}
           >
-            Close
+            {text.closeMenu}
           </Button>
         </div>
 
@@ -74,7 +77,10 @@ export default function AppHeaderRouteMenu({
                 align="left"
                 className="px-3 text-[11px]"
               >
-                <AppHeaderNavLinkLabel label={item.label} badge={item.badge} />
+                <AppHeaderNavLinkLabel
+                  label={text.links[item.labelKey]}
+                  badge={item.badgeKey === undefined ? undefined : text.badges[item.badgeKey]}
+                />
               </LinkButton>
             );
           })}

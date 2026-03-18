@@ -12,6 +12,9 @@ type UseAppHeaderUserMenuParams = {
   hasToken: boolean;
   token: string | null;
   onPersistToken: (token: string) => void;
+  guestDisplayName: string;
+  userDisplayNameFallback: string;
+  profileLoadErrorFallback: string;
   onLogout?: () => void;
 };
 
@@ -21,6 +24,9 @@ export default function useAppHeaderUserMenu({
   hasToken,
   token,
   onPersistToken,
+  guestDisplayName,
+  userDisplayNameFallback,
+  profileLoadErrorFallback,
   onLogout,
 }: UseAppHeaderUserMenuParams) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -36,15 +42,15 @@ export default function useAppHeaderUserMenu({
 
   const userDisplayName = useMemo(() => {
     if (!hasToken || token === null) {
-      return 'Guest';
+      return guestDisplayName;
     }
 
     if (userProfile?.name.trim().length) {
       return userProfile.name;
     }
 
-    return readJwtDisplayName(token) ?? 'User';
-  }, [hasToken, token, userProfile?.name]);
+    return readJwtDisplayName(token) ?? userDisplayNameFallback;
+  }, [guestDisplayName, hasToken, token, userDisplayNameFallback, userProfile?.name]);
 
   const resetUserMenuDrag = useCallback(() => {
     userMenuDragOffsetRef.current = 0;
@@ -116,13 +122,13 @@ export default function useAppHeaderUserMenu({
           return;
         }
 
-        setUserProfileError('Could not load user profile right now.');
+        setUserProfileError(profileLoadErrorFallback);
       });
 
     return () => {
       isCancelled = true;
     };
-  }, [hasToken, isUserMenuOpen, onPersistToken, token]);
+  }, [hasToken, isUserMenuOpen, onPersistToken, profileLoadErrorFallback, token]);
 
   const requestLogoutConfirm = useCallback(() => {
     setIsLogoutConfirmOpen(true);
