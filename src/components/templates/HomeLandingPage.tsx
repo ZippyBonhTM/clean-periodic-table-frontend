@@ -69,11 +69,7 @@ export default function HomeLandingPage({ locale }: HomeLandingPageProps) {
 
             <HomeHeroElementCluster
               locale={locale}
-              title={text.hero.showcaseTitle}
-              description={text.hero.showcaseDescription}
-              hint={text.hero.showcaseHint}
-              rotationHint={text.hero.showcaseRotationHint}
-              emptyHint={text.hero.showcaseEmptyHint}
+              idleLabel={text.hero.showcaseIdleLabel}
               openTableLabel={text.hero.showcaseOpenTableCta}
             />
           </div>

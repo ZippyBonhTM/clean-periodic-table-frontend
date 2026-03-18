@@ -17,11 +17,7 @@ import { HOME_HERO_ELEMENTS, type HomeHeroElement } from './homeHeroElements';
 
 type HomeHeroElementClusterProps = {
   locale: AppLocale;
-  title: string;
-  description: string;
-  hint: string;
-  rotationHint: string;
-  emptyHint: string;
+  idleLabel: string;
   openTableLabel: string;
 };
 
@@ -64,11 +60,7 @@ function formatHeroAtomicMass(value: number, locale: AppLocale): string {
 
 export default function HomeHeroElementCluster({
   locale,
-  title,
-  description,
-  hint,
-  rotationHint,
-  emptyHint,
+  idleLabel,
   openTableLabel,
 }: HomeHeroElementClusterProps) {
   const text = usePeriodicTableText();
@@ -79,6 +71,9 @@ export default function HomeHeroElementCluster({
   const [animatingSlotIndex, setAnimatingSlotIndex] = useState<number | null>(null);
   const timeoutIdsRef = useRef<number[]>([]);
   const periodicTableHref = useMemo(() => buildLocalizedAppPath(locale, '/periodic-table'), [locale]);
+  const selectedSlotIndex = selectedElement === null
+    ? -1
+    : activeElements.findIndex((element) => element.number === selectedElement.number);
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
@@ -140,7 +135,7 @@ export default function HomeHeroElementCluster({
 
   return (
     <div className="relative rounded-[2.2rem] border border-white/10 bg-black/16 p-4 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.95)] backdrop-blur-sm md:p-5">
-      <div className="relative h-[18rem] md:h-[19.5rem]">
+      <div className="relative h-[18.75rem] md:h-[20rem]">
         {activeElements.map((element, index) => {
           const isAnimating = animatingSlotIndex === index;
           const isSelected = selectedElement?.number === element.number;
@@ -153,32 +148,46 @@ export default function HomeHeroElementCluster({
               } ${isSelected ? 'z-20' : 'z-10'}`}
             >
               <div className={`transition-transform duration-300 ${isSelected ? 'scale-[1.03]' : 'scale-100'}`}>
-                <ElementTile element={element} density="regular" onOpen={() => setSelectedElement(element)} />
+                <ElementTile
+                  element={element}
+                  density="regular"
+                  onOpen={() => {
+                    setSelectedElement((currentSelectedElement) => {
+                      if (currentSelectedElement?.number === element.number) {
+                        return null;
+                      }
+
+                      return element;
+                    });
+                  }}
+                />
               </div>
             </div>
           );
         })}
-      </div>
 
-      <div className="mt-4 max-w-sm space-y-3 border-t border-white/10 pt-4">
-        <div className="space-y-2">
-          <p className="text-sm font-semibold text-(--text-strong)">{title}</p>
-          <p className="text-sm leading-7 text-(--text-muted)">{description}</p>
+        <div className="pointer-events-none absolute inset-x-0 bottom-1 flex items-center justify-between gap-3 px-1">
+          <p className="text-xs font-medium text-(--text-muted)">{idleLabel}</p>
+          <LinkButton
+            href={periodicTableHref}
+            variant="ghost"
+            size="md"
+            className="pointer-events-auto rounded-full px-4"
+          >
+            {openTableLabel}
+          </LinkButton>
         </div>
 
-        <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-(--text-muted)">
-          <span>{hint}</span>
-          <span>{rotationHint}</span>
-        </div>
-
-        <div
-          className={`overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/8 p-4 backdrop-blur-md transition-all duration-300 ${
-            selectedElement === null ? 'max-h-28 opacity-100' : 'max-h-80 opacity-100'
-          }`}
-        >
-          {selectedElement === null ? (
-            <p className="text-sm leading-7 text-(--text-muted)">{emptyHint}</p>
-          ) : (
+        {selectedElement !== null && selectedSlotIndex >= 0 ? (
+          <div
+            className={`absolute z-30 w-[14.5rem] overflow-hidden rounded-[1.45rem] border border-white/12 bg-[linear-gradient(160deg,rgba(15,23,42,0.94),rgba(15,23,42,0.82))] p-4 shadow-[0_30px_80px_-45px_rgba(15,23,42,1)] backdrop-blur-md transition-all duration-300 ${
+              selectedSlotIndex === 0
+                ? 'left-[5.75rem] top-3 md:left-[7rem] md:top-2'
+                : selectedSlotIndex === 1
+                  ? 'right-[5.75rem] top-12 md:right-[7rem] md:top-12'
+                  : 'left-4 top-[9.25rem] md:left-6 md:top-[10.75rem]'
+            }`}
+          >
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
@@ -229,8 +238,8 @@ export default function HomeHeroElementCluster({
                 </LinkButton>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

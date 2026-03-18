@@ -12,12 +12,7 @@ export const homeLandingTextEn = {
       'Easy to navigate',
       'English and Portuguese',
     ],
-    showcaseTitle: 'Periodic table elements already alive inside the homepage',
-    showcaseDescription:
-      'Tap, explore, and watch the page move before leaving the first scene.',
-    showcaseHint: 'Tap an element to open a quick summary.',
-    showcaseRotationHint: 'The selection changes on its own over time.',
-    showcaseEmptyHint: 'Pick one of the elements beside it and a quick summary will appear here.',
+    showcaseIdleLabel: 'Pick an element',
     showcaseOpenTableCta: 'Open full table',
   },
   features: {
