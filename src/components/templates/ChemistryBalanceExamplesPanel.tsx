@@ -1,6 +1,7 @@
 'use client';
 
 import Button from '@/components/atoms/Button';
+import NoTranslateText from '@/components/atoms/NoTranslateText';
 import Panel from '@/components/atoms/Panel';
 import {
   getChemistryBalanceExamples,
@@ -49,9 +50,12 @@ function ChemistryBalanceExamplesPanel({
                 </span>
                 <div>
                   <h3 className="text-sm font-bold text-[var(--text-strong)]">{example.title}</h3>
-                  <p className="mt-1 break-words text-sm font-semibold text-[var(--accent-strong)]">
+                  <NoTranslateText
+                    as="p"
+                    className="mt-1 break-words text-sm font-semibold text-[var(--accent-strong)]"
+                  >
                     {example.equation}
-                  </p>
+                  </NoTranslateText>
                 </div>
                 <p className="text-sm leading-6 text-[var(--text-muted)]">{example.description}</p>
               </div>

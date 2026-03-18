@@ -1,5 +1,6 @@
 import { memo } from 'react';
 
+import NoTranslateText from '@/components/atoms/NoTranslateText';
 import {
   formatElementModalTitle,
   formatElementTileOpenLabel,
@@ -158,9 +159,9 @@ function ElementTile({ element, density = 'regular', mode = 'default', onOpen }:
           </div>
 
           <div className="element-classic-tile__core">
-            <p className={symbolClassName} title={element.symbol}>
+            <NoTranslateText as="p" className={symbolClassName} title={element.symbol}>
               {element.symbol}
-            </p>
+            </NoTranslateText>
             <p className={nameClassName} title={element.name}>
               {element.name}
             </p>
@@ -209,7 +210,9 @@ function ElementTile({ element, density = 'regular', mode = 'default', onOpen }:
       </div>
 
       <div className={`relative ${isCompact ? 'mt-1' : 'mt-2'}`}>
-        <p className={`font-black tracking-tight ${isCompact ? 'text-xl' : 'text-2xl'}`}>{element.symbol}</p>
+        <NoTranslateText as="p" className={`font-black tracking-tight ${isCompact ? 'text-xl' : 'text-2xl'}`}>
+          {element.symbol}
+        </NoTranslateText>
         <h3 className={`font-semibold leading-tight ${isCompact ? 'text-xs' : 'text-sm'}`}>{element.name}</h3>
       </div>
 

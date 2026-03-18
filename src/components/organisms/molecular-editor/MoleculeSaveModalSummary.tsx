@@ -1,5 +1,6 @@
 'use client';
 
+import NoTranslateText from '@/components/atoms/NoTranslateText';
 import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
 
 type MoleculeSaveModalSummaryProps = {
@@ -37,18 +38,22 @@ export default function MoleculeSaveModalSummary({
         {componentCount > 1 ? (
           <div className="rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-faint) px-3 py-2.5 sm:col-span-2 lg:col-span-1">
             <dt className="text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">{text.saveModal.componentFocus}</dt>
-            <dd className="mt-1 break-words text-sm font-black text-foreground">
+            <NoTranslateText as="dd" className="mt-1 break-words text-sm font-black text-foreground">
               {focusedComponentLabel ?? `Mol 1 / ${componentCount}`}
-            </dd>
+            </NoTranslateText>
           </div>
         ) : null}
         <div className="rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-faint) px-3 py-2.5 sm:col-span-2 lg:col-span-1">
           <dt className="text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">{text.saveModal.nomenclature}</dt>
-          <dd className="mt-1 break-words text-sm font-black text-foreground">{nomenclature}</dd>
+          <NoTranslateText as="dd" className="mt-1 break-words text-sm font-black text-foreground">
+            {nomenclature}
+          </NoTranslateText>
         </div>
         <div className="rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-faint) px-3 py-2.5">
           <dt className="text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">{text.saveModal.formula}</dt>
-          <dd className="mt-1 break-words text-sm font-black text-foreground">{formula}</dd>
+          <NoTranslateText as="dd" className="mt-1 break-words text-sm font-black text-foreground">
+            {formula}
+          </NoTranslateText>
         </div>
         <div className="rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-faint) px-3 py-2.5">
           <dt className="text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">{text.saveModal.atoms}</dt>

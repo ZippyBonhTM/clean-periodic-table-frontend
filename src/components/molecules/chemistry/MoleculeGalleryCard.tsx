@@ -3,6 +3,7 @@
 import { memo, useCallback, useMemo } from 'react';
 
 import MarkdownContent from '@/components/atoms/MarkdownContent';
+import NoTranslateText from '@/components/atoms/NoTranslateText';
 import MoleculeGalleryPreview from '@/components/molecules/chemistry/MoleculeGalleryPreview';
 import { formatSavedAtLabel } from '@/components/molecules/chemistry/moleculeGalleryUtils';
 import {
@@ -67,9 +68,12 @@ const MoleculeGalleryCard = memo(function MoleculeGalleryCard({
         <div className="min-w-0">
           <p className="truncate text-base font-black text-foreground">{title}</p>
           <div className="mt-1 flex flex-wrap items-center gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
+            <NoTranslateText
+              as="p"
+              className="text-[11px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)"
+            >
               {savedMolecule.summary.formula}
-            </p>
+            </NoTranslateText>
             {componentCount > 1 ? (
               <span className="rounded-full border border-(--border-subtle) bg-(--surface-overlay-faint) px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)">
                 {formatMolecularEditorComponentCount(text, componentCount)}
@@ -89,7 +93,7 @@ const MoleculeGalleryCard = memo(function MoleculeGalleryCard({
               <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
                 {text.gallery.nomenclature}
               </span>
-              {nomenclature}
+              <NoTranslateText>{nomenclature}</NoTranslateText>
             </p>
           ) : null}
         </div>

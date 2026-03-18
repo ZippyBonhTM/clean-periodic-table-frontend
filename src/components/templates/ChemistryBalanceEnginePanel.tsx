@@ -1,6 +1,7 @@
 'use client';
 
 import Button from '@/components/atoms/Button';
+import NoTranslateText from '@/components/atoms/NoTranslateText';
 import Panel from '@/components/atoms/Panel';
 import {
   formatChemistryBalanceValidity,
@@ -76,7 +77,7 @@ function ChemistryBalanceEnginePanel({
         </div>
       ) : remoteAnalysis.status === 'loading' ? (
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
-          {text.engine.loadingPrefix} <code>{remoteAnalysis.input}</code>.
+          {text.engine.loadingPrefix} <NoTranslateText as="code">{remoteAnalysis.input}</NoTranslateText>.
         </div>
       ) : remoteAnalysis.status === 'failed' ? (
         <div className="rounded-2xl border border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.08)] px-4 py-4 text-sm leading-6 text-[var(--text-muted)]">
@@ -84,7 +85,9 @@ function ChemistryBalanceEnginePanel({
             {text.engine.failedTitle}
           </p>
           <p className="mt-2">
-            <span className="font-semibold text-[var(--text-strong)]">{remoteAnalysis.error.code}</span>
+            <NoTranslateText as="span" className="font-semibold text-[var(--text-strong)]">
+              {remoteAnalysis.error.code}
+            </NoTranslateText>
             : {remoteAnalysis.error.message}
           </p>
         </div>

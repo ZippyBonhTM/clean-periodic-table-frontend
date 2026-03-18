@@ -1,6 +1,7 @@
 'use client';
 
 import Button from '@/components/atoms/Button';
+import NoTranslateText from '@/components/atoms/NoTranslateText';
 import Panel from '@/components/atoms/Panel';
 import {
   formatChemistryBalanceHistoryDate,
@@ -55,16 +56,28 @@ function ChemistryBalanceHistoryPanel({
                 className="w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-overlay-faint)] px-4 py-4 text-left transition-colors hover:border-[var(--accent)] hover:bg-[var(--surface-overlay-soft)]"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <p className="break-words text-sm font-semibold text-[var(--text-strong)]">
+                  <NoTranslateText
+                    as="p"
+                    className="break-words text-sm font-semibold text-[var(--text-strong)]"
+                  >
                     {entry.input}
-                  </p>
+                  </NoTranslateText>
                   <span className="shrink-0 rounded-full border border-[var(--border-subtle)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
                     {formatChemistryBalanceHistoryStatus(text, entry.status)}
                   </span>
                 </div>
-                <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--text-muted)]">
-                  {entry.summary}
-                </p>
+                {entry.status === 'balanced' ? (
+                  <NoTranslateText
+                    as="p"
+                    className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--text-muted)]"
+                  >
+                    {entry.summary}
+                  </NoTranslateText>
+                ) : (
+                  <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--text-muted)]">
+                    {entry.summary}
+                  </p>
+                )}
                 <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
                   {formatChemistryBalanceHistoryDate(text, entry.savedAt)}
                 </p>

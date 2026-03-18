@@ -2,8 +2,10 @@ import type { Metadata } from 'next';
 import { JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import Script from 'next/script';
 
 import AppLocaleProvider from '@/shared/i18n/AppLocaleProvider';
+import { APP_LOCALE_STORAGE_KEY } from '@/shared/i18n/appLocale';
 
 import './globals.css';
 
@@ -20,7 +22,29 @@ const jetBrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'Clean Periodic Table',
   description: 'Interactive periodic table frontend for auth + backend microservices',
+  other: {
+    google: 'notranslate',
+  },
 };
+
+const appLocaleBootstrapScript = `
+  (function() {
+    try {
+      var path = window.location.pathname || '/';
+      var firstSegment = path.split('/').filter(Boolean)[0] || '';
+      var storedLocale = window.localStorage.getItem('${APP_LOCALE_STORAGE_KEY}');
+      var locale = firstSegment === 'pt'
+        ? 'pt-BR'
+        : firstSegment === 'en'
+          ? 'en-US'
+          : storedLocale;
+      var htmlLang = locale === 'pt-BR' ? 'pt-BR' : 'en';
+      document.documentElement.lang = htmlLang;
+    } catch (error) {
+      document.documentElement.lang = 'en';
+    }
+  })();
+`;
 
 export default function RootLayout({
   children,
@@ -35,6 +59,11 @@ export default function RootLayout({
         className={`${spaceGrotesk.variable} ${jetBrainsMono.variable} antialiased`}
         suppressHydrationWarning
       >
+        <Script
+          id="app-locale-bootstrap"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: appLocaleBootstrapScript }}
+        />
         <AppLocaleProvider>
           {children}
           {isProduction ? <Analytics /> : null}

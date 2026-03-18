@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from 'react';
 
+import NoTranslateText from '@/components/atoms/NoTranslateText';
 import {
   formatMolecularEditorSimplifiedDescription,
 } from '@/components/organisms/molecular-editor/molecularEditorText';
@@ -37,9 +38,12 @@ export default function MoleculeSimplifiedCanvasView({
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-(--text-muted) sm:text-[11px]">
             {text.simplifiedView.title}
           </p>
-          <p className="mt-2.5 wrap-break-word text-[clamp(1.5rem,8vw,4.5rem)] font-black leading-[0.96] tracking-[0.03em] text-foreground">
+          <NoTranslateText
+            as="p"
+            className="mt-2.5 wrap-break-word text-[clamp(1.5rem,8vw,4.5rem)] font-black leading-[0.96] tracking-[0.03em] text-foreground"
+          >
             {formulaDisplayValue}
-          </p>
+          </NoTranslateText>
           <p className="mx-auto mt-2.5 max-w-2xl text-[11px] leading-relaxed text-(--text-muted) sm:mt-4 sm:text-sm">
             {formatMolecularEditorSimplifiedDescription(text, focusedComponentIndex, moleculeComponentsCount)}
           </p>
@@ -56,7 +60,9 @@ export default function MoleculeSimplifiedCanvasView({
                   {row.name}
                 </dt>
                 <dd className="mt-2 flex items-end justify-between gap-3">
-                  <span className="text-xl font-black text-foreground sm:text-2xl">{row.symbol}</span>
+                  <NoTranslateText as="span" className="text-xl font-black text-foreground sm:text-2xl">
+                    {row.symbol}
+                  </NoTranslateText>
                   <span className="text-base font-semibold text-foreground sm:text-lg">{row.count}</span>
                 </dd>
               </div>

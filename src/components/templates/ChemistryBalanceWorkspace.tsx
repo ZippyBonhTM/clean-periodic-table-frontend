@@ -70,7 +70,11 @@ export default function ChemistryBalanceWorkspace() {
               onChange={(event) => setEquationInput(event.target.value)}
               placeholder={text.workspace.equationPlaceholder}
               rows={4}
-              className="min-h-28 w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-4 py-3 text-sm text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)] sm:text-base"
+              translate="no"
+              spellCheck={false}
+              autoCapitalize="off"
+              autoCorrect="off"
+              className="notranslate min-h-28 w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-4 py-3 text-sm text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)] sm:text-base"
             />
           </div>
 
