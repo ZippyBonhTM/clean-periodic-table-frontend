@@ -1,9 +1,15 @@
+ 'use client';
+
+import { useCallback } from 'react';
 import Link from 'next/link';
 
 import LinkButton from '@/components/atoms/LinkButton';
 import AppShell from '@/components/templates/AppShell';
 import HomeHeroElementCluster from '@/components/templates/HomeHeroElementCluster';
 import { getHomeLandingText } from '@/components/templates/homeLandingText';
+import { logoutSession } from '@/shared/api/authApi';
+import useAuthSession from '@/shared/hooks/useAuthSession';
+import useAuthToken from '@/shared/hooks/useAuthToken';
 import { buildLocalizedAppPath } from '@/shared/i18n/appLocaleRouting';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
@@ -13,9 +19,20 @@ type HomeLandingPageProps = {
 
 export default function HomeLandingPage({ locale }: HomeLandingPageProps) {
   const text = getHomeLandingText(locale);
+  const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
+  const authSession = useAuthSession({
+    token,
+    onTokenRefresh: persistToken,
+    onUnauthorized: removeToken,
+    allowAnonymousRefresh: isHydrated && !isSilentRefreshBlocked,
+    skipTokenValidation: true,
+  });
   const periodicTableHref = buildLocalizedAppPath(locale, '/periodic-table');
   const balanceEquationHref = buildLocalizedAppPath(locale, '/balance-equation');
   const molecularEditorHref = buildLocalizedAppPath(locale, '/molecular-editor');
+  const hasStoredSession = token !== null;
+  const hasHeaderToken = !isHydrated || hasStoredSession;
+  const showHeaderAccountChrome = isHydrated && hasStoredSession;
   const heroBackgroundStyle = {
     background: [
       'radial-gradient(circle at top left, rgba(251,191,36,0.18), transparent 24%)',
@@ -27,12 +44,17 @@ export default function HomeLandingPage({ locale }: HomeLandingPageProps) {
     background:
       'linear-gradient(180deg, color-mix(in oklab, var(--surface-1) 82%, transparent), color-mix(in oklab, var(--surface-2) 68%, transparent))',
   } as const;
+  const onLogout = useCallback(() => {
+    void logoutSession().catch(() => undefined);
+    removeToken({ blockSilentRefresh: true });
+  }, [removeToken]);
 
   return (
     <AppShell
-      hasToken={false}
-      authStatus="anonymous"
-      headerShowAccountChrome={false}
+      hasToken={hasHeaderToken}
+      authStatus={isHydrated ? authSession.status : 'checking'}
+      headerShowAccountChrome={showHeaderAccountChrome}
+      onLogout={onLogout}
       authEntryMode="route"
       showFooter={false}
     >
