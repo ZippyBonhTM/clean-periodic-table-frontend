@@ -1,24 +1,24 @@
 import Button from '@/components/atoms/Button';
 import LinkButton from '@/components/atoms/LinkButton';
 import type { AppHeaderTextCatalog } from '@/components/shared/header/appHeaderText';
+import { buildLocalizedAppPath, isLocalizedAppHrefActive } from '@/shared/i18n/appLocaleRouting';
+import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
 import AppHeaderNavLinkLabel from './AppHeaderNavLinkLabel';
 import { NAV_LINKS } from './appHeader.types';
 
 type AppHeaderRouteMenuProps = {
   isOpen: boolean;
+  locale: AppLocale;
   pathname: string | null;
-  balanceEquationHref: string;
-  isBalanceEquationActive: boolean;
   text: AppHeaderTextCatalog['navigation'];
   onClose: () => void;
 };
 
 export default function AppHeaderRouteMenu({
   isOpen,
+  locale,
   pathname,
-  balanceEquationHref,
-  isBalanceEquationActive,
   text,
   onClose,
 }: AppHeaderRouteMenuProps) {
@@ -62,11 +62,8 @@ export default function AppHeaderRouteMenu({
 
         <nav className="mt-3 flex flex-col gap-2">
           {NAV_LINKS.map((item) => {
-            const href = item.href === '/balance-equation' ? balanceEquationHref : item.href;
-            const isActive =
-              item.href === '/balance-equation'
-                ? isBalanceEquationActive
-                : pathname === item.href || (pathname === '/' && item.href === '/search');
+            const href = buildLocalizedAppPath(locale, item.href);
+            const isActive = isLocalizedAppHrefActive(pathname, item.href);
 
             return (
               <LinkButton

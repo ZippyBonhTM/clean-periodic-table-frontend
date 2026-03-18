@@ -3,10 +3,12 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
+import { buildLocalizedAppPath } from '@/shared/i18n/appLocaleRouting';
 import {
   formatMolecularEditorGalleryLoadedMessage,
 } from '@/components/organisms/molecular-editor/molecularEditorText';
 import useMolecularEditorText from '@/components/organisms/molecular-editor/useMolecularEditorText';
+import useAppLocale from '@/shared/i18n/useAppLocale';
 import type { ShowGalleryFeedback } from '@/components/organisms/molecular-editor/savedMoleculeWorkflow.types';
 import { writePendingSavedMoleculeId } from '@/shared/storage/pendingSavedMoleculeStorage';
 import type { SavedMolecule } from '@/shared/types/molecule';
@@ -31,6 +33,7 @@ export default function useSavedMoleculeWorkflowUi({
   showGalleryFeedback,
 }: UseSavedMoleculeWorkflowUiOptions) {
   const router = useRouter();
+  const { locale } = useAppLocale();
   const text = useMolecularEditorText();
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
 
@@ -83,8 +86,8 @@ export default function useSavedMoleculeWorkflowUi({
     }
 
     writePendingSavedMoleculeId(activeSavedMolecule.id);
-    router.push('/molecular-editor');
-  }, [activeSavedMolecule, router, showGalleryFeedback, text.notices.selectSavedBeforeOpening]);
+    router.push(buildLocalizedAppPath(locale, '/molecular-editor'));
+  }, [activeSavedMolecule, locale, router, showGalleryFeedback, text.notices.selectSavedBeforeOpening]);
 
   return {
     isSaveModalOpen,

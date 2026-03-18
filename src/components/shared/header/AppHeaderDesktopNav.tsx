@@ -1,30 +1,27 @@
 import LinkButton from '@/components/atoms/LinkButton';
 import type { AppHeaderTextCatalog } from '@/components/shared/header/appHeaderText';
+import { buildLocalizedAppPath, isLocalizedAppHrefActive } from '@/shared/i18n/appLocaleRouting';
+import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
 import AppHeaderNavLinkLabel from './AppHeaderNavLinkLabel';
 import { NAV_LINKS } from './appHeader.types';
 
 type AppHeaderDesktopNavProps = {
+  locale: AppLocale;
   pathname: string | null;
-  balanceEquationHref: string;
-  isBalanceEquationActive: boolean;
   text: AppHeaderTextCatalog['navigation'];
 };
 
 export default function AppHeaderDesktopNav({
+  locale,
   pathname,
-  balanceEquationHref,
-  isBalanceEquationActive,
   text,
 }: AppHeaderDesktopNavProps) {
   return (
     <nav className="flex flex-wrap items-center gap-2 md:col-start-1 md:row-start-2">
       {NAV_LINKS.map((item) => {
-        const href = item.href === '/balance-equation' ? balanceEquationHref : item.href;
-        const isActive =
-          item.href === '/balance-equation'
-            ? isBalanceEquationActive
-            : pathname === item.href || (pathname === '/' && item.href === '/search');
+        const href = buildLocalizedAppPath(locale, item.href);
+        const isActive = isLocalizedAppHrefActive(pathname, item.href);
 
         return (
           <LinkButton

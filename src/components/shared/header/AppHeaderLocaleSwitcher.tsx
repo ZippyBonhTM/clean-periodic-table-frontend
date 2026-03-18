@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 
 import useAppHeaderText from '@/components/shared/header/useAppHeaderText';
-import { buildBalanceEquationPath, isBalanceEquationPath } from '@/shared/i18n/appLocaleRouting';
+import { buildLocalizedAppPath, isLocalizedAppPath } from '@/shared/i18n/appLocaleRouting';
 import useAppLocale from '@/shared/i18n/useAppLocale';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
@@ -26,8 +26,8 @@ function AppHeaderLocaleSwitcher({ mobile = false }: AppHeaderLocaleSwitcherProp
 
     setLocale(nextLocale);
 
-    if (isBalanceEquationPath(pathname)) {
-      router.replace(buildBalanceEquationPath(nextLocale));
+    if (isLocalizedAppPath(pathname) && pathname !== null) {
+      router.replace(buildLocalizedAppPath(nextLocale, pathname));
     }
   };
 

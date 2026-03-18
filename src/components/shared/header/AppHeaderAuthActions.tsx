@@ -7,6 +7,8 @@ import type { AuthEntryMode } from './appHeader.types';
 type AppHeaderAuthActionsProps = {
   hasToken: boolean;
   authEntryMode: AuthEntryMode;
+  loginHref: string;
+  registerHref: string;
   text: AppHeaderTextCatalog['auth'];
   onRequestLogin?: () => void;
   onRequestRegister?: () => void;
@@ -15,6 +17,8 @@ type AppHeaderAuthActionsProps = {
 export default function AppHeaderAuthActions({
   hasToken,
   authEntryMode,
+  loginHref,
+  registerHref,
   text,
   onRequestLogin,
   onRequestRegister,
@@ -27,7 +31,7 @@ export default function AppHeaderAuthActions({
     return (
       <>
         <LinkButton
-          href="/login"
+          href={loginHref}
           variant="ghost"
           size="sm"
           uppercase
@@ -36,7 +40,7 @@ export default function AppHeaderAuthActions({
           {text.login}
         </LinkButton>
         <LinkButton
-          href="/register"
+          href={registerHref}
           variant="ghost"
           size="sm"
           uppercase

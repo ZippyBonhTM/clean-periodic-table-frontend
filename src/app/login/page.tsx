@@ -8,9 +8,12 @@ import AppShell from '@/components/templates/AppShell';
 import { logoutSession } from '@/shared/api/authApi';
 import useAuthSession from '@/shared/hooks/useAuthSession';
 import useAuthToken from '@/shared/hooks/useAuthToken';
+import { buildLocalizedAppPath } from '@/shared/i18n/appLocaleRouting';
+import useAppLocale from '@/shared/i18n/useAppLocale';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { locale } = useAppLocale();
   const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
   const authSession = useAuthSession({
     token,
@@ -22,9 +25,9 @@ export default function LoginPage() {
   const onSuccess = useCallback(
     (nextToken: string) => {
       persistToken(nextToken, { clearSilentRefreshBlocked: true });
-      router.replace('/search');
+      router.replace(buildLocalizedAppPath(locale, '/search'));
     },
-    [persistToken, router],
+    [locale, persistToken, router],
   );
 
   const onLogout = useCallback(() => {
