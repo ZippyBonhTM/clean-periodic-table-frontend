@@ -2,6 +2,7 @@ import { chemistryBalanceTextEn } from '@/components/templates/chemistryBalanceT
 import { chemistryBalanceTextPt } from '@/components/templates/chemistryBalanceText.pt';
 import type { ChemistryBalanceExample } from '@/components/templates/chemistryBalanceExamples';
 import type { BalanceChemicalEquationStage } from '@/shared/chemistry/analysis';
+import type { ChemicalEngineAnalyzeReactionFailure } from '@/shared/chemistry/engine';
 import type { BalancedReactionAnalysis } from '@/shared/chemistry/rules';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
@@ -149,4 +150,11 @@ export function formatChemistryBalanceAlignment(
     default:
       return text.analysisComparison.different;
   }
+}
+
+export function formatChemistryBalanceEngineFailure(
+  text: ChemistryBalanceTextCatalog,
+  failure: ChemicalEngineAnalyzeReactionFailure,
+): string {
+  return text.engine.errorMessages[failure.code];
 }

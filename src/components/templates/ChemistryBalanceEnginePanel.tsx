@@ -4,6 +4,7 @@ import Button from '@/components/atoms/Button';
 import NoTranslateText from '@/components/atoms/NoTranslateText';
 import Panel from '@/components/atoms/Panel';
 import {
+  formatChemistryBalanceEngineFailure,
   formatChemistryBalanceValidity,
 } from '@/components/templates/chemistryBalanceText';
 import type { ChemistryBalanceRemoteAnalysisState } from '@/components/templates/chemistryBalanceRemoteAnalysis.types';
@@ -84,12 +85,7 @@ function ChemistryBalanceEnginePanel({
           <p className="font-semibold text-[var(--text-strong)]">
             {text.engine.failedTitle}
           </p>
-          <p className="mt-2">
-            <NoTranslateText as="span" className="font-semibold text-[var(--text-strong)]">
-              {remoteAnalysis.error.code}
-            </NoTranslateText>
-            : {remoteAnalysis.error.message}
-          </p>
+          <p className="mt-2">{formatChemistryBalanceEngineFailure(text, remoteAnalysis.error)}</p>
         </div>
       ) : (
         <div className="space-y-3">
