@@ -1,14 +1,15 @@
-import ElementsWorkspace from '@/components/templates/ElementsWorkspace';
-import { listPublicElementsServer } from '@/shared/api/backendServerApi';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+
+import { resolveRequestAppLocale } from '@/shared/i18n/appLocale';
+import { buildLocalizedAppPath } from '@/shared/i18n/appLocaleRouting';
 
 export default async function PeriodicTablePage() {
-  const { elements, isPubliclyAvailable } = await listPublicElementsServer();
+  const requestHeaders = await headers();
+  const locale = resolveRequestAppLocale({
+    cookieHeader: requestHeaders.get('cookie'),
+    acceptLanguage: requestHeaders.get('accept-language'),
+  });
 
-  return (
-    <ElementsWorkspace
-      tableMode="explore"
-      initialElements={elements}
-      hasPublicElements={isPubliclyAvailable}
-    />
-  );
+  redirect(buildLocalizedAppPath(locale, '/periodic-table'));
 }
