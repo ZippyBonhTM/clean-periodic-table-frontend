@@ -35,7 +35,6 @@ export function resolveAppLocaleFromPathname(pathname: string | null): AppLocale
 
 const LOCALIZED_APP_PATHS = new Set([
   '/',
-  '/search',
   '/periodic-table',
   '/balance-equation',
   '/molecular-editor',

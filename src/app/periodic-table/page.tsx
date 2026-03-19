@@ -6,7 +6,7 @@ export default async function PeriodicTablePage() {
 
   return (
     <ElementsWorkspace
-      tableMode="table"
+      tableMode="explore"
       initialElements={elements}
       hasPublicElements={isPubliclyAvailable}
     />

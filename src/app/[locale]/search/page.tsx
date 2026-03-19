@@ -1,10 +1,7 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
-import ElementsWorkspace from '@/components/templates/ElementsWorkspace';
-import { listPublicElementsServer } from '@/shared/api/backendServerApi';
 import { resolveAppLocaleFromSegment } from '@/shared/i18n/appLocaleRouting';
-import { buildLocalizedPageMetadata } from '@/shared/i18n/appPageMetadata';
 
 type LocalizedSearchPageProps = {
   params: Promise<{
@@ -22,24 +19,18 @@ export async function generateMetadata({
     return {};
   }
 
-  return buildLocalizedPageMetadata(resolvedLocale, 'search');
+  return {};
 }
 
 export default async function LocalizedSearchPage({
   params,
 }: LocalizedSearchPageProps) {
   const { locale } = await params;
-  const { elements, isPubliclyAvailable } = await listPublicElementsServer();
+  const resolvedLocale = resolveAppLocaleFromSegment(locale);
 
-  if (resolveAppLocaleFromSegment(locale) === null) {
+  if (resolvedLocale === null) {
     notFound();
   }
 
-  return (
-    <ElementsWorkspace
-      tableMode="explore"
-      initialElements={elements}
-      hasPublicElements={isPubliclyAvailable}
-    />
-  );
+  redirect(`/${locale}/periodic-table`);
 }

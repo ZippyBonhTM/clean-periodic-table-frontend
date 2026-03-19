@@ -13,13 +13,9 @@ export const appPageMetadataEn = {
         'chemistry tools',
       ],
     },
-    search: {
-      title: 'Search',
-      description: 'Search elements by name, symbol, number, phase, or category.',
-    },
     periodicTable: {
       title: 'Periodic Table',
-      description: 'Browse the periodic table with detailed element data and multiple views.',
+      description: 'Explore the periodic table, search elements quickly, and open rich element details in one place.',
     },
     balanceEquation: {
       title: 'Balance Equation',

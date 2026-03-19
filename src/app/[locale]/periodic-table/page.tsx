@@ -37,7 +37,7 @@ export default async function LocalizedPeriodicTablePage({
 
   return (
     <ElementsWorkspace
-      tableMode="table"
+      tableMode="explore"
       initialElements={elements}
       hasPublicElements={isPubliclyAvailable}
     />

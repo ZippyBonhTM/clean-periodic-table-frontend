@@ -25,7 +25,7 @@ export default function LoginPage() {
   const onSuccess = useCallback(
     (nextToken: string) => {
       persistToken(nextToken, { clearSilentRefreshBlocked: true });
-      router.replace(buildLocalizedAppPath(locale, '/search'));
+      router.replace(buildLocalizedAppPath(locale, '/periodic-table'));
     },
     [locale, persistToken, router],
   );

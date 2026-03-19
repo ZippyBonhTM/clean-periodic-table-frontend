@@ -28,7 +28,6 @@ export const appHeaderTextPt = {
     menuTitle: 'Rotas',
     links: {
       periodicTable: 'Tabela Periódica',
-      search: 'Pesquisar',
       balanceEquation: 'Balancear Equação',
       molecularEditor: 'Editor Molecular',
       moleculeGallery: 'Galeria de Moléculas',

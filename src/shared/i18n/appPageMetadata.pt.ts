@@ -13,13 +13,9 @@ export const appPageMetadataPt = {
         'ferramentas de química',
       ],
     },
-    search: {
-      title: 'Pesquisar',
-      description: 'Pesquise elementos por nome, símbolo, número, fase ou categoria.',
-    },
     periodicTable: {
       title: 'Tabela Periódica',
-      description: 'Navegue pela tabela periódica com dados detalhados e múltiplas visualizações.',
+      description: 'Explore a tabela periódica, pesquise elementos com rapidez e abra detalhes completos em um só lugar.',
     },
     balanceEquation: {
       title: 'Balancear Equação',
