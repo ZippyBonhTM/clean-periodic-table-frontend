@@ -217,83 +217,6 @@ a {
   user-select: none;
 }
 
-.not-found-signal {
-  position: absolute;
-  width: min(220px, 38vw);
-  height: calc(var(--not-found-signal-travel, 140px) + 156px);
-  isolation: isolate;
-}
-
-.not-found-signal__svg {
-  position: absolute;
-  inset: 0;
-  overflow: visible;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.not-found-signal__path-backdrop {
-  fill: none;
-  stroke: rgba(9, 12, 18, 0.78);
-  stroke-width: 5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0;
-}
-
-.not-found-signal__path {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.98);
-  stroke-width: 2.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.28));
-  opacity: 0;
-}
-
-.not-found-signal__anchor {
-  fill: rgba(255, 255, 255, 0.88);
-  opacity: 0;
-}
-
-.not-found-signal__ring {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.94);
-  stroke-width: 2.4;
-  opacity: 0;
-}
-
-.not-found-signal__particle {
-  position: absolute;
-  left: 8px;
-  top: -14px;
-  width: 36px;
-  height: 48px;
-  background-image: url('/assets/404/particulas.png');
-  background-repeat: no-repeat;
-  background-size: 1536px 1024px;
-  background-position: var(--not-found-particle-pos-x, 0) var(--not-found-particle-pos-y, 0);
-  will-change: transform, opacity;
-  opacity: 0;
-  z-index: 3;
-}
-
-.not-found-signal__card {
-  position: absolute;
-  top: calc(var(--not-found-signal-travel, 140px) + 22px);
-  right: 0;
-  width: min(188px, 34vw);
-  z-index: 1;
-}
-
-.not-found-signal__card-shell {
-  min-height: 132px;
-  will-change: opacity;
-  opacity: 1;
-  animation: not-found-signal-card-fade var(--not-found-signal-duration-css, 6500ms) linear infinite;
-  animation-delay: var(--not-found-signal-delay-css, 0ms);
-}
-
 @keyframes not-found-particle-scroll {
   from {
     transform: translateY(0);
@@ -301,17 +224,6 @@ a {
 
   to {
     transform: translateY(100%);
-  }
-}
-
-@keyframes not-found-signal-card-fade {
-  0%,
-  86% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
   }
 }
 
@@ -326,16 +238,6 @@ a {
   .not-found-stage__ghost-code {
     left: 50%;
     top: 12%;
-  }
-
-  .not-found-signal {
-    width: min(164px, 42vw);
-    height: calc(var(--not-found-signal-travel, 128px) + 136px);
-  }
-
-  .not-found-signal__card {
-    top: calc(var(--not-found-signal-travel, 128px) + 18px);
-    width: min(164px, 42vw);
   }
 }
 
