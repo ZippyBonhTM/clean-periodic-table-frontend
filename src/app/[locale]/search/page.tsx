@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import ElementsWorkspace from '@/components/templates/ElementsWorkspace';
+import { listPublicElementsServer } from '@/shared/api/backendServerApi';
 import { resolveAppLocaleFromSegment } from '@/shared/i18n/appLocaleRouting';
 import { buildLocalizedPageMetadata } from '@/shared/i18n/appPageMetadata';
 
@@ -28,10 +29,17 @@ export default async function LocalizedSearchPage({
   params,
 }: LocalizedSearchPageProps) {
   const { locale } = await params;
+  const { elements, isPubliclyAvailable } = await listPublicElementsServer();
 
   if (resolveAppLocaleFromSegment(locale) === null) {
     notFound();
   }
 
-  return <ElementsWorkspace tableMode="explore" />;
+  return (
+    <ElementsWorkspace
+      tableMode="explore"
+      initialElements={elements}
+      hasPublicElements={isPubliclyAvailable}
+    />
+  );
 }

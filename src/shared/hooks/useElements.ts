@@ -67,9 +67,15 @@ type UseElementsInput = {
   token: string | null;
   onTokenRefresh: (token: string) => void;
   onUnauthorized: () => void;
+  initialData?: ChemicalElement[] | null;
 };
 
-function useElements({ token, onTokenRefresh, onUnauthorized }: UseElementsInput): ElementsState {
+function useElements({
+  token,
+  onTokenRefresh,
+  onUnauthorized,
+  initialData = null,
+}: UseElementsInput): ElementsState {
   const [snapshot, setSnapshot] = useState<ElementsSnapshot>({
     token: null,
     data: [],
@@ -175,7 +181,7 @@ function useElements({ token, onTokenRefresh, onUnauthorized }: UseElementsInput
 
   const activeData = useMemo(() => {
     if (token === null) {
-      return [];
+      return initialData ?? [];
     }
 
     if (snapshot.token === token) {
@@ -186,8 +192,12 @@ function useElements({ token, onTokenRefresh, onUnauthorized }: UseElementsInput
       return snapshot.data;
     }
 
+    if (initialData !== null) {
+      return initialData;
+    }
+
     return cachedElements ?? [];
-  }, [cachedElements, snapshot.data, snapshot.error, snapshot.token, token]);
+  }, [cachedElements, initialData, snapshot.data, snapshot.error, snapshot.token, token]);
 
   const sortedElements = useMemo(() => {
     return [...activeData].sort((first, second) => first.number - second.number);
@@ -210,8 +220,13 @@ function useElements({ token, onTokenRefresh, onUnauthorized }: UseElementsInput
       return false;
     }
 
-    return snapshot.token !== token && cachedElements === null && snapshot.data.length === 0;
-  }, [cachedElements, snapshot.data.length, snapshot.token, token]);
+    return (
+      snapshot.token !== token &&
+      cachedElements === null &&
+      snapshot.data.length === 0 &&
+      initialData === null
+    );
+  }, [cachedElements, initialData, snapshot.data.length, snapshot.token, token]);
 
   return {
     data: sortedElements,
