@@ -4,8 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 
-import ElementTile from '@/components/molecules/ElementTile';
 import NoTranslateText from '@/components/atoms/NoTranslateText';
+import ElementTile from '@/components/molecules/ElementTile';
 import { getNotFoundText } from '@/components/templates/notFoundText';
 import { buildLocalizedAppPath } from '@/shared/i18n/appLocaleRouting';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
@@ -20,7 +20,7 @@ type SceneElementSeed = {
   element: ChemicalElement;
 };
 
-type FallingElementSignalProps = {
+type StaticElementSignalProps = {
   element: ChemicalElement;
   className: string;
   delay: string;
@@ -52,7 +52,7 @@ const sceneElementSeeds: readonly SceneElementSeed[] = [
       group: 16,
       image: {
         title: 'Sulfur specimen',
-        url: '/assets/404/usina quebrada.png',
+        url: '',
         attribution: '',
       },
       ionization_energies: [999.6, 2252],
@@ -97,7 +97,7 @@ const sceneElementSeeds: readonly SceneElementSeed[] = [
       group: 3,
       image: {
         title: 'Uranium specimen',
-        url: '/assets/404/usina quebrada.png',
+        url: '',
         attribution: '',
       },
       ionization_energies: [597.6, 1420],
@@ -142,7 +142,7 @@ const sceneElementSeeds: readonly SceneElementSeed[] = [
       group: 11,
       image: {
         title: 'Gold specimen',
-        url: '/assets/404/usina quebrada.png',
+        url: '',
         attribution: '',
       },
       ionization_energies: [890.1, 1980],
@@ -173,27 +173,25 @@ function buildSceneElements(locale: AppLocale): ChemicalElement[] {
   }));
 }
 
-function FallingElementSignal({
+function StaticElementSignal({
   element,
   className,
   delay,
   duration,
   distance,
-}: FallingElementSignalProps) {
+}: StaticElementSignalProps) {
   const style = {
-    ['--not-found-drop-delay' as string]: delay,
-    ['--not-found-drop-duration' as string]: duration,
-    ['--not-found-drop-distance' as string]: distance,
+    ['--not-found-signal-delay' as string]: delay,
+    ['--not-found-signal-duration' as string]: duration,
+    ['--not-found-signal-travel' as string]: distance,
   } satisfies CSSProperties;
 
   return (
-    <div className={`not-found-drop ${className}`} style={style}>
-      <span className="not-found-drop__particle" />
-      <span className="not-found-drop__line" />
-      <div className="not-found-drop__card">
-        <div className="not-found-drop__card-shell">
-          <ElementTile element={element} mode="classic" />
-        </div>
+    <div className={`not-found-signal ${className}`} style={style}>
+      <span className="not-found-signal__particle" />
+      <span className="not-found-signal__line" />
+      <div className="not-found-signal__card">
+        <ElementTile element={element} mode="classic" />
       </div>
     </div>
   );
@@ -204,111 +202,96 @@ export default function NotFoundPage({ locale }: NotFoundPageProps) {
   const sceneElements = buildSceneElements(locale);
 
   return (
-    <main className="min-h-screen px-[var(--app-inline-padding)] py-6 md:py-8">
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-[var(--app-max-width)] items-center">
-        <section className="relative w-full overflow-hidden rounded-[2rem] border border-[var(--border-subtle)] bg-[color:color-mix(in_oklab,var(--surface-1)_92%,transparent)] shadow-[0_28px_90px_rgba(2,8,23,0.26)]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(34,211,238,0.12),transparent_28%),radial-gradient(circle_at_82%_14%,rgba(245,158,11,0.1),transparent_24%),linear-gradient(180deg,rgba(255,255,255,0.04),transparent_60%)]" />
+    <main className="relative min-h-screen overflow-hidden bg-black">
+      <Image
+        src="/assets/404/usina quebrada.png"
+        alt=""
+        fill
+        priority
+        className="object-cover"
+      />
 
-          <div className="relative grid min-h-[720px] gap-0 lg:grid-cols-[minmax(0,0.9fr)_minmax(340px,520px)]">
-            <div className="flex flex-col justify-between px-6 py-7 md:px-10 md:py-10 lg:px-14 lg:py-14">
-              <div className="space-y-8">
-                <div className="flex items-center justify-between gap-4">
-                  <Link
-                    href={buildLocalizedAppPath(locale, '/')}
-                    className="inline-flex items-center rounded-full border border-[var(--border-subtle)] px-3 py-1.5 text-sm font-semibold text-[var(--text-muted)] transition hover:border-[var(--accent)] hover:text-[var(--text-strong)]"
-                  >
-                    {text.brand}
-                  </Link>
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,6,10,0.34),rgba(4,6,10,0.5)_34%,rgba(4,6,10,0.78)_100%)]" />
 
-                  <span className="inline-flex rounded-full border border-[var(--border-subtle)] bg-white/6 px-3 py-1.5 text-xs font-black tracking-[0.22em] text-[var(--text-muted)]">
-                    {text.eyebrow}
-                  </span>
-                </div>
+      <div className="not-found-stage__particle-flow" aria-hidden="true">
+        <span className="not-found-stage__particle-stream not-found-stage__particle-stream--a" />
+        <span className="not-found-stage__particle-stream not-found-stage__particle-stream--b" />
+      </div>
 
-                <div className="max-w-2xl space-y-5">
-                  <h1 className="max-w-3xl text-4xl font-black tracking-[-0.08em] text-[var(--text-strong)] md:text-6xl lg:text-7xl">
-                    {text.title}
-                  </h1>
-                  <p className="max-w-xl text-base leading-7 text-[var(--text-muted)] md:text-lg">
-                    {text.description}
-                  </p>
-                </div>
+      <div className="pointer-events-none absolute inset-0 z-[1]">
+        <NoTranslateText as="span" className="not-found-stage__ghost-code">
+          404
+        </NoTranslateText>
 
-                <div className="flex flex-wrap gap-3">
-                  <Link
-                    href={buildLocalizedAppPath(locale, '/')}
-                    className="inline-flex items-center justify-center rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-bold text-[var(--on-accent)] transition hover:bg-[var(--accent-strong)]"
-                  >
-                    {text.actions.home}
-                  </Link>
-                  <Link
-                    href={buildLocalizedAppPath(locale, '/periodic-table')}
-                    className="inline-flex items-center justify-center rounded-full border border-[var(--border-subtle)] px-5 py-3 text-sm font-bold text-[var(--text-strong)] transition hover:border-[var(--accent)] hover:bg-white/6"
-                  >
-                    {text.actions.periodicTable}
-                  </Link>
-                </div>
-              </div>
+        <StaticElementSignal
+          element={sceneElements[0]}
+          className="right-[8%] top-[14%] md:right-[16%] md:top-[14%]"
+          delay="0s"
+          duration="6.2s"
+          distance="134px"
+        />
+        <StaticElementSignal
+          element={sceneElements[1]}
+          className="right-[44%] top-[30%] md:right-[38%] md:top-[30%]"
+          delay="1.8s"
+          duration="7.1s"
+          distance="156px"
+        />
+        <StaticElementSignal
+          element={sceneElements[2]}
+          className="right-[18%] top-[54%] md:right-[22%] md:top-[54%]"
+          delay="3.1s"
+          duration="6.7s"
+          distance="128px"
+        />
+      </div>
 
-              <p className="mt-10 text-sm font-medium text-[var(--text-muted)]">
-                {text.stageHint}
+      <section className="relative z-10 flex min-h-screen items-end md:items-center">
+        <div className="w-full px-[var(--app-inline-padding)] py-8 md:py-10">
+          <div className="max-w-[min(540px,92vw)] rounded-[1.75rem] border border-white/10 bg-black/28 px-6 py-6 backdrop-blur-sm md:px-8 md:py-8">
+            <div className="flex items-center justify-between gap-4">
+              <Link
+                href={buildLocalizedAppPath(locale, '/')}
+                className="inline-flex items-center rounded-full border border-white/14 px-3 py-1.5 text-sm font-semibold text-white/76 transition hover:border-white/24 hover:text-white"
+              >
+                {text.brand}
+              </Link>
+
+              <span className="inline-flex rounded-full border border-white/12 bg-white/6 px-3 py-1.5 text-xs font-black tracking-[0.22em] text-white/64">
+                {text.eyebrow}
+              </span>
+            </div>
+
+            <div className="mt-6 space-y-5">
+              <h1 className="max-w-3xl text-4xl font-black tracking-[-0.08em] text-white md:text-6xl lg:text-7xl">
+                {text.title}
+              </h1>
+              <p className="max-w-xl text-base leading-7 text-white/76 md:text-lg">
+                {text.description}
               </p>
             </div>
 
-            <div className="relative border-t border-[var(--border-subtle)] px-5 py-6 lg:border-t-0 lg:border-l lg:px-8 lg:py-8">
-              <div className="not-found-stage">
-                <Image
-                  src="/assets/404/usina quebrada.png"
-                  alt=""
-                  fill
-                  priority
-                  className="not-found-stage__plant object-cover"
-                />
-                <Image
-                  src="/assets/404/particulas.png"
-                  alt=""
-                  fill
-                  className="not-found-stage__particles not-found-stage__particles--slow object-cover"
-                />
-                <Image
-                  src="/assets/404/particulas.png"
-                  alt=""
-                  fill
-                  className="not-found-stage__particles not-found-stage__particles--fast object-cover"
-                />
-
-                <div className="not-found-stage__veil" />
-
-                <NoTranslateText as="span" className="not-found-stage__ghost-code">
-                  404
-                </NoTranslateText>
-
-                <FallingElementSignal
-                  element={sceneElements[0]}
-                  className="left-[4%] top-[8%] md:left-[14%]"
-                  delay="0s"
-                  duration="9.2s"
-                  distance="170px"
-                />
-                <FallingElementSignal
-                  element={sceneElements[1]}
-                  className="left-[48%] top-[2%] md:left-[58%]"
-                  delay="1.8s"
-                  duration="10.8s"
-                  distance="210px"
-                />
-                <FallingElementSignal
-                  element={sceneElements[2]}
-                  className="left-[18%] top-[18%] md:left-[34%]"
-                  delay="3.2s"
-                  duration="8.8s"
-                  distance="155px"
-                />
-              </div>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link
+                href={buildLocalizedAppPath(locale, '/')}
+                className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-black transition hover:bg-white/90"
+              >
+                {text.actions.home}
+              </Link>
+              <Link
+                href={buildLocalizedAppPath(locale, '/periodic-table')}
+                className="inline-flex items-center justify-center rounded-full border border-white/18 px-5 py-3 text-sm font-bold text-white transition hover:border-white/32 hover:bg-white/8"
+              >
+                {text.actions.periodicTable}
+              </Link>
             </div>
+
+            <p className="mt-8 text-sm font-medium text-white/58">
+              {text.stageHint}
+            </p>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </main>
   );
 }
