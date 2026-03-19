@@ -223,47 +223,58 @@ a {
   height: calc(var(--not-found-signal-travel, 140px) + 156px);
 }
 
+.not-found-signal__svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.not-found-signal__path {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.18));
+  opacity: 0;
+}
+
+.not-found-signal__anchor {
+  fill: rgba(255, 255, 255, 0.88);
+  opacity: 0;
+}
+
+.not-found-signal__ring {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.94);
+  stroke-width: 1.8;
+  opacity: 0;
+}
+
 .not-found-signal__particle {
   position: absolute;
-  left: calc(50% - 18px);
-  top: 0;
+  left: 8px;
+  top: -14px;
   width: 36px;
   height: 48px;
   background-image: url('/assets/404/particulas.png');
   background-repeat: no-repeat;
   background-size: 1536px 1024px;
   background-position: var(--not-found-particle-pos-x, 0) var(--not-found-particle-pos-y, 0);
-  animation: not-found-signal-particle var(--not-found-signal-duration, 6.5s) linear infinite;
-  animation-delay: var(--not-found-signal-delay, 0s);
   will-change: transform, opacity;
-}
-
-.not-found-signal__line {
-  position: absolute;
-  left: calc(50% - 1px);
-  top: 8px;
-  width: 2px;
-  height: calc(var(--not-found-signal-travel, 140px) + 10px);
-  background: linear-gradient(180deg, rgba(255, 249, 196, 0.72), rgba(34, 211, 238, 0.32) 52%, rgba(34, 211, 238, 0.02));
-  box-shadow: 0 0 14px rgba(255, 249, 196, 0.16);
-  transform-origin: top center;
-  animation: not-found-signal-line var(--not-found-signal-duration, 6.5s) linear infinite;
-  animation-delay: var(--not-found-signal-delay, 0s);
-  will-change: top, height, opacity;
+  opacity: 0;
 }
 
 .not-found-signal__card {
   position: absolute;
   top: calc(var(--not-found-signal-travel, 140px) + 22px);
-  left: 50%;
-  width: 100%;
-  transform: translateX(-50%);
+  right: 0;
+  width: min(188px, 34vw);
 }
 
 .not-found-signal__card-shell {
-  animation: not-found-signal-card var(--not-found-signal-duration, 6.5s) linear infinite;
-  animation-delay: var(--not-found-signal-delay, 0s);
   will-change: opacity;
+  opacity: 0;
 }
 
 @keyframes not-found-particle-scroll {
@@ -273,73 +284,6 @@ a {
 
   to {
     transform: translateY(100%);
-  }
-}
-
-@keyframes not-found-signal-particle {
-  0%,
-  8% {
-    opacity: 0;
-    transform: translate3d(0, -18px, 0) scale(0.7);
-  }
-
-  16% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-
-  74% {
-    opacity: 1;
-    transform: translate3d(0, var(--not-found-signal-travel, 140px), 0) scale(1);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translate3d(0, calc(var(--not-found-signal-travel, 140px) + 24px), 0) scale(0.92);
-  }
-}
-
-@keyframes not-found-signal-line {
-  0%,
-  8% {
-    opacity: 0;
-    top: 8px;
-    height: 0;
-  }
-
-  16% {
-    opacity: 1;
-    top: 8px;
-    height: calc(var(--not-found-signal-travel, 140px) + 14px);
-  }
-
-  74% {
-    opacity: 0.92;
-    top: calc(var(--not-found-signal-travel, 140px) - 8px);
-    height: 22px;
-  }
-
-  100% {
-    opacity: 0;
-    top: calc(var(--not-found-signal-travel, 140px) + 8px);
-    height: 0;
-  }
-}
-
-@keyframes not-found-signal-card {
-  0%,
-  10% {
-    opacity: 0;
-  }
-
-  18%,
-  58% {
-    opacity: 1;
-  }
-
-  72%,
-  100% {
-    opacity: 0;
   }
 }
 
@@ -363,6 +307,7 @@ a {
 
   .not-found-signal__card {
     top: calc(var(--not-found-signal-travel, 128px) + 18px);
+    width: min(164px, 42vw);
   }
 }
 

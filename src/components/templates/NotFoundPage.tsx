@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import type { CSSProperties } from 'react';
+import { useEffect, useRef, type CSSProperties } from 'react';
 
 import NoTranslateText from '@/components/atoms/NoTranslateText';
 import ElementTile from '@/components/molecules/ElementTile';
@@ -23,9 +23,9 @@ type SceneElementSeed = {
 type StaticElementSignalProps = {
   element: ChemicalElement;
   className: string;
-  delay: string;
-  duration: string;
-  distance: string;
+  delayMs: number;
+  durationMs: number;
+  distancePx: number;
   particlePosition: {
     x: string;
     y: string;
@@ -180,25 +180,112 @@ function buildSceneElements(locale: AppLocale): ChemicalElement[] {
 function StaticElementSignal({
   element,
   className,
-  delay,
-  duration,
-  distance,
+  delayMs,
+  durationMs,
+  distancePx,
   particlePosition,
 }: StaticElementSignalProps) {
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const particleRef = useRef<HTMLSpanElement | null>(null);
+  const cardShellRef = useRef<HTMLDivElement | null>(null);
+  const pathRef = useRef<SVGPathElement | null>(null);
+  const ringRef = useRef<SVGCircleElement | null>(null);
+  const startXRef = useRef<SVGCircleElement | null>(null);
+
   const style = {
-    ['--not-found-signal-delay' as string]: delay,
-    ['--not-found-signal-duration' as string]: duration,
-    ['--not-found-signal-travel' as string]: distance,
+    ['--not-found-signal-travel' as string]: `${distancePx}px`,
     ['--not-found-particle-pos-x' as string]: particlePosition.x,
     ['--not-found-particle-pos-y' as string]: particlePosition.y,
   } satisfies CSSProperties;
 
+  useEffect(() => {
+    let frameId = 0;
+
+    const update = (time: number) => {
+      const wrapper = wrapperRef.current;
+      const particle = particleRef.current;
+      const cardShell = cardShellRef.current;
+      const path = pathRef.current;
+      const ring = ringRef.current;
+      const startCircle = startXRef.current;
+
+      if (!wrapper || !particle || !cardShell || !path || !ring || !startCircle) {
+        frameId = window.requestAnimationFrame(update);
+        return;
+      }
+
+      const cycleProgress = ((time + delayMs) % durationMs) / durationMs;
+      const visibleStart = 0.14;
+      const visibleEnd = 0.82;
+      const fadeInEnd = 0.22;
+      const fadeOutStart = 0.7;
+
+      const motionProgress =
+        cycleProgress <= visibleStart
+          ? 0
+          : cycleProgress >= visibleEnd
+            ? 1
+            : (cycleProgress - visibleStart) / (visibleEnd - visibleStart);
+
+      const opacity =
+        cycleProgress < visibleStart || cycleProgress > visibleEnd
+          ? 0
+          : cycleProgress < fadeInEnd
+            ? (cycleProgress - visibleStart) / (fadeInEnd - visibleStart)
+            : cycleProgress > fadeOutStart
+              ? 1 - (cycleProgress - fadeOutStart) / (visibleEnd - fadeOutStart)
+              : 1;
+
+      const particleX = 26;
+      const particleY = 10 + motionProgress * distancePx;
+
+      const cardRect = cardShell.getBoundingClientRect();
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const startX = cardRect.left - wrapperRect.left + 6;
+      const startY = cardRect.top - wrapperRect.top + cardRect.height * 0.42;
+      const controlOneX = startX - 42;
+      const controlOneY = startY - 26;
+      const controlTwoX = particleX + 64;
+      const controlTwoY = particleY + 16;
+
+      path.setAttribute(
+        'd',
+        `M ${startX} ${startY} C ${controlOneX} ${controlOneY}, ${controlTwoX} ${controlTwoY}, ${particleX} ${particleY}`,
+      );
+      path.style.opacity = String(opacity);
+
+      ring.setAttribute('cx', String(particleX));
+      ring.setAttribute('cy', String(particleY));
+      ring.style.opacity = String(opacity);
+
+      startCircle.setAttribute('cx', String(startX));
+      startCircle.setAttribute('cy', String(startY));
+      startCircle.style.opacity = String(opacity * 0.82);
+
+      particle.style.transform = `translate3d(0, ${particleY}px, 0)`;
+      particle.style.opacity = String(opacity);
+      cardShell.style.opacity = String(opacity);
+
+      frameId = window.requestAnimationFrame(update);
+    };
+
+    frameId = window.requestAnimationFrame(update);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [delayMs, distancePx, durationMs]);
+
   return (
-    <div className={`not-found-signal ${className}`} style={style}>
+    <div ref={wrapperRef} className={`not-found-signal ${className}`} style={style}>
+      <svg className="not-found-signal__svg">
+        <path ref={pathRef} className="not-found-signal__path" d="M 0 0 C 0 0, 0 0, 0 0" />
+        <circle ref={startXRef} className="not-found-signal__anchor" cx="0" cy="0" r="3.5" />
+        <circle ref={ringRef} className="not-found-signal__ring" cx="0" cy="0" r="16" />
+      </svg>
       <span className="not-found-signal__particle" />
-      <span className="not-found-signal__line" />
       <div className="not-found-signal__card">
-        <div className="not-found-signal__card-shell">
+        <div ref={cardShellRef} className="not-found-signal__card-shell">
           <ElementTile element={element} density="regular" />
         </div>
       </div>
@@ -235,25 +322,25 @@ export default function NotFoundPage({ locale }: NotFoundPageProps) {
         <StaticElementSignal
           element={sceneElements[0]}
           className="right-[8%] top-[14%] md:right-[16%] md:top-[14%]"
-          delay="0s"
-          duration="6.2s"
-          distance="134px"
+          delayMs={0}
+          durationMs={6200}
+          distancePx={134}
           particlePosition={{ x: '-84px', y: '-418px' }}
         />
         <StaticElementSignal
           element={sceneElements[1]}
           className="right-[44%] top-[30%] md:right-[38%] md:top-[30%]"
-          delay="1.8s"
-          duration="7.1s"
-          distance="156px"
+          delayMs={1800}
+          durationMs={7100}
+          distancePx={156}
           particlePosition={{ x: '-395px', y: '-352px' }}
         />
         <StaticElementSignal
           element={sceneElements[2]}
           className="right-[18%] top-[54%] md:right-[22%] md:top-[54%]"
-          delay="3.1s"
-          duration="6.7s"
-          distance="128px"
+          delayMs={3100}
+          durationMs={6700}
+          distancePx={128}
           particlePosition={{ x: '-973px', y: '-287px' }}
         />
       </div>
