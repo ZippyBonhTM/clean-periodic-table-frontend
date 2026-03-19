@@ -41,7 +41,6 @@ const LOCALIZED_APP_PATHS = new Set([
   '/molecule-gallery',
   '/login',
   '/register',
-  '/molecular-builder',
 ]);
 
 export function normalizeAppPathname(pathname: string | null): string | null {
