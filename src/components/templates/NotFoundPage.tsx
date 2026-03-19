@@ -26,6 +26,10 @@ type StaticElementSignalProps = {
   delay: string;
   duration: string;
   distance: string;
+  particlePosition: {
+    x: string;
+    y: string;
+  };
 };
 
 const sceneElementSeeds: readonly SceneElementSeed[] = [
@@ -179,11 +183,14 @@ function StaticElementSignal({
   delay,
   duration,
   distance,
+  particlePosition,
 }: StaticElementSignalProps) {
   const style = {
     ['--not-found-signal-delay' as string]: delay,
     ['--not-found-signal-duration' as string]: duration,
     ['--not-found-signal-travel' as string]: distance,
+    ['--not-found-particle-pos-x' as string]: particlePosition.x,
+    ['--not-found-particle-pos-y' as string]: particlePosition.y,
   } satisfies CSSProperties;
 
   return (
@@ -231,6 +238,7 @@ export default function NotFoundPage({ locale }: NotFoundPageProps) {
           delay="0s"
           duration="6.2s"
           distance="134px"
+          particlePosition={{ x: '-84px', y: '-418px' }}
         />
         <StaticElementSignal
           element={sceneElements[1]}
@@ -238,6 +246,7 @@ export default function NotFoundPage({ locale }: NotFoundPageProps) {
           delay="1.8s"
           duration="7.1s"
           distance="156px"
+          particlePosition={{ x: '-395px', y: '-352px' }}
         />
         <StaticElementSignal
           element={sceneElements[2]}
@@ -245,6 +254,7 @@ export default function NotFoundPage({ locale }: NotFoundPageProps) {
           delay="3.1s"
           duration="6.7s"
           distance="128px"
+          particlePosition={{ x: '-973px', y: '-287px' }}
         />
       </div>
 

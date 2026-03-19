@@ -225,15 +225,14 @@ a {
 
 .not-found-signal__particle {
   position: absolute;
-  left: calc(50% - 4px);
+  left: calc(50% - 18px);
   top: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 249, 196, 0.98), rgba(250, 204, 21, 0.78) 52%, rgba(250, 204, 21, 0) 76%);
-  box-shadow:
-    0 0 14px rgba(250, 204, 21, 0.92),
-    0 0 28px rgba(250, 204, 21, 0.46);
+  width: 36px;
+  height: 48px;
+  background-image: url('/assets/404/particulas.png');
+  background-repeat: no-repeat;
+  background-size: 1536px 1024px;
+  background-position: var(--not-found-particle-pos-x, 0) var(--not-found-particle-pos-y, 0);
   animation: not-found-signal-particle var(--not-found-signal-duration, 6.5s) linear infinite;
   animation-delay: var(--not-found-signal-delay, 0s);
   will-change: transform, opacity;
