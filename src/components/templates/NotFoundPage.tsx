@@ -188,6 +188,7 @@ function StaticElementSignal({
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const particleRef = useRef<HTMLSpanElement | null>(null);
   const cardShellRef = useRef<HTMLDivElement | null>(null);
+  const pathBackdropRef = useRef<SVGPathElement | null>(null);
   const pathRef = useRef<SVGPathElement | null>(null);
   const ringRef = useRef<SVGCircleElement | null>(null);
   const startXRef = useRef<SVGCircleElement | null>(null);
@@ -207,11 +208,12 @@ function StaticElementSignal({
       const wrapper = wrapperRef.current;
       const particle = particleRef.current;
       const cardShell = cardShellRef.current;
+      const pathBackdrop = pathBackdropRef.current;
       const path = pathRef.current;
       const ring = ringRef.current;
       const startCircle = startXRef.current;
 
-      if (!wrapper || !particle || !cardShell || !path || !ring || !startCircle) {
+      if (!wrapper || !particle || !cardShell || !pathBackdrop || !path || !ring || !startCircle) {
         frameId = window.requestAnimationFrame(update);
         return;
       }
@@ -250,10 +252,10 @@ function StaticElementSignal({
       const controlTwoX = particleX + 64;
       const controlTwoY = particleY + 16;
 
-      path.setAttribute(
-        'd',
-        `M ${startX} ${startY} C ${controlOneX} ${controlOneY}, ${controlTwoX} ${controlTwoY}, ${particleX} ${particleY}`,
-      );
+      const pathData = `M ${startX} ${startY} C ${controlOneX} ${controlOneY}, ${controlTwoX} ${controlTwoY}, ${particleX} ${particleY}`;
+      pathBackdrop.setAttribute('d', pathData);
+      pathBackdrop.style.opacity = String(opacity);
+      path.setAttribute('d', pathData);
       path.style.opacity = String(opacity);
 
       ring.setAttribute('cx', String(particleX));
@@ -278,12 +280,17 @@ function StaticElementSignal({
 
   return (
     <div ref={wrapperRef} className={`not-found-signal ${className}`} style={style}>
-      <svg className="not-found-signal__svg">
+      <svg className="not-found-signal__svg" width="100%" height="100%">
+        <path
+          ref={pathBackdropRef}
+          className="not-found-signal__path-backdrop"
+          d="M 0 0 C 0 0, 0 0, 0 0"
+        />
         <path ref={pathRef} className="not-found-signal__path" d="M 0 0 C 0 0, 0 0, 0 0" />
         <circle ref={startXRef} className="not-found-signal__anchor" cx="0" cy="0" r="3.5" />
         <circle ref={ringRef} className="not-found-signal__ring" cx="0" cy="0" r="16" />
       </svg>
-      <span className="not-found-signal__particle" />
+      <span ref={particleRef} className="not-found-signal__particle" />
       <div className="not-found-signal__card">
         <div ref={cardShellRef} className="not-found-signal__card-shell">
           <ElementTile element={element} density="regular" />

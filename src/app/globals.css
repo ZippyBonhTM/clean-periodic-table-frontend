@@ -221,21 +221,33 @@ a {
   position: absolute;
   width: min(220px, 38vw);
   height: calc(var(--not-found-signal-travel, 140px) + 156px);
+  isolation: isolate;
 }
 
 .not-found-signal__svg {
   position: absolute;
   inset: 0;
   overflow: visible;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.not-found-signal__path-backdrop {
+  fill: none;
+  stroke: rgba(9, 12, 18, 0.78);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
 }
 
 .not-found-signal__path {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.9);
-  stroke-width: 2;
+  stroke: rgba(255, 255, 255, 0.98);
+  stroke-width: 2.6;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.18));
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.28));
   opacity: 0;
 }
 
@@ -247,7 +259,7 @@ a {
 .not-found-signal__ring {
   fill: none;
   stroke: rgba(255, 255, 255, 0.94);
-  stroke-width: 1.8;
+  stroke-width: 2.4;
   opacity: 0;
 }
 
@@ -263,6 +275,7 @@ a {
   background-position: var(--not-found-particle-pos-x, 0) var(--not-found-particle-pos-y, 0);
   will-change: transform, opacity;
   opacity: 0;
+  z-index: 3;
 }
 
 .not-found-signal__card {
@@ -270,6 +283,7 @@ a {
   top: calc(var(--not-found-signal-travel, 140px) + 22px);
   right: 0;
   width: min(188px, 34vw);
+  z-index: 1;
 }
 
 .not-found-signal__card-shell {
