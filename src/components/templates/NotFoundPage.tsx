@@ -66,8 +66,7 @@ export default function NotFoundPage({ locale }: NotFoundPageProps) {
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
                 href={buildLocalizedAppPath(locale, '/')}
-                className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-extrabold tracking-tight !text-black visited:!text-black active:!text-black transition hover:bg-white/90"
-                style={{ color: '#000000' }}
+                className="inline-flex items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-extrabold tracking-tight !text-slate-800 visited:!text-slate-800 active:!text-slate-800 transition hover:bg-white/90"
               >
                 {text.actions.home}
               </Link>
