@@ -37,6 +37,14 @@ const shouldNoindexVercelHostname =
 const nextConfig: NextConfig = {
   output: 'standalone',
   allowedDevOrigins: configuredAllowedDevOrigins ?? defaultAllowedDevOrigins,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+      },
+    ],
+  },
   headers: shouldNoindexVercelHostname
     ? async () => [
         {

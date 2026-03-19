@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 
@@ -11,62 +12,127 @@ type NotFoundPageProps = {
   locale: AppLocale;
 };
 
-type BrokenElementTileProps = {
+type PhysicalElementCardProps = {
   element: NotFoundTextCatalog['elements'][number];
+  imageUrl: string;
+  imageAlt: string;
   className: string;
   delay: string;
 };
 
-function BrokenElementTile({ element, className, delay }: BrokenElementTileProps) {
+const specimenMediaBySymbol = {
+  S: {
+    imageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/2/23/Native_sulfur_%28Vodinskoe_Deposit%3B_quarry_near_Samara%2C_Russia%29_9.jpg',
+  },
+  U: {
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b2/Ames_Process_uranium_biscuit.jpg',
+  },
+  Au: {
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Gold_%2879_Au%29.jpg',
+  },
+} as const satisfies Record<string, { imageUrl: string }>;
+
+function PhysicalElementCard({
+  element,
+  imageUrl,
+  imageAlt,
+  className,
+  delay,
+}: PhysicalElementCardProps) {
   const accentStyleByTone: Record<string, CSSProperties> = {
     cyan: {
-      ['--broken-tile-rgb' as string]: '34, 211, 238',
+      ['--specimen-rgb' as string]: '34, 211, 238',
     },
     violet: {
-      ['--broken-tile-rgb' as string]: '167, 139, 250',
+      ['--specimen-rgb' as string]: '167, 139, 250',
     },
     amber: {
-      ['--broken-tile-rgb' as string]: '245, 158, 11',
+      ['--specimen-rgb' as string]: '245, 158, 11',
     },
   };
 
   const style = {
     ...accentStyleByTone[element.accent],
-    ['--broken-tile-delay' as string]: delay,
+    ['--specimen-delay' as string]: delay,
   } satisfies CSSProperties;
 
   return (
-    <article className={`not-found-broken-tile ${className}`} style={style}>
-      <span className="not-found-broken-tile__crack not-found-broken-tile__crack--primary" />
-      <span className="not-found-broken-tile__crack not-found-broken-tile__crack--secondary" />
-      <span className="not-found-broken-tile__shard not-found-broken-tile__shard--one" />
-      <span className="not-found-broken-tile__shard not-found-broken-tile__shard--two" />
+    <article className={`not-found-specimen-card ${className}`} style={style}>
+      <div className="relative h-full overflow-hidden rounded-[1.2rem]">
+        <Image
+          src={imageUrl}
+          alt={imageAlt}
+          fill
+          sizes="(max-width: 767px) 42vw, 240px"
+          className="object-cover"
+        />
 
-      <div className="relative flex items-start justify-between gap-2">
-        <span className="rounded-md border border-white/14 bg-black/14 px-2 py-1 text-[10px] font-semibold text-[var(--text-muted)]">
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,10,18,0.1),rgba(6,10,18,0.12)_34%,rgba(6,10,18,0.88)_100%)]" />
+
+        <div className="absolute left-3 top-3 rounded-md border border-white/16 bg-black/30 px-2 py-1 text-[10px] font-semibold text-white/78 backdrop-blur-sm">
           {element.number}
-        </span>
-      </div>
+        </div>
 
-      <div className="relative mt-3">
-        <NoTranslateText
-          as="p"
-          className="text-4xl font-black tracking-[-0.08em] text-[var(--text-strong)] md:text-5xl"
-        >
-          {element.symbol}
-        </NoTranslateText>
-        <p className="mt-1 text-lg font-bold text-[var(--text-strong)]">{element.name}</p>
-      </div>
+        <div className="absolute inset-x-0 bottom-0 space-y-2 px-4 pb-4 pt-10">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <NoTranslateText
+                as="p"
+                className="text-3xl font-black tracking-[-0.08em] text-white md:text-4xl"
+              >
+                {element.symbol}
+              </NoTranslateText>
+              <p className="text-base font-bold text-white">{element.name}</p>
+            </div>
 
-      <div className="relative mt-4 flex items-center justify-between gap-3 text-xs">
-        <span className="rounded-full bg-black/12 px-2.5 py-1 text-[var(--text-muted)]">
-          {element.label}
-        </span>
-        <NoTranslateText as="span" className="font-semibold text-[var(--text-strong)]">
-          {element.mass}
-        </NoTranslateText>
+            <NoTranslateText as="span" className="text-sm font-semibold text-white/88">
+              {element.mass}
+            </NoTranslateText>
+          </div>
+
+          <p className="text-xs font-medium text-white/74">{element.label}</p>
+        </div>
       </div>
     </article>
+  );
+}
+
+function RadiationMeter({ text }: { text: NotFoundTextCatalog['meter'] }) {
+  return (
+    <aside className="not-found-meter">
+      <div className="flex items-center justify-between gap-3">
+        <span className="rounded-full border border-emerald-400/24 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-black tracking-[0.24em] text-emerald-300">
+          {text.label}
+        </span>
+        <span className="not-found-meter__beep">{text.status}</span>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-white/8 bg-black/28 p-3">
+        <div className="flex items-end gap-1.5">
+          {Array.from({ length: 8 }, (_, index) => (
+            <span
+              key={index}
+              className="not-found-meter__bar"
+              style={
+                {
+                  ['--meter-bar-index' as string]: index,
+                } satisfies CSSProperties
+              }
+            />
+          ))}
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/46">
+            {text.level}
+          </span>
+          <NoTranslateText as="span" className="text-sm font-black text-white">
+            9.2
+          </NoTranslateText>
+        </div>
+      </div>
+    </aside>
   );
 }
 
@@ -127,28 +193,33 @@ export default function NotFoundPage({ locale }: NotFoundPageProps) {
 
             <div className="relative border-t border-[var(--border-subtle)] px-6 py-8 lg:border-t-0 lg:border-l lg:px-10 lg:py-12">
               <div className="not-found-stage">
-                <NoTranslateText
-                  as="span"
-                  className="not-found-stage__ghost-code"
-                >
+                <NoTranslateText as="span" className="not-found-stage__ghost-code">
                   404
                 </NoTranslateText>
 
-                <BrokenElementTile
+                <PhysicalElementCard
                   element={text.elements[0]}
-                  className="left-[4%] top-[7%] rotate-[-10deg] md:left-[6%]"
+                  imageUrl={specimenMediaBySymbol.S.imageUrl}
+                  imageAlt={text.elements[0].imageAlt}
+                  className="left-[3%] top-[10%] rotate-[-8deg] md:left-[6%]"
                   delay="0s"
                 />
-                <BrokenElementTile
+                <PhysicalElementCard
                   element={text.elements[1]}
-                  className="right-[6%] top-[3%] rotate-[7deg]"
-                  delay="1.1s"
+                  imageUrl={specimenMediaBySymbol.U.imageUrl}
+                  imageAlt={text.elements[1].imageAlt}
+                  className="right-[4%] top-[5%] rotate-[8deg]"
+                  delay="1s"
                 />
-                <BrokenElementTile
+                <PhysicalElementCard
                   element={text.elements[2]}
-                  className="left-[18%] bottom-[10%] rotate-[4deg] md:left-[24%]"
-                  delay="2s"
+                  imageUrl={specimenMediaBySymbol.Au.imageUrl}
+                  imageAlt={text.elements[2].imageAlt}
+                  className="left-[22%] bottom-[12%] rotate-[3deg] md:left-[26%]"
+                  delay="1.9s"
                 />
+
+                <RadiationMeter text={text.meter} />
               </div>
             </div>
           </div>
