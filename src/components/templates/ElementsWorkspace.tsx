@@ -18,6 +18,7 @@ import { logoutSession } from '@/shared/api/authApi';
 import useAuthSession from '@/shared/hooks/useAuthSession';
 import useAuthToken from '@/shared/hooks/useAuthToken';
 import useElements from '@/shared/hooks/useElements';
+import type { ChemicalElement } from '@/shared/types/element';
 
 function PeriodicTableLoadingState() {
   const text = usePeriodicTableText();
@@ -33,9 +34,15 @@ const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'))
 
 type ElementsWorkspaceProps = {
   tableMode: PeriodicTableMode;
+  initialElements?: ChemicalElement[] | null;
+  hasPublicElements?: boolean;
 };
 
-function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
+function ElementsWorkspace({
+  tableMode,
+  initialElements = null,
+  hasPublicElements = false,
+}: ElementsWorkspaceProps) {
   const text = useAuthText();
   const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
   const authSession = useAuthSession({
@@ -51,7 +58,10 @@ function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
     token: hasValidSession ? token : null,
     onTokenRefresh: persistToken,
     onUnauthorized: removeToken,
+    initialData: initialElements,
   });
+  const shouldRenderPeriodicTable =
+    data.length > 0 || (hasPublicElements && initialElements !== null);
 
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -80,7 +90,7 @@ function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
     [closeAuthModal, persistToken],
   );
 
-  if (!isHydrated) {
+  if (!isHydrated && !hasPublicElements) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-[var(--app-max-width)] items-center px-[var(--app-inline-padding)] py-6">
         <ElementsState tone="info" message={text.workspace.loadingSession} />
@@ -99,7 +109,9 @@ function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
       showFooter={false}
     >
       <section className="space-y-4">
-        {authSession.status === 'checking' ? (
+        {shouldRenderPeriodicTable ? (
+          <PeriodicTable elements={data} mode={tableMode} />
+        ) : authSession.status === 'checking' ? (
           <ElementsState tone="info" message={text.workspace.checkingSession} />
         ) : authSession.status === 'unverified' ? (
           <ElementsState
@@ -123,9 +135,7 @@ function ElementsWorkspace({ tableMode }: ElementsWorkspaceProps) {
           />
         ) : resolvedElementsError !== null ? (
           <ElementsState tone="error" message={resolvedElementsError} />
-        ) : (
-          <PeriodicTable elements={data} mode={tableMode} />
-        )}
+        ) : null}
       </section>
 
       <AuthModal

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import ElementsWorkspace from '@/components/templates/ElementsWorkspace';
+import { listPublicElementsServer } from '@/shared/api/backendServerApi';
 import { resolveAppLocaleFromSegment } from '@/shared/i18n/appLocaleRouting';
 import { buildLocalizedPageMetadata } from '@/shared/i18n/appPageMetadata';
 
@@ -28,10 +29,17 @@ export default async function LocalizedPeriodicTablePage({
   params,
 }: LocalizedPeriodicTablePageProps) {
   const { locale } = await params;
+  const { elements, isPubliclyAvailable } = await listPublicElementsServer();
 
   if (resolveAppLocaleFromSegment(locale) === null) {
     notFound();
   }
 
-  return <ElementsWorkspace tableMode="table" />;
+  return (
+    <ElementsWorkspace
+      tableMode="table"
+      initialElements={elements}
+      hasPublicElements={isPubliclyAvailable}
+    />
+  );
 }
