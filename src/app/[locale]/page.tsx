@@ -7,7 +7,7 @@ import { resolveAppLocaleFromSegment } from '@/shared/i18n/appLocaleRouting';
 import { buildLocalizedPageMetadata } from '@/shared/i18n/appPageMetadata';
 import { buildLocalizedAbsoluteAppUrl } from '@/shared/seo/appSite';
 
-type LocalizedHomePageProps = {
+type PageProps = {
   params: Promise<{
     locale: string;
   }>;
@@ -45,7 +45,7 @@ function buildHomeStructuredData(locale: 'en-US' | 'pt-BR') {
 
 export async function generateMetadata({
   params,
-}: LocalizedHomePageProps): Promise<Metadata> {
+}: PageProps): Promise<Metadata> {
   const { locale } = await params;
   const resolvedLocale = resolveAppLocaleFromSegment(locale);
 
@@ -56,9 +56,9 @@ export async function generateMetadata({
   return buildLocalizedPageMetadata(resolvedLocale, 'home');
 }
 
-export default async function LocalizedHomePage({
+export default async function Page({
   params,
-}: LocalizedHomePageProps) {
+}: PageProps) {
   const { locale } = await params;
   const resolvedLocale = resolveAppLocaleFromSegment(locale);
 
