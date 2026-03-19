@@ -173,138 +173,71 @@ a {
   contain: paint;
 }
 
-.not-found-stage {
-  position: relative;
-  min-height: 390px;
-  border-radius: 1.75rem;
-  border: 1px solid color-mix(in oklab, var(--border-subtle) 78%, transparent);
-  background:
-    radial-gradient(circle at 20% 20%, color-mix(in oklab, var(--accent-strong) 18%, transparent), transparent 28%),
-    radial-gradient(circle at 78% 18%, rgba(245, 158, 11, 0.14), transparent 24%),
-    linear-gradient(180deg, color-mix(in oklab, var(--surface-2) 94%, transparent), color-mix(in oklab, var(--surface-1) 92%, transparent));
+.not-found-stage__particle-flow {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.42;
+}
+
+.not-found-stage__particle-stream {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('/assets/404/particulas.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  will-change: transform;
+}
+
+.not-found-stage__particle-stream--a {
+  top: -100%;
+  animation: not-found-particle-scroll 16s linear infinite;
+}
+
+.not-found-stage__particle-stream--b {
+  top: 0;
+  animation: not-found-particle-scroll 16s linear infinite;
 }
 
 .not-found-stage__ghost-code {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -54%);
+  left: 58%;
+  top: 16%;
+  transform: translate(-50%, 0);
   font-size: clamp(7rem, 19vw, 11rem);
   font-weight: 900;
   letter-spacing: -0.14em;
   line-height: 0.8;
-  color: color-mix(in oklab, var(--text-strong) 8%, transparent);
+  color: rgba(255, 255, 255, 0.08);
   user-select: none;
 }
 
-.not-found-broken-tile {
-  --broken-tile-rgb: 34, 211, 238;
-  --broken-tile-delay: 0s;
-  position: absolute;
-  width: min(230px, 46vw);
-  min-height: 220px;
-  padding: 1rem;
-  border-radius: 1.35rem;
-  border: 1px solid rgba(var(--broken-tile-rgb), 0.66);
-  background:
-    linear-gradient(145deg, rgba(var(--broken-tile-rgb), 0.18), rgba(var(--broken-tile-rgb), 0.05) 58%, var(--tile-gradient-tail)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 56%);
-  box-shadow:
-    0 0 0 1px rgba(var(--broken-tile-rgb), 0.16),
-    0 18px 44px rgba(2, 8, 23, 0.28),
-    0 0 24px rgba(var(--broken-tile-rgb), 0.16);
-  backdrop-filter: blur(14px);
-  animation: not-found-broken-float 8.5s ease-in-out infinite;
-  animation-delay: var(--broken-tile-delay);
-}
-
-.not-found-broken-tile::after {
-  content: '';
-  position: absolute;
-  right: -1px;
-  bottom: -1px;
-  width: 32%;
-  height: 28%;
-  clip-path: polygon(38% 0%, 100% 16%, 100% 100%, 0% 100%, 0% 36%);
-  background: linear-gradient(145deg, rgba(var(--broken-tile-rgb), 0.16), rgba(255, 255, 255, 0.02));
-  border-left: 1px solid rgba(var(--broken-tile-rgb), 0.34);
-  border-top: 1px solid rgba(var(--broken-tile-rgb), 0.28);
-  opacity: 0.86;
-}
-
-.not-found-broken-tile__crack {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.not-found-broken-tile__crack--primary {
-  background:
-    linear-gradient(118deg, transparent 0 44%, rgba(255, 255, 255, 0.52) 46%, transparent 48% 100%),
-    linear-gradient(74deg, transparent 0 56%, rgba(var(--broken-tile-rgb), 0.46) 58%, transparent 60% 100%);
-  opacity: 0.36;
-}
-
-.not-found-broken-tile__crack--secondary {
-  background:
-    linear-gradient(210deg, transparent 0 40%, rgba(255, 255, 255, 0.32) 42%, transparent 44% 100%),
-    linear-gradient(132deg, transparent 0 65%, rgba(var(--broken-tile-rgb), 0.34) 67%, transparent 69% 100%);
-  opacity: 0.28;
-}
-
-.not-found-broken-tile__shard {
-  position: absolute;
-  display: block;
-  border: 1px solid rgba(var(--broken-tile-rgb), 0.44);
-  background: linear-gradient(145deg, rgba(var(--broken-tile-rgb), 0.24), rgba(255, 255, 255, 0.05));
-  box-shadow: 0 8px 20px rgba(2, 8, 23, 0.22);
-}
-
-.not-found-broken-tile__shard--one {
-  top: -10px;
-  right: 18px;
-  width: 28px;
-  height: 28px;
-  border-radius: 10px 12px 6px 14px;
-  transform: rotate(24deg);
-}
-
-.not-found-broken-tile__shard--two {
-  bottom: 14px;
-  right: -10px;
-  width: 22px;
-  height: 22px;
-  border-radius: 8px 10px 4px 12px;
-  transform: rotate(-18deg);
-}
-
-@keyframes not-found-broken-float {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
+@keyframes not-found-particle-scroll {
+  from {
+    transform: translateY(0);
   }
 
-  50% {
-    transform: translate3d(0, -10px, 0);
+  to {
+    transform: translateY(100%);
   }
 }
 
 @media (max-width: 1023px) {
-  .not-found-stage {
-    min-height: 350px;
+  .not-found-stage__ghost-code {
+    left: 68%;
+    top: 12%;
   }
 }
 
 @media (max-width: 767px) {
-  .not-found-stage {
-    min-height: 320px;
-  }
-
-  .not-found-broken-tile {
-    width: min(190px, 52vw);
-    min-height: 180px;
-    padding: 0.85rem;
+  .not-found-stage__ghost-code {
+    left: 50%;
+    top: 12%;
   }
 }
 
