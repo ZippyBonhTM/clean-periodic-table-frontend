@@ -196,6 +196,8 @@ function StaticElementSignal({
     ['--not-found-signal-travel' as string]: `${distancePx}px`,
     ['--not-found-particle-pos-x' as string]: particlePosition.x,
     ['--not-found-particle-pos-y' as string]: particlePosition.y,
+    ['--not-found-signal-duration-css' as string]: `${durationMs}ms`,
+    ['--not-found-signal-delay-css' as string]: `${delayMs}ms`,
   } satisfies CSSProperties;
 
   useEffect(() => {
@@ -214,7 +216,7 @@ function StaticElementSignal({
         return;
       }
 
-      const cycleProgress = ((time + delayMs) % durationMs) / durationMs;
+      const cycleProgress = ((time + delayMs + durationMs * 0.24) % durationMs) / durationMs;
       const visibleStart = 0.14;
       const visibleEnd = 0.82;
       const fadeInEnd = 0.22;
@@ -264,8 +266,6 @@ function StaticElementSignal({
 
       particle.style.transform = `translate3d(0, ${particleY}px, 0)`;
       particle.style.opacity = String(opacity);
-      cardShell.style.opacity = String(opacity);
-
       frameId = window.requestAnimationFrame(update);
     };
 

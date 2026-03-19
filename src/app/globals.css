@@ -273,8 +273,11 @@ a {
 }
 
 .not-found-signal__card-shell {
+  min-height: 132px;
   will-change: opacity;
-  opacity: 0;
+  opacity: 1;
+  animation: not-found-signal-card-fade var(--not-found-signal-duration-css, 6500ms) linear infinite;
+  animation-delay: var(--not-found-signal-delay-css, 0ms);
 }
 
 @keyframes not-found-particle-scroll {
@@ -284,6 +287,18 @@ a {
 
   to {
     transform: translateY(100%);
+  }
+}
+
+@keyframes not-found-signal-card-fade {
+  0%,
+  54% {
+    opacity: 1;
+  }
+
+  72%,
+  100% {
+    opacity: 0;
   }
 }
 
