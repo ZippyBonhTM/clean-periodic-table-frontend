@@ -306,11 +306,10 @@ a {
 
 @keyframes not-found-signal-card-fade {
   0%,
-  54% {
+  86% {
     opacity: 1;
   }
 
-  72%,
   100% {
     opacity: 0;
   }

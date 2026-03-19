@@ -188,8 +188,8 @@ function StaticElementSignal({
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const particleRef = useRef<HTMLSpanElement | null>(null);
   const cardShellRef = useRef<HTMLDivElement | null>(null);
-  const pathBackdropRef = useRef<SVGPathElement | null>(null);
-  const pathRef = useRef<SVGPathElement | null>(null);
+  const pathBackdropRef = useRef<SVGPolylineElement | null>(null);
+  const pathRef = useRef<SVGPolylineElement | null>(null);
   const ringRef = useRef<SVGCircleElement | null>(null);
   const startXRef = useRef<SVGCircleElement | null>(null);
 
@@ -247,15 +247,11 @@ function StaticElementSignal({
       const wrapperRect = wrapper.getBoundingClientRect();
       const startX = cardRect.left - wrapperRect.left + 6;
       const startY = cardRect.top - wrapperRect.top + cardRect.height * 0.42;
-      const controlOneX = startX - 42;
-      const controlOneY = startY - 26;
-      const controlTwoX = particleX + 64;
-      const controlTwoY = particleY + 16;
-
-      const pathData = `M ${startX} ${startY} C ${controlOneX} ${controlOneY}, ${controlTwoX} ${controlTwoY}, ${particleX} ${particleY}`;
-      pathBackdrop.setAttribute('d', pathData);
+      const elbowX = Math.max(particleX + 34, startX - 42);
+      const points = `${startX},${startY} ${elbowX},${startY} ${elbowX},${particleY} ${particleX},${particleY}`;
+      pathBackdrop.setAttribute('points', points);
       pathBackdrop.style.opacity = String(opacity);
-      path.setAttribute('d', pathData);
+      path.setAttribute('points', points);
       path.style.opacity = String(opacity);
 
       ring.setAttribute('cx', String(particleX));
@@ -281,12 +277,12 @@ function StaticElementSignal({
   return (
     <div ref={wrapperRef} className={`not-found-signal ${className}`} style={style}>
       <svg className="not-found-signal__svg" width="100%" height="100%">
-        <path
+        <polyline
           ref={pathBackdropRef}
           className="not-found-signal__path-backdrop"
-          d="M 0 0 C 0 0, 0 0, 0 0"
+          points="0,0 0,0 0,0 0,0"
         />
-        <path ref={pathRef} className="not-found-signal__path" d="M 0 0 C 0 0, 0 0, 0 0" />
+        <polyline ref={pathRef} className="not-found-signal__path" points="0,0 0,0 0,0 0,0" />
         <circle ref={startXRef} className="not-found-signal__anchor" cx="0" cy="0" r="3.5" />
         <circle ref={ringRef} className="not-found-signal__ring" cx="0" cy="0" r="16" />
       </svg>
