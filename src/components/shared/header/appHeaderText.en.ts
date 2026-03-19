@@ -28,7 +28,6 @@ export const appHeaderTextEn = {
     menuTitle: 'Routes',
     links: {
       periodicTable: 'Periodic Table',
-      search: 'Search',
       balanceEquation: 'Balance Equation',
       molecularEditor: 'Molecular Editor',
       moleculeGallery: 'Molecule Gallery',

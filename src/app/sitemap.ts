@@ -5,7 +5,6 @@ import { buildLocalizedAbsoluteAppUrl } from '@/shared/seo/appSite';
 
 const INDEXABLE_PATHNAMES = [
   '/',
-  '/search',
   '/periodic-table',
   '/balance-equation',
   '/molecular-editor',

@@ -14,7 +14,6 @@ export type AppPageMetadataKey = keyof typeof appPageMetadataEn.pages;
 
 const APP_PAGE_PATHNAME_BY_KEY: Record<AppPageMetadataKey, string> = {
   home: '/',
-  search: '/search',
   periodicTable: '/periodic-table',
   balanceEquation: '/balance-equation',
   molecularEditor: '/molecular-editor',
