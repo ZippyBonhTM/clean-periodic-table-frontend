@@ -191,7 +191,9 @@ function StaticElementSignal({
       <span className="not-found-signal__particle" />
       <span className="not-found-signal__line" />
       <div className="not-found-signal__card">
-        <ElementTile element={element} mode="classic" />
+        <div className="not-found-signal__card-shell">
+          <ElementTile element={element} density="regular" />
+        </div>
       </div>
     </div>
   );

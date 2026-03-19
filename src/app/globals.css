@@ -261,6 +261,12 @@ a {
   transform: translateX(-50%);
 }
 
+.not-found-signal__card-shell {
+  animation: not-found-signal-card var(--not-found-signal-duration, 6.5s) linear infinite;
+  animation-delay: var(--not-found-signal-delay, 0s);
+  will-change: opacity;
+}
+
 @keyframes not-found-particle-scroll {
   from {
     transform: translateY(0);
@@ -318,6 +324,23 @@ a {
     opacity: 0;
     top: calc(var(--not-found-signal-travel, 140px) + 8px);
     height: 0;
+  }
+}
+
+@keyframes not-found-signal-card {
+  0%,
+  10% {
+    opacity: 0;
+  }
+
+  18%,
+  58% {
+    opacity: 1;
+  }
+
+  72%,
+  100% {
+    opacity: 0;
   }
 }
 
