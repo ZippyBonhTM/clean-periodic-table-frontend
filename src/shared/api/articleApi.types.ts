@@ -77,6 +77,12 @@ type ArticleUnpublishInput = {
   signal?: AbortSignal;
 };
 
+type ArticleDeleteInput = {
+  articleId: string;
+  token: string;
+  signal?: AbortSignal;
+};
+
 type ArticleRecordViewInput = {
   articleId: string;
   token?: string | null;
@@ -111,6 +117,7 @@ interface ArticleApi {
   updateArticle(input: UpdateArticleInput): Promise<ArticleDetail>;
   publishArticle(input: ArticlePublishInput): Promise<ArticleDetail>;
   unpublishArticle(input: ArticleUnpublishInput): Promise<ArticleDetail>;
+  deleteArticle(input: ArticleDeleteInput): Promise<void>;
   recordArticleView(input: ArticleRecordViewInput): Promise<void>;
   saveArticle(input: ArticleSaveInput): Promise<void>;
   uploadImage(input: ArticleImageUploadInput): Promise<ArticleImageUploadResult>;
@@ -125,6 +132,7 @@ export type {
   ArticleHashtagSuggestionsInput,
   ArticleOwnedDetailInput,
   ArticleSearchInput,
+  ArticleDeleteInput,
   ArticlePublishInput,
   ArticleUnpublishInput,
   ArticleRecordViewInput,

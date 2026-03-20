@@ -172,10 +172,11 @@ export default function ArticleEditorWorkspace({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [activeMutation, setActiveMutation] = useState<
-    'save' | 'autosave' | 'upload' | 'upload-cover' | 'publish' | 'unpublish' | null
+    'save' | 'autosave' | 'upload' | 'upload-cover' | 'publish' | 'unpublish' | 'delete' | null
   >(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null);
+  const [isDeleteConfirmationVisible, setIsDeleteConfirmationVisible] = useState(false);
   const [autosaveState, setAutosaveState] = useState<
     'idle' | 'scheduled' | 'saving' | 'saved' | 'failed' | 'disabled'
   >('idle');
@@ -217,6 +218,7 @@ export default function ArticleEditorWorkspace({
     setMarkdownSource(article.markdownSource);
     setVisibility(article.visibility);
     setHashtagsInput(article.hashtags.map((hashtag) => `#${hashtag.name}`).join(', '));
+    setIsDeleteConfirmationVisible(false);
   }, []);
 
   useEffect(() => {
@@ -246,6 +248,7 @@ export default function ArticleEditorWorkspace({
     setMarkdownSource('');
     setHashtagsInput('');
     setVisibility('private');
+    setIsDeleteConfirmationVisible(false);
 
     void articleApi
       .getMyArticleById({
@@ -359,6 +362,10 @@ export default function ArticleEditorWorkspace({
       timeStyle: 'short',
     }).format(new Date(savedArticle.updatedAt));
   }, [locale, savedArticle, text.meta.unsaved]);
+  const deleteConfirmationMessage =
+    savedArticle?.status === 'published'
+      ? text.notices.deleteConfirmPublished
+      : text.notices.deleteConfirmDraft;
 
   const onRetryLoad = useCallback(() => {
     setLoadAttempt((currentValue) => currentValue + 1);
@@ -471,6 +478,16 @@ export default function ArticleEditorWorkspace({
     setFeedbackError(null);
     setFeedbackSuccess(text.notices.coverCleared);
   }, [text.notices.coverCleared]);
+
+  const onRequestDeleteArticle = useCallback(() => {
+    setFeedbackError(null);
+    setFeedbackSuccess(null);
+    setIsDeleteConfirmationVisible(true);
+  }, []);
+
+  const onCancelDeleteArticle = useCallback(() => {
+    setIsDeleteConfirmationVisible(false);
+  }, []);
 
   const onImageFileSelected = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
@@ -698,6 +715,37 @@ export default function ArticleEditorWorkspace({
       setActiveMutation(null);
     }
   }, [applyLoadedArticle, savedArticle, text, token]);
+
+  const onDeleteArticle = useCallback(async () => {
+    if (token === null || savedArticle === null) {
+      return;
+    }
+
+    setActiveMutation('delete');
+    setFeedbackError(null);
+    setFeedbackSuccess(null);
+
+    try {
+      await articleApi.deleteArticle({
+        articleId: savedArticle.id,
+        token,
+      });
+
+      setIsDeleteConfirmationVisible(false);
+      router.replace(workspaceHref);
+    } catch (caughtError: unknown) {
+      setFeedbackError(
+        resolveMutationErrorMessage(
+          caughtError,
+          text,
+          text.notices.deleteFailed,
+          text.notices.deleteFailedNetwork,
+        ),
+      );
+    } finally {
+      setActiveMutation(null);
+    }
+  }, [router, savedArticle, text, token, workspaceHref]);
 
   if (!isHydrated) {
     return (
@@ -1020,12 +1068,50 @@ export default function ArticleEditorWorkspace({
                       {activeMutation === 'publish' ? text.actions.publishing : text.actions.publish}
                     </Button>
                   )}
+
+                  {savedArticle !== null ? (
+                    <Button
+                      variant="ghost"
+                      onClick={onRequestDeleteArticle}
+                      disabled={activeMutation !== null || isLoadingArticle}
+                      className="border-rose-400/40 bg-rose-500/10 text-rose-100 hover:border-rose-300/60 hover:bg-rose-500/15 hover:text-rose-50"
+                    >
+                      {text.actions.deleteArticle}
+                    </Button>
+                  ) : null}
                 </div>
 
                 {savedArticle?.status !== 'published' && publishValidationMessage !== null ? (
                   <p className="text-xs leading-relaxed text-(--text-muted)">
                     {publishValidationMessage}
                   </p>
+                ) : null}
+
+                {savedArticle !== null && isDeleteConfirmationVisible ? (
+                  <div className="space-y-3 rounded-[1.4rem] border border-rose-400/35 bg-rose-500/10 p-4">
+                    <p className="text-sm leading-relaxed text-rose-100">
+                      {deleteConfirmationMessage}
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      <Button
+                        variant="ghost"
+                        onClick={() => void onDeleteArticle()}
+                        disabled={activeMutation !== null || isLoadingArticle}
+                        className="border-rose-400/45 bg-rose-500/15 text-rose-50 hover:border-rose-300/60 hover:bg-rose-500/25"
+                      >
+                        {activeMutation === 'delete'
+                          ? text.actions.deletingArticle
+                          : text.actions.confirmDelete}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={onCancelDeleteArticle}
+                        disabled={activeMutation !== null || isLoadingArticle}
+                      >
+                        {text.actions.cancelDelete}
+                      </Button>
+                    </div>
+                  </div>
                 ) : null}
               </Panel>
             </section>

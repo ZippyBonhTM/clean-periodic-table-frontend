@@ -39,6 +39,10 @@ export const articleEditorTextPt = {
     publishing: 'Publicando...',
     unpublish: 'Despublicar',
     unpublishing: 'Despublicando...',
+    deleteArticle: 'Excluir artigo',
+    deletingArticle: 'Excluindo artigo...',
+    confirmDelete: 'Confirmar exclusão',
+    cancelDelete: 'Manter artigo',
     openWorkspace: 'Abrir meus artigos',
   },
   notices: {
@@ -71,6 +75,13 @@ export const articleEditorTextPt = {
     unpublishFailed: 'Não foi possível despublicar este artigo agora.',
     unpublishFailedNetwork:
       'Não foi possível despublicar este artigo. Verifique sua conexão e tente de novo.',
+    deleteConfirmDraft:
+      'Exclua este rascunho da sua área. Se quiser continuar depois, você vai precisar criar outro.',
+    deleteConfirmPublished:
+      'Exclua este artigo. Ele deixará de aparecer na sua área e não ficará mais disponível publicamente.',
+    deleteFailed: 'Não foi possível excluir este artigo agora.',
+    deleteFailedNetwork:
+      'Não foi possível excluir este artigo. Verifique sua conexão e tente de novo.',
     saveBeforePublish: 'Salve o rascunho pelo menos uma vez antes de publicar.',
     publishNeedsTitle: 'Adicione um título antes de publicar.',
     publishNeedsMarkdown: 'Adicione conteúdo em markdown antes de publicar.',
