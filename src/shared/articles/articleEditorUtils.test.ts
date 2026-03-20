@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildArticleSlugPreview,
+  hasArticleEditorChanges,
   parseArticleHashtags,
   validateArticlePublishInput,
 } from '@/shared/articles/articleEditorUtils';
@@ -45,5 +46,71 @@ describe('articleEditorUtils', () => {
         markdownSource: '# Atomic Orbitals',
       }),
     ).toBeNull();
+  });
+
+  it('detects draft changes for autosave without treating a blank draft as dirty', () => {
+    expect(
+      hasArticleEditorChanges(
+        {
+          title: '',
+          excerpt: '',
+          markdownSource: '',
+          visibility: 'private',
+          hashtags: [],
+        },
+        null,
+      ),
+    ).toBe(false);
+
+    expect(
+      hasArticleEditorChanges(
+        {
+          title: 'Atomic Orbitals',
+          excerpt: '',
+          markdownSource: '',
+          visibility: 'private',
+          hashtags: [],
+        },
+        null,
+      ),
+    ).toBe(true);
+
+    expect(
+      hasArticleEditorChanges(
+        {
+          title: 'Atomic Orbitals',
+          excerpt: 'Intro',
+          markdownSource: '# Atomic Orbitals',
+          visibility: 'public',
+          hashtags: ['orbitals'],
+        },
+        {
+          title: 'Atomic Orbitals',
+          excerpt: 'Intro',
+          markdownSource: '# Atomic Orbitals',
+          visibility: 'public',
+          hashtags: ['orbitals'],
+        },
+      ),
+    ).toBe(false);
+
+    expect(
+      hasArticleEditorChanges(
+        {
+          title: 'Atomic Orbitals',
+          excerpt: 'Updated intro',
+          markdownSource: '# Atomic Orbitals',
+          visibility: 'public',
+          hashtags: ['orbitals'],
+        },
+        {
+          title: 'Atomic Orbitals',
+          excerpt: 'Intro',
+          markdownSource: '# Atomic Orbitals',
+          visibility: 'public',
+          hashtags: ['orbitals'],
+        },
+      ),
+    ).toBe(true);
   });
 });
