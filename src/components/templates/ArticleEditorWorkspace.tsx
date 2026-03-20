@@ -19,6 +19,7 @@ import { logoutSession } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
 import {
   buildArticleSlugPreview,
+  hasArticleEditorChanges,
   parseArticleHashtags,
   validateArticlePublishInput,
 } from '@/shared/articles/articleEditorUtils';
@@ -33,6 +34,7 @@ import type { AppLocale } from '@/shared/i18n/appLocale.types';
 import type { ArticleDetail, ArticleStatus, ArticleVisibility } from '@/shared/types/article';
 
 const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'));
+const ARTICLE_EDITOR_AUTOSAVE_DELAY_MS = 45_000;
 
 type ArticleEditorWorkspaceProps = {
   locale: AppLocale;
@@ -165,9 +167,13 @@ export default function ArticleEditorWorkspace({
   const [isLoadingArticle, setIsLoadingArticle] = useState(articleId !== undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const [activeMutation, setActiveMutation] = useState<'save' | 'publish' | 'unpublish' | null>(null);
+  const [activeMutation, setActiveMutation] = useState<'save' | 'autosave' | 'publish' | 'unpublish' | null>(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null);
+  const [autosaveState, setAutosaveState] = useState<
+    'idle' | 'scheduled' | 'saving' | 'saved' | 'failed' | 'disabled'
+  >('idle');
+  const [autosaveError, setAutosaveError] = useState<string | null>(null);
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const resolvedSessionMessage = resolveSessionWorkspaceMessage(authSession.message, authText);
@@ -222,6 +228,8 @@ export default function ArticleEditorWorkspace({
     setLoadError(null);
     setFeedbackError(null);
     setFeedbackSuccess(null);
+    setAutosaveState('idle');
+    setAutosaveError(null);
     setSavedArticle(null);
     setTitle('');
     setExcerpt('');
@@ -265,6 +273,33 @@ export default function ArticleEditorWorkspace({
   const hashtagList = useMemo(() => parseArticleHashtags(hashtagsInput), [hashtagsInput]);
   const slugPreview = useMemo(() => buildArticleSlugPreview(title), [title]);
   const renderedPreview = markdownSource.trim().length > 0 ? markdownSource : null;
+  const currentDraftSnapshot = useMemo(
+    () => ({
+      title,
+      excerpt,
+      markdownSource,
+      visibility,
+      hashtags: hashtagList,
+    }),
+    [excerpt, hashtagList, markdownSource, title, visibility],
+  );
+  const savedDraftSnapshot = useMemo(
+    () =>
+      savedArticle === null
+        ? null
+        : {
+            title: savedArticle.title,
+            excerpt: savedArticle.excerpt,
+            markdownSource: savedArticle.markdownSource,
+            visibility: savedArticle.visibility,
+            hashtags: savedArticle.hashtags.map((hashtag) => hashtag.name),
+          },
+    [savedArticle],
+  );
+  const hasUnsavedChanges = useMemo(
+    () => hasArticleEditorChanges(currentDraftSnapshot, savedDraftSnapshot),
+    [currentDraftSnapshot, savedDraftSnapshot],
+  );
   const publishValidationMessage = useMemo(
     () =>
       resolvePublishValidationMessage(text, {
@@ -278,6 +313,30 @@ export default function ArticleEditorWorkspace({
     savedArticle !== null &&
     savedArticle.status !== 'published' &&
     publishValidationMessage === null;
+  const autosaveDisabled = savedArticle?.status === 'published';
+  const autosaveStatusLabel = useMemo(() => {
+    if (autosaveDisabled) {
+      return text.meta.autosaveDisabledPublished;
+    }
+
+    if (autosaveState === 'scheduled') {
+      return text.meta.autosavePending;
+    }
+
+    if (autosaveState === 'saving') {
+      return text.meta.autosaveSaving;
+    }
+
+    if (autosaveState === 'saved') {
+      return text.meta.autosaveSaved;
+    }
+
+    if (autosaveState === 'failed' && autosaveError !== null) {
+      return autosaveError;
+    }
+
+    return text.meta.autosaveIdle;
+  }, [autosaveDisabled, autosaveError, autosaveState, text.meta]);
   const lastSavedLabel = useMemo(() => {
     if (savedArticle === null) {
       return text.meta.unsaved;
@@ -293,14 +352,20 @@ export default function ArticleEditorWorkspace({
     setLoadAttempt((currentValue) => currentValue + 1);
   }, []);
 
-  const onSaveDraft = useCallback(async () => {
+  const performSave = useCallback(async (origin: 'manual' | 'autosave') => {
     if (token === null) {
       return;
     }
 
-    setActiveMutation('save');
-    setFeedbackError(null);
-    setFeedbackSuccess(null);
+    setActiveMutation(origin === 'autosave' ? 'autosave' : 'save');
+
+    if (origin === 'manual') {
+      setFeedbackError(null);
+      setFeedbackSuccess(null);
+    } else {
+      setAutosaveError(null);
+      setAutosaveState('saving');
+    }
 
     try {
       const isCreatingDraft = savedArticle === null;
@@ -325,20 +390,38 @@ export default function ArticleEditorWorkspace({
             });
 
       applyLoadedArticle(response);
-      setFeedbackSuccess(text.notices.saveSucceeded);
+
+      if (origin === 'manual') {
+        setFeedbackSuccess(text.notices.saveSucceeded);
+      } else {
+        setAutosaveState('saved');
+        setAutosaveError(null);
+      }
 
       if (isCreatingDraft) {
         router.replace(buildLocalizedArticleEditorPath(locale, response.id));
       }
     } catch (caughtError: unknown) {
-      setFeedbackError(
-        resolveMutationErrorMessage(
-          caughtError,
-          text,
-          text.notices.saveFailed,
-          text.notices.saveFailedNetwork,
-        ),
-      );
+      if (origin === 'manual') {
+        setFeedbackError(
+          resolveMutationErrorMessage(
+            caughtError,
+            text,
+            text.notices.saveFailed,
+            text.notices.saveFailedNetwork,
+          ),
+        );
+      } else {
+        setAutosaveError(
+          resolveMutationErrorMessage(
+            caughtError,
+            text,
+            text.notices.autosaveFailed,
+            text.notices.autosaveFailedNetwork,
+          ),
+        );
+        setAutosaveState('failed');
+      }
     } finally {
       setActiveMutation(null);
     }
@@ -354,6 +437,55 @@ export default function ArticleEditorWorkspace({
     title,
     token,
     visibility,
+  ]);
+
+  const onSaveDraft = useCallback(async () => {
+    await performSave('manual');
+  }, [performSave]);
+
+  useEffect(() => {
+    if (!hasValidSession || token === null || isLoadingArticle || loadError !== null) {
+      return;
+    }
+
+    if (autosaveDisabled) {
+      setAutosaveState('disabled');
+      setAutosaveError(null);
+      return;
+    }
+
+    if (!hasUnsavedChanges) {
+      setAutosaveError(null);
+      setAutosaveState((currentValue) =>
+        currentValue === 'saved' ? currentValue : 'idle',
+      );
+      return;
+    }
+
+    if (activeMutation !== null) {
+      return;
+    }
+
+    setAutosaveState((currentValue) =>
+      currentValue === 'failed' ? currentValue : 'scheduled',
+    );
+
+    const timeoutId = window.setTimeout(() => {
+      void performSave('autosave');
+    }, ARTICLE_EDITOR_AUTOSAVE_DELAY_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    activeMutation,
+    autosaveDisabled,
+    hasUnsavedChanges,
+    hasValidSession,
+    isLoadingArticle,
+    loadError,
+    performSave,
+    token,
   ]);
 
   const onPublishArticle = useCallback(async () => {
@@ -627,7 +759,9 @@ export default function ArticleEditorWorkspace({
                     onClick={() => void onSaveDraft()}
                     disabled={activeMutation !== null || isLoadingArticle}
                   >
-                    {activeMutation === 'save' ? text.actions.savingDraft : text.actions.saveDraft}
+                    {activeMutation === 'save' || activeMutation === 'autosave'
+                      ? text.actions.savingDraft
+                      : text.actions.saveDraft}
                   </Button>
 
                   {savedArticle?.status === 'published' ? (
@@ -684,6 +818,18 @@ export default function ArticleEditorWorkspace({
                   {text.meta.lastSaved}
                 </p>
                 <p className="text-sm text-(--text-muted)">{lastSavedLabel}</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-(--text-muted)">
+                  {text.meta.autosaveStatus}
+                </p>
+                <p
+                  className={
+                    autosaveState === 'failed'
+                      ? 'text-sm text-rose-200'
+                      : 'text-sm text-(--text-muted)'
+                  }
+                >
+                  {autosaveStatusLabel}
+                </p>
                 {savedArticle !== null && savedArticle.publishedAt !== null ? (
                   <>
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-(--text-muted)">

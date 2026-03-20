@@ -40,6 +40,9 @@ export const articleEditorTextPt = {
     saveSucceeded: 'Rascunho salvo com sucesso.',
     saveFailed: 'Não foi possível salvar seu rascunho agora.',
     saveFailedNetwork: 'Não foi possível salvar seu rascunho. Verifique sua conexão e tente de novo.',
+    autosaveFailed: 'Não foi possível salvar seu rascunho automaticamente agora.',
+    autosaveFailedNetwork:
+      'Não foi possível salvar seu rascunho automaticamente. Verifique sua conexão e tente de novo.',
     publishSucceeded: 'Artigo publicado com sucesso.',
     publishFailed: 'Não foi possível publicar este artigo agora.',
     publishFailedNetwork:
@@ -58,6 +61,12 @@ export const articleEditorTextPt = {
     currentSlug: 'Slug atual',
     lastSaved: 'Último salvamento',
     publishedAt: 'Publicado em',
+    autosaveStatus: 'Auto-save',
+    autosaveIdle: 'Sem alterações pendentes',
+    autosavePending: 'Alterações pendentes',
+    autosaveSaving: 'Salvando automaticamente...',
+    autosaveSaved: 'Salvo automaticamente',
+    autosaveDisabledPublished: 'Desativado enquanto o artigo estiver publicado',
     unsaved: 'Ainda não salvo',
     draft: 'Rascunho',
     published: 'Publicado',
