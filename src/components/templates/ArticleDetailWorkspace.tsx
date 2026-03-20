@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import LinkButton from '@/components/atoms/LinkButton';
 import MarkdownContent from '@/components/atoms/MarkdownContent';
 import Panel from '@/components/atoms/Panel';
+import { articleApi } from '@/shared/api/articleApi';
 import { buildLocalizedArticleFeedPath } from '@/shared/articles/articleRouting';
 import type { ArticleFeatureStage } from '@/shared/config/articleFeature';
 import type { ArticleDetail, ArticleStatus } from '@/shared/types/article';
@@ -56,11 +57,35 @@ export default function ArticleDetailWorkspace({
   const hasHeaderToken = !isHydrated || hasStoredSession;
   const showHeaderAccountChrome = isHydrated && hasStoredSession;
   const feedHref = buildLocalizedArticleFeedPath(locale);
+  const recordedViewArticleIdRef = useRef<string | null>(null);
 
   const onLogout = useCallback(() => {
     void logoutSession().catch(() => undefined);
     removeToken({ blockSilentRefresh: true });
   }, [removeToken]);
+
+  useEffect(() => {
+    if (!isAvailable || article === null) {
+      return;
+    }
+
+    if (article.status !== 'published' || article.visibility !== 'public') {
+      return;
+    }
+
+    if (recordedViewArticleIdRef.current === article.id) {
+      return;
+    }
+
+    recordedViewArticleIdRef.current = article.id;
+
+    void articleApi
+      .recordArticleView({
+        articleId: article.id,
+        token,
+      })
+      .catch(() => undefined);
+  }, [article, isAvailable, token]);
 
   if (!isAvailable || article === null) {
     return (

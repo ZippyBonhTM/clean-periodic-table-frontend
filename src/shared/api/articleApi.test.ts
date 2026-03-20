@@ -198,6 +198,33 @@ describe('articleApi', () => {
     );
   });
 
+  it('records article views through the asynchronous engagement endpoint', async () => {
+    process.env.NEXT_PUBLIC_ARTICLE_API_URL = 'http://localhost:4010';
+
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => null,
+    }));
+
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const { createArticleApi } = await import('@/shared/api/articleApi');
+    const api: ArticleApi = createArticleApi();
+
+    await api.recordArticleView({
+      articleId: 'article-123',
+      token: 'token-1',
+    });
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      new URL('http://localhost:4010/api/v1/articles/article-123/view'),
+      expect.objectContaining({
+        method: 'POST',
+        keepalive: true,
+      }),
+    );
+  });
+
   it('uploads article images through the signed upload flow and normalizes the final file url', async () => {
     process.env.NEXT_PUBLIC_ARTICLE_API_URL = 'http://localhost:4010';
 
@@ -289,6 +316,11 @@ describe('articleApi', () => {
       token: 'token-1',
       file: new File(['binary-image'], 'atomic-orbitals.webp', { type: 'image/webp' }),
     });
+    await expect(
+      api.recordArticleView({
+        articleId: 'article-atomic-orbitals',
+      }),
+    ).resolves.toBeUndefined();
     const hashtagFeed = await api.getHashtagFeed({
       hashtag: 'orbitals',
     });
