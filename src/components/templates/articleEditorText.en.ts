@@ -27,6 +27,11 @@ export const articleEditorTextEn = {
   },
   notices: {
     signInRequired: 'Sign in to create and save article drafts.',
+    loadingArticle: 'Loading your article draft...',
+    loadFailed: 'We could not load this article right now.',
+    loadFailedNetwork: 'We could not load this article. Check your connection and try again.',
+    loadForbidden: 'You do not have access to this article.',
+    loadNotFound: 'We could not find this article draft.',
     unavailable: 'The article editor is not available right now.',
     saveSucceeded: 'Draft saved successfully.',
     saveFailed: 'We could not save your draft right now.',
@@ -43,4 +48,3 @@ export const articleEditorTextEn = {
     archived: 'Archived',
   },
 } as const;
-

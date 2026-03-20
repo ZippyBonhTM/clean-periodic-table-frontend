@@ -27,6 +27,11 @@ export const articleEditorTextPt = {
   },
   notices: {
     signInRequired: 'Entre para criar e salvar rascunhos de artigos.',
+    loadingArticle: 'Carregando seu rascunho de artigo...',
+    loadFailed: 'Não foi possível carregar este artigo agora.',
+    loadFailedNetwork: 'Não foi possível carregar este artigo. Verifique sua conexão e tente de novo.',
+    loadForbidden: 'Você não tem acesso a este artigo.',
+    loadNotFound: 'Não foi possível encontrar este rascunho de artigo.',
     unavailable: 'O editor de artigos não está disponível agora.',
     saveSucceeded: 'Rascunho salvo com sucesso.',
     saveFailed: 'Não foi possível salvar seu rascunho agora.',
@@ -43,4 +48,3 @@ export const articleEditorTextPt = {
     archived: 'Arquivado',
   },
 } as const;
-

@@ -1,7 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useCallback, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import Button from '@/components/atoms/Button';
 import LinkButton from '@/components/atoms/LinkButton';
@@ -20,7 +21,10 @@ import {
   buildArticleSlugPreview,
   parseArticleHashtags,
 } from '@/shared/articles/articleEditorUtils';
-import { buildLocalizedArticlePrivateListPath } from '@/shared/articles/articleRouting';
+import {
+  buildLocalizedArticleEditorPath,
+  buildLocalizedArticlePrivateListPath,
+} from '@/shared/articles/articleRouting';
 import type { ArticleFeatureStage } from '@/shared/config/articleFeature';
 import useAuthSession from '@/shared/hooks/useAuthSession';
 import useAuthToken from '@/shared/hooks/useAuthToken';
@@ -32,6 +36,7 @@ const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'))
 type ArticleEditorWorkspaceProps = {
   locale: AppLocale;
   featureStage: ArticleFeatureStage;
+  articleId?: string;
 };
 
 function resolveSaveErrorMessage(
@@ -57,6 +62,37 @@ function resolveSaveErrorMessage(
   return text.notices.saveFailed;
 }
 
+function resolveLoadErrorMessage(
+  error: unknown,
+  text: ReturnType<typeof getArticleEditorText>,
+): string {
+  if (error instanceof ArticleApiConfigurationError) {
+    return text.notices.unavailable;
+  }
+
+  if (error instanceof ApiError && error.statusCode === 0) {
+    return text.notices.loadFailedNetwork;
+  }
+
+  if (error instanceof ApiError && error.statusCode === 404) {
+    return text.notices.loadNotFound;
+  }
+
+  if (error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403)) {
+    return text.notices.loadForbidden;
+  }
+
+  if (error instanceof ApiError && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  return text.notices.loadFailed;
+}
+
 function resolveStatusLabel(
   status: ArticleStatus,
   text: ReturnType<typeof getArticleEditorText>,
@@ -75,7 +111,9 @@ function resolveStatusLabel(
 export default function ArticleEditorWorkspace({
   locale,
   featureStage,
+  articleId,
 }: ArticleEditorWorkspaceProps) {
+  const router = useRouter();
   const text = getArticleEditorText(locale);
   const authText = useAuthText();
   const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
@@ -93,6 +131,9 @@ export default function ArticleEditorWorkspace({
   const [hashtagsInput, setHashtagsInput] = useState('');
   const [visibility, setVisibility] = useState<ArticleVisibility>('private');
   const [savedArticle, setSavedArticle] = useState<ArticleDetail | null>(null);
+  const [isLoadingArticle, setIsLoadingArticle] = useState(articleId !== undefined);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
@@ -123,6 +164,73 @@ export default function ArticleEditorWorkspace({
     [closeAuthModal, persistToken],
   );
 
+  const applyLoadedArticle = useCallback((article: ArticleDetail) => {
+    setSavedArticle(article);
+    setTitle(article.title);
+    setExcerpt(article.excerpt);
+    setMarkdownSource(article.markdownSource);
+    setVisibility(article.visibility);
+    setHashtagsInput(article.hashtags.map((hashtag) => `#${hashtag.name}`).join(', '));
+  }, []);
+
+  useEffect(() => {
+    if (articleId === undefined) {
+      setIsLoadingArticle(false);
+      setLoadError(null);
+      return;
+    }
+
+    if (!hasValidSession || token === null) {
+      setIsLoadingArticle(false);
+      return;
+    }
+
+    let isCancelled = false;
+
+    setIsLoadingArticle(true);
+    setLoadError(null);
+    setSaveError(null);
+    setSaveSuccess(null);
+    setSavedArticle(null);
+    setTitle('');
+    setExcerpt('');
+    setMarkdownSource('');
+    setHashtagsInput('');
+    setVisibility('private');
+
+    void articleApi
+      .getMyArticleById({
+        articleId,
+        token,
+      })
+      .then((response) => {
+        if (isCancelled) {
+          return;
+        }
+
+        applyLoadedArticle(response);
+      })
+      .catch((caughtError: unknown) => {
+        if (isCancelled) {
+          return;
+        }
+
+        setSavedArticle(null);
+        setLoadError(resolveLoadErrorMessage(caughtError, text));
+      })
+      .finally(() => {
+        if (isCancelled) {
+          return;
+        }
+
+        setIsLoadingArticle(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [applyLoadedArticle, articleId, hasValidSession, loadAttempt, text, token]);
+
   const hashtagList = useMemo(() => parseArticleHashtags(hashtagsInput), [hashtagsInput]);
   const slugPreview = useMemo(() => buildArticleSlugPreview(title), [title]);
   const renderedPreview = markdownSource.trim().length > 0 ? markdownSource : null;
@@ -137,6 +245,10 @@ export default function ArticleEditorWorkspace({
     }).format(new Date(savedArticle.updatedAt));
   }, [locale, savedArticle, text.meta.unsaved]);
 
+  const onRetryLoad = useCallback(() => {
+    setLoadAttempt((currentValue) => currentValue + 1);
+  }, []);
+
   const onSaveDraft = useCallback(async () => {
     if (token === null) {
       return;
@@ -147,6 +259,7 @@ export default function ArticleEditorWorkspace({
     setSaveSuccess(null);
 
     try {
+      const isCreatingDraft = savedArticle === null;
       const response =
         savedArticle === null
           ? await articleApi.createDraft({
@@ -167,19 +280,30 @@ export default function ArticleEditorWorkspace({
               hashtags: hashtagList,
             });
 
-      setSavedArticle(response);
-      setTitle(response.title);
-      setExcerpt(response.excerpt);
-      setMarkdownSource(response.markdownSource);
-      setVisibility(response.visibility);
-      setHashtagsInput(response.hashtags.map((hashtag) => `#${hashtag.name}`).join(', '));
+      applyLoadedArticle(response);
       setSaveSuccess(text.notices.saveSucceeded);
+
+      if (isCreatingDraft) {
+        router.replace(buildLocalizedArticleEditorPath(locale, response.id));
+      }
     } catch (caughtError: unknown) {
       setSaveError(resolveSaveErrorMessage(caughtError, text));
     } finally {
       setIsSaving(false);
     }
-  }, [excerpt, hashtagList, markdownSource, savedArticle, text, title, token, visibility]);
+  }, [
+    applyLoadedArticle,
+    excerpt,
+    hashtagList,
+    locale,
+    markdownSource,
+    router,
+    savedArticle,
+    text,
+    title,
+    token,
+    visibility,
+  ]);
 
   if (!isHydrated) {
     return (
@@ -256,6 +380,15 @@ export default function ArticleEditorWorkspace({
             message={text.notices.signInRequired}
             actionLabel={authText.common.openLogin}
             onAction={() => openAuthModal('login')}
+          />
+        ) : articleId !== undefined && isLoadingArticle && savedArticle === null ? (
+          <ElementsState tone="info" message={text.notices.loadingArticle} showProgress />
+        ) : articleId !== undefined && loadError !== null && savedArticle === null ? (
+          <ElementsState
+            tone="error"
+            message={loadError}
+            actionLabel={authText.common.tryAgain}
+            onAction={onRetryLoad}
           />
         ) : (
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)]">
@@ -371,7 +504,7 @@ export default function ArticleEditorWorkspace({
                 ) : null}
 
                 <div className="flex flex-wrap gap-3">
-                  <Button onClick={() => void onSaveDraft()} disabled={isSaving}>
+                  <Button onClick={() => void onSaveDraft()} disabled={isSaving || isLoadingArticle}>
                     {isSaving ? text.actions.savingDraft : text.actions.saveDraft}
                   </Button>
                 </div>
@@ -452,4 +585,3 @@ export default function ArticleEditorWorkspace({
     </AppShell>
   );
 }
-

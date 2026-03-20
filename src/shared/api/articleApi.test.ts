@@ -51,7 +51,7 @@ describe('articleApi', () => {
     const fetchSpy = vi.fn(async (input: URL | RequestInfo) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
 
-      if (url.includes('/by-slug/')) {
+      if (url.includes('/by-slug/') || url.endsWith('/api/v1/articles/article-123')) {
         return {
           ok: true,
           json: async () => ({
@@ -89,6 +89,10 @@ describe('articleApi', () => {
     const api: ArticleApi = createArticleApi();
 
     await api.getArticleBySlug({ slug: 'atomic-orbitals' });
+    await api.getMyArticleById({
+      articleId: 'article-123',
+      token: 'token-1',
+    });
     await api.updateArticle({
       articleId: 'article-123',
       token: 'token-1',
@@ -105,18 +109,28 @@ describe('articleApi', () => {
       new URL('http://localhost:4010/api/v1/articles/article-123'),
       expect.any(Object),
     );
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      3,
+      new URL('http://localhost:4010/api/v1/articles/article-123'),
+      expect.any(Object),
+    );
   });
 
   it('exposes a deterministic mock adapter under the same contract', async () => {
     const api: ArticleApi = createMockArticleApi();
 
     const feed = await api.getGlobalFeed();
+    const ownDetail = await api.getMyArticleById({
+      articleId: 'article-stoichiometry-draft',
+      token: 'token-1',
+    });
     const detail = await api.getArticleBySlug({
       slug: 'atomic-orbitals-for-curious-beginners',
     });
 
     expect(feed.items).toHaveLength(1);
     expect(feed.items[0]?.status).toBe('published');
+    expect(ownDetail.id).toBe('article-stoichiometry-draft');
     expect(detail.slug).toBe('atomic-orbitals-for-curious-beginners');
     expect(detail.markdownSource).toContain('Atomic Orbitals');
   });
