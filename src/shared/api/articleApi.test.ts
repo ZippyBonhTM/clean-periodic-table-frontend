@@ -139,6 +139,65 @@ describe('articleApi', () => {
     );
   });
 
+  it('uses the expected public endpoints for search, hashtag feeds, and hashtag suggestions', async () => {
+    process.env.NEXT_PUBLIC_ARTICLE_API_URL = 'http://localhost:4010';
+
+    const fetchSpy = vi.fn(async (input: URL | RequestInfo) => {
+      const url =
+        typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+
+      if (url.includes('/api/v1/hashtags')) {
+        return {
+          ok: true,
+          json: async () => [
+            {
+              id: 'tag-1',
+              name: 'orbitals',
+            },
+          ],
+        };
+      }
+
+      return {
+        ok: true,
+        json: async () => sampleFeedResponse,
+      };
+    });
+
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const { createArticleApi } = await import('@/shared/api/articleApi');
+    const api: ArticleApi = createArticleApi();
+
+    await api.searchArticles({
+      query: 'atomic orbitals',
+    });
+    await api.getHashtagFeed({
+      hashtag: 'orbitals',
+      cursor: 'cursor-1',
+      limit: 12,
+    });
+    await api.getHashtagSuggestions({
+      query: 'or',
+    });
+
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      1,
+      new URL('http://localhost:4010/api/v1/search?q=atomic+orbitals'),
+      expect.any(Object),
+    );
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      2,
+      new URL('http://localhost:4010/api/v1/feed/hashtag/orbitals?cursor=cursor-1&limit=12'),
+      expect.any(Object),
+    );
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      3,
+      new URL('http://localhost:4010/api/v1/hashtags?q=or'),
+      expect.any(Object),
+    );
+  });
+
   it('uploads article images through the signed upload flow and normalizes the final file url', async () => {
     process.env.NEXT_PUBLIC_ARTICLE_API_URL = 'http://localhost:4010';
 
@@ -230,6 +289,12 @@ describe('articleApi', () => {
       token: 'token-1',
       file: new File(['binary-image'], 'atomic-orbitals.webp', { type: 'image/webp' }),
     });
+    const hashtagFeed = await api.getHashtagFeed({
+      hashtag: 'orbitals',
+    });
+    const hashtagSuggestions = await api.getHashtagSuggestions({
+      query: 'or',
+    });
     const detail = await api.getArticleBySlug({
       slug: 'atomic-orbitals-for-curious-beginners',
     });
@@ -244,6 +309,14 @@ describe('articleApi', () => {
     expect(uploadedImage.fileUrl).toBe(
       'https://cdn.example.com/articles/mock/atomic-orbitals.webp',
     );
+    expect(hashtagFeed.items).toHaveLength(1);
+    expect(hashtagFeed.items[0]?.slug).toBe('atomic-orbitals-for-curious-beginners');
+    expect(hashtagSuggestions).toEqual([
+      {
+        id: 'tag-orbitals',
+        name: 'orbitals',
+      },
+    ]);
     expect(detail.slug).toBe('atomic-orbitals-for-curious-beginners');
     expect(detail.markdownSource).toContain('Atomic Orbitals');
   });

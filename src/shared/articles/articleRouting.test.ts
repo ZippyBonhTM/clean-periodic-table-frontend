@@ -7,6 +7,7 @@ import {
   buildLocalizedArticleDetailPath,
   buildLocalizedArticleEditorCreatePath,
   buildLocalizedArticleEditorPath,
+  buildLocalizedArticleFeedBrowsePath,
   buildLocalizedArticleFeedPath,
   buildLocalizedArticlePrivateListPath,
 } from '@/shared/articles/articleRouting';
@@ -42,5 +43,19 @@ describe('articleRouting', () => {
     expect(buildLocalizedArticleDetailPath('pt-BR', '/balance-and-redox/')).toBe(
       '/pt/articles/balance-and-redox',
     );
+  });
+
+  it('builds the localized article feed path with search and hashtag filters', () => {
+    expect(
+      buildLocalizedArticleFeedBrowsePath('en-US', {
+        query: 'atomic orbitals',
+      }),
+    ).toBe('/en/articles?q=atomic+orbitals');
+    expect(
+      buildLocalizedArticleFeedBrowsePath('pt-BR', {
+        hashtag: '#Química Orgânica',
+      }),
+    ).toBe('/pt/articles?tag=quimica-organica');
+    expect(buildLocalizedArticleFeedBrowsePath('en-US')).toBe('/en/articles');
   });
 });

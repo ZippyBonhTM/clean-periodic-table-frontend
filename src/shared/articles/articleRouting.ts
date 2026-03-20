@@ -1,5 +1,6 @@
 import { APP_LOCALE_SEGMENT_BY_LOCALE } from '@/shared/i18n/appLocaleRouting';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
+import { buildArticleFeedBrowseSearchParams } from '@/shared/articles/articleFeedFilters';
 
 const ARTICLE_FEED_PATHNAME = '/articles';
 const ARTICLE_PRIVATE_LIST_PATHNAME = '/me/articles';
@@ -7,6 +8,20 @@ const ARTICLE_EDITOR_CREATE_PATHNAME = '/me/articles/new';
 
 function buildLocalizedArticleFeedPath(locale: AppLocale): string {
   return `/${APP_LOCALE_SEGMENT_BY_LOCALE[locale]}${ARTICLE_FEED_PATHNAME}`;
+}
+
+function buildLocalizedArticleFeedBrowsePath(
+  locale: AppLocale,
+  input: {
+    query?: string | null;
+    hashtag?: string | null;
+  } = {},
+): string {
+  const basePath = buildLocalizedArticleFeedPath(locale);
+  const searchParams = buildArticleFeedBrowseSearchParams(input);
+  const search = searchParams.toString();
+
+  return search.length > 0 ? `${basePath}?${search}` : basePath;
 }
 
 function buildLocalizedArticlePrivateListPath(locale: AppLocale): string {
@@ -34,6 +49,7 @@ export {
   buildLocalizedArticleDetailPath,
   buildLocalizedArticleEditorCreatePath,
   buildLocalizedArticleEditorPath,
+  buildLocalizedArticleFeedBrowsePath,
   buildLocalizedArticleFeedPath,
   buildLocalizedArticlePrivateListPath,
 };

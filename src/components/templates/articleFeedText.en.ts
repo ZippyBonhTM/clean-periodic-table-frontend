@@ -4,17 +4,34 @@ export const articleFeedTextEn = {
   description:
     'A read-only article feed for chemistry notes, explainers, and experiments, prepared to grow into the full Article System.',
   internalBadge: 'Internal Preview',
+  filters: {
+    viewingAll: 'Showing all public articles',
+    searchingFor: 'Search',
+    hashtag: 'Hashtag',
+  },
   stats: {
     loadedCountLabel: 'articles loaded',
     availabilityAvailable: 'Public feed available',
     availabilityUnavailable: 'Feed waiting for backend connection',
   },
+  controls: {
+    searchLabel: 'Search articles',
+    searchPlaceholder: 'Search by title, excerpt, markdown, or hashtag',
+    searchSubmit: 'Search',
+    clearFilters: 'Clear filters',
+    suggestionsLabel: 'Suggested hashtags',
+  },
   states: {
     unavailable: 'The public article feed is not available yet on this environment.',
     empty: 'No public articles have been published yet.',
+    searchEmpty: 'No public articles matched this search.',
+    hashtagEmpty: 'No public articles were found for this hashtag.',
     loadMore: 'Load more',
     loadingMore: 'Loading more articles...',
     loadMoreFailed: 'Could not load more articles right now.',
+    loadingSuggestions: 'Loading hashtag suggestions...',
+    noSuggestions: 'No hashtag suggestions for this term yet.',
+    suggestionsUnavailable: 'Hashtag suggestions are unavailable right now.',
     retry: 'Try again',
   },
   cards: {
@@ -26,6 +43,7 @@ export const articleFeedTextEn = {
     bylineFallback: 'Unknown author',
     hashtagFallback: 'No hashtags',
     scoreLabel: 'Score',
+    browseHashtag: 'Browse hashtag',
     openArticle: 'Open article',
   },
 } as const;

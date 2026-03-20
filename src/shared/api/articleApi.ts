@@ -5,6 +5,8 @@ import type {
   ArticleApi,
   ArticleCursorInput,
   ArticleDetailInput,
+  ArticleHashtagFeedInput,
+  ArticleHashtagSuggestionsInput,
   ArticleImageUploadInput,
   ArticleImageUploadResult,
   ArticleOwnedDetailInput,
@@ -14,7 +16,13 @@ import type {
   CreateArticleDraftInput,
   UpdateArticleInput,
 } from './articleApi.types';
-import type { ArticleCursorPage, ArticleDetail, ArticleFeedItem, ArticleSummary } from '@/shared/types/article';
+import type {
+  ArticleCursorPage,
+  ArticleDetail,
+  ArticleFeedItem,
+  ArticleHashtag,
+  ArticleSummary,
+} from '@/shared/types/article';
 
 class ArticleApiConfigurationError extends Error {
   readonly code = 'ARTICLE_API_NOT_CONFIGURED';
@@ -83,6 +91,17 @@ function buildSearchQuery(input: ArticleSearchInput): string {
   }
 
   return `?${searchParams.toString()}`;
+}
+
+function buildHashtagSuggestionsQuery(input: ArticleHashtagSuggestionsInput): string {
+  const searchParams = new URLSearchParams();
+  searchParams.set('q', input.query);
+  return `?${searchParams.toString()}`;
+}
+
+function buildHashtagFeedPath(input: ArticleHashtagFeedInput): string {
+  const encodedHashtag = encodeURIComponent(input.hashtag);
+  return `/api/v1/feed/hashtag/${encodedHashtag}${buildCursorQuery(input)}`;
 }
 
 function resolveArticleUploadFileUrl(
@@ -228,6 +247,28 @@ function createArticleApi(): ArticleApi {
       );
     },
 
+    async getHashtagFeed(input) {
+      return await requestJson<ArticleCursorPage<ArticleFeedItem>>(
+        resolveArticleApiBaseUrl(),
+        buildHashtagFeedPath(input),
+        {
+          method: 'GET',
+          signal: input.signal,
+        },
+      );
+    },
+
+    async getHashtagSuggestions(input) {
+      return await requestJson<ArticleHashtag[]>(
+        resolveArticleApiBaseUrl(),
+        `/api/v1/hashtags${buildHashtagSuggestionsQuery(input)}`,
+        {
+          method: 'GET',
+          signal: input.signal,
+        },
+      );
+    },
+
     async listMyArticles(input) {
       return await requestJson<ArticleCursorPage<ArticleSummary>>(
         resolveArticleApiBaseUrl(),
@@ -351,6 +392,8 @@ export { ArticleApiConfigurationError, articleApi, createArticleApi };
 export type {
   ArticleApi,
   ArticleDetailInput,
+  ArticleHashtagFeedInput,
+  ArticleHashtagSuggestionsInput,
   ArticleImageUploadInput,
   ArticleImageUploadResult,
   ArticleOwnedDetailInput,

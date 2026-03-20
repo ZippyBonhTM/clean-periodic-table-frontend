@@ -4,17 +4,34 @@ export const articleFeedTextPt = {
   description:
     'Um feed somente leitura para notas, explicações e experimentos de química, preparado para evoluir até o Article System completo.',
   internalBadge: 'Preview Interno',
+  filters: {
+    viewingAll: 'Exibindo todos os artigos públicos',
+    searchingFor: 'Busca',
+    hashtag: 'Hashtag',
+  },
   stats: {
     loadedCountLabel: 'artigos carregados',
     availabilityAvailable: 'Feed público disponível',
     availabilityUnavailable: 'Feed aguardando conexão com o backend',
   },
+  controls: {
+    searchLabel: 'Buscar artigos',
+    searchPlaceholder: 'Busque por título, resumo, markdown ou hashtag',
+    searchSubmit: 'Buscar',
+    clearFilters: 'Limpar filtros',
+    suggestionsLabel: 'Hashtags sugeridas',
+  },
   states: {
     unavailable: 'O feed público de artigos ainda não está disponível neste ambiente.',
     empty: 'Nenhum artigo público foi publicado ainda.',
+    searchEmpty: 'Nenhum artigo público correspondeu a esta busca.',
+    hashtagEmpty: 'Nenhum artigo público foi encontrado para esta hashtag.',
     loadMore: 'Carregar mais',
     loadingMore: 'Carregando mais artigos...',
     loadMoreFailed: 'Não foi possível carregar mais artigos agora.',
+    loadingSuggestions: 'Carregando sugestões de hashtag...',
+    noSuggestions: 'Ainda não há sugestões de hashtag para este termo.',
+    suggestionsUnavailable: 'As sugestões de hashtag estão indisponíveis agora.',
     retry: 'Tentar novamente',
   },
   cards: {
@@ -26,6 +43,7 @@ export const articleFeedTextPt = {
     bylineFallback: 'Autor desconhecido',
     hashtagFallback: 'Sem hashtags',
     scoreLabel: 'Score',
+    browseHashtag: 'Explorar hashtag',
     openArticle: 'Abrir artigo',
   },
 } as const;

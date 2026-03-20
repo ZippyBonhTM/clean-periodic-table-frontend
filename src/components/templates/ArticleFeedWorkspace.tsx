@@ -1,15 +1,26 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 
 import Button from '@/components/atoms/Button';
+import Input from '@/components/atoms/Input';
 import LinkButton from '@/components/atoms/LinkButton';
 import Panel from '@/components/atoms/Panel';
 import { articleApi } from '@/shared/api/articleApi';
-import { buildLocalizedArticleDetailPath } from '@/shared/articles/articleRouting';
+import {
+  buildLocalizedArticleDetailPath,
+  buildLocalizedArticleFeedBrowsePath,
+} from '@/shared/articles/articleRouting';
+import type { ArticleFeedBrowseMode } from '@/shared/articles/articleFeedFilters';
 import type { ArticleFeatureStage } from '@/shared/config/articleFeature';
-import type { ArticleCursorPage, ArticleFeedItem, ArticleStatus } from '@/shared/types/article';
+import type {
+  ArticleCursorPage,
+  ArticleFeedItem,
+  ArticleHashtag,
+  ArticleStatus,
+} from '@/shared/types/article';
 import { logoutSession } from '@/shared/api/authApi';
 import useAuthSession from '@/shared/hooks/useAuthSession';
 import useAuthToken from '@/shared/hooks/useAuthToken';
@@ -22,6 +33,9 @@ type ArticleFeedWorkspaceProps = {
   locale: AppLocale;
   featureStage: ArticleFeatureStage;
   initialFeed: ArticleCursorPage<ArticleFeedItem>;
+  initialBrowseMode: ArticleFeedBrowseMode;
+  initialQuery: string | null;
+  initialHashtag: string | null;
   isFeedAvailable: boolean;
   initialErrorMessage: string | null;
 };
@@ -40,6 +54,34 @@ function resolveLoadMoreErrorMessage(error: unknown, fallbackMessage: string): s
   }
 
   return fallbackMessage;
+}
+
+async function loadBrowseFeedPage(input: {
+  mode: ArticleFeedBrowseMode;
+  cursor: string;
+  query: string | null;
+  hashtag: string | null;
+}): Promise<ArticleCursorPage<ArticleFeedItem>> {
+  if (input.mode === 'search' && input.query !== null) {
+    return await articleApi.searchArticles({
+      query: input.query,
+      cursor: input.cursor,
+      limit: 12,
+    });
+  }
+
+  if (input.mode === 'hashtag' && input.hashtag !== null) {
+    return await articleApi.getHashtagFeed({
+      hashtag: input.hashtag,
+      cursor: input.cursor,
+      limit: 12,
+    });
+  }
+
+  return await articleApi.getGlobalFeed({
+    cursor: input.cursor,
+    limit: 12,
+  });
 }
 
 function resolveStatusLabel(status: ArticleStatus, text: ReturnType<typeof getArticleFeedText>): string {
@@ -73,8 +115,6 @@ function ArticleFeedCard({
     item.author.displayName?.trim() ||
     item.author.username?.trim() ||
     text.cards.bylineFallback;
-  const hashtagLabels =
-    item.hashtags.length > 0 ? item.hashtags.map((hashtag) => `#${hashtag.name}`) : [text.cards.hashtagFallback];
   const articleHref = buildLocalizedArticleDetailPath(locale, item.slug);
 
   return (
@@ -102,16 +142,28 @@ function ArticleFeedCard({
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {hashtagLabels.map((label) => (
-            <span
-              key={`${item.id}-${label}`}
-              className="inline-flex rounded-full border border-(--border-subtle) bg-[var(--surface-2)] px-3 py-1 text-xs font-semibold text-(--text-muted)"
-            >
-              {label}
+        {item.hashtags.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {item.hashtags.map((hashtag) => (
+              <Link
+                key={`${item.id}-${hashtag.id}`}
+                href={buildLocalizedArticleFeedBrowsePath(locale, {
+                  hashtag: hashtag.name,
+                })}
+                title={`${text.cards.browseHashtag}: #${hashtag.name}`}
+                className="inline-flex rounded-full border border-(--border-subtle) bg-[var(--surface-2)] px-3 py-1 text-xs font-semibold text-(--text-muted) transition hover:border-(--accent) hover:text-(--text-strong)"
+              >
+                #{hashtag.name}
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex rounded-full border border-(--border-subtle) bg-[var(--surface-2)] px-3 py-1 text-xs font-semibold text-(--text-muted)">
+              {text.cards.hashtagFallback}
             </span>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="mt-6 flex items-center justify-between gap-4 border-t border-(--border-subtle) pt-4">
@@ -141,9 +193,13 @@ export default function ArticleFeedWorkspace({
   locale,
   featureStage,
   initialFeed,
+  initialBrowseMode,
+  initialQuery,
+  initialHashtag,
   isFeedAvailable,
   initialErrorMessage,
 }: ArticleFeedWorkspaceProps) {
+  const router = useRouter();
   const text = getArticleFeedText(locale);
   const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
   const authSession = useAuthSession({
@@ -158,9 +214,24 @@ export default function ArticleFeedWorkspace({
   const showHeaderAccountChrome = isHydrated && hasStoredSession;
   const [items, setItems] = useState(initialFeed.items);
   const [nextCursor, setNextCursor] = useState(initialFeed.nextCursor);
+  const [searchInput, setSearchInput] = useState(initialQuery ?? '');
+  const [hashtagSuggestions, setHashtagSuggestions] = useState<ArticleHashtag[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setItems(initialFeed.items);
+    setNextCursor(initialFeed.nextCursor);
+    setSearchInput(initialQuery ?? '');
+    setHashtagSuggestions([]);
+    setSuggestionsError(null);
+    setIsLoadingSuggestions(false);
+    setIsLoadingMore(false);
+    setLoadMoreError(null);
+  }, [initialBrowseMode, initialFeed, initialHashtag, initialQuery]);
 
   const onLogout = useCallback(() => {
     void logoutSession().catch(() => undefined);
@@ -176,9 +247,11 @@ export default function ArticleFeedWorkspace({
     setLoadMoreError(null);
 
     try {
-      const nextFeed = await articleApi.getGlobalFeed({
+      const nextFeed = await loadBrowseFeedPage({
+        mode: initialBrowseMode,
         cursor: nextCursor,
-        limit: 12,
+        query: initialQuery,
+        hashtag: initialHashtag,
       });
 
       setItems((currentItems) => mergeFeedItems(currentItems, nextFeed.items));
@@ -188,7 +261,87 @@ export default function ArticleFeedWorkspace({
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, nextCursor, text.states.loadMoreFailed]);
+  }, [
+    initialBrowseMode,
+    initialHashtag,
+    initialQuery,
+    isLoadingMore,
+    nextCursor,
+    text.states.loadMoreFailed,
+  ]);
+
+  useEffect(() => {
+    const normalizedQuery = searchInput.trim();
+
+    if (normalizedQuery.length < 2) {
+      setHashtagSuggestions([]);
+      setSuggestionsError(null);
+      setIsLoadingSuggestions(false);
+      return;
+    }
+
+    const abortController = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      setIsLoadingSuggestions(true);
+      setSuggestionsError(null);
+
+      void articleApi
+        .getHashtagSuggestions({
+          query: normalizedQuery,
+          signal: abortController.signal,
+        })
+        .then((response) => {
+          setHashtagSuggestions(response);
+        })
+        .catch((caughtError: unknown) => {
+          if (abortController.signal.aborted) {
+            return;
+          }
+
+          setHashtagSuggestions([]);
+          setSuggestionsError(resolveLoadMoreErrorMessage(caughtError, text.states.suggestionsUnavailable));
+        })
+        .finally(() => {
+          if (abortController.signal.aborted) {
+            return;
+          }
+
+          setIsLoadingSuggestions(false);
+        });
+    }, 220);
+
+    return () => {
+      abortController.abort();
+      window.clearTimeout(timeoutId);
+    };
+  }, [searchInput, text.states.suggestionsUnavailable]);
+
+  const onSubmitSearch = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      router.push(
+        buildLocalizedArticleFeedBrowsePath(locale, {
+          query: searchInput.trim(),
+        }),
+      );
+    },
+    [locale, router, searchInput],
+  );
+
+  const onClearFilters = useCallback(() => {
+    router.push(buildLocalizedArticleFeedBrowsePath(locale));
+  }, [locale, router]);
+
+  const onApplyHashtag = useCallback(
+    (hashtag: string) => {
+      router.push(
+        buildLocalizedArticleFeedBrowsePath(locale, {
+          hashtag,
+        }),
+      );
+    },
+    [locale, router],
+  );
 
   useEffect(() => {
     if (nextCursor === null || loadMoreSentinelRef.current === null) {
@@ -229,6 +382,20 @@ export default function ArticleFeedWorkspace({
     () => `${items.length} ${text.stats.loadedCountLabel}`,
     [items.length, text.stats.loadedCountLabel],
   );
+  const activeFilterLabel =
+    initialBrowseMode === 'search' && initialQuery !== null
+      ? `${text.filters.searchingFor}: "${initialQuery}"`
+      : initialBrowseMode === 'hashtag' && initialHashtag !== null
+        ? `${text.filters.hashtag}: #${initialHashtag}`
+        : text.filters.viewingAll;
+  const emptyStateMessage =
+    initialBrowseMode === 'search'
+      ? text.states.searchEmpty
+      : initialBrowseMode === 'hashtag'
+        ? text.states.hashtagEmpty
+        : text.states.empty;
+  const showSuggestionPanel =
+    searchInput.trim().length >= 2;
 
   return (
     <AppShell
@@ -256,6 +423,7 @@ export default function ArticleFeedWorkspace({
               <p className="text-base leading-8 text-(--text-muted) md:text-lg">
                 {text.description}
               </p>
+              <p className="text-sm font-semibold text-(--text-strong)">{activeFilterLabel}</p>
             </div>
 
             <div className="flex flex-wrap gap-3 lg:max-w-sm lg:justify-end">
@@ -280,9 +448,68 @@ export default function ArticleFeedWorkspace({
           </Panel>
         ) : null}
 
+        <Panel className="space-y-4">
+          <form
+            className="flex flex-col gap-3 md:flex-row md:items-end"
+            onSubmit={onSubmitSearch}
+          >
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <label
+                htmlFor="article-feed-search"
+                className="text-[11px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)"
+              >
+                {text.controls.searchLabel}
+              </label>
+              <Input
+                id="article-feed-search"
+                name="article-feed-search"
+                value={searchInput}
+                onChange={setSearchInput}
+                placeholder={text.controls.searchPlaceholder}
+              />
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button type="submit">{text.controls.searchSubmit}</Button>
+              {(initialBrowseMode !== 'feed' || searchInput.trim().length > 0) ? (
+                <Button variant="ghost" onClick={onClearFilters}>
+                  {text.controls.clearFilters}
+                </Button>
+              ) : null}
+            </div>
+          </form>
+
+          {showSuggestionPanel ? (
+            <div className="space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)">
+                {text.controls.suggestionsLabel}
+              </p>
+              {isLoadingSuggestions ? (
+                <p className="text-sm text-(--text-muted)">{text.states.loadingSuggestions}</p>
+              ) : suggestionsError !== null ? (
+                <p className="text-sm text-rose-200">{suggestionsError}</p>
+              ) : hashtagSuggestions.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {hashtagSuggestions.map((hashtag) => (
+                    <button
+                      key={hashtag.id}
+                      type="button"
+                      onClick={() => onApplyHashtag(hashtag.name)}
+                      className="inline-flex rounded-full border border-(--border-subtle) bg-[var(--surface-2)] px-3 py-1 text-xs font-semibold text-(--text-muted) transition hover:border-(--accent) hover:text-(--text-strong)"
+                    >
+                      #{hashtag.name}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-(--text-muted)">{text.states.noSuggestions}</p>
+              )}
+            </div>
+          ) : null}
+        </Panel>
+
         {hasEmptyPublicFeed ? (
           <Panel className="space-y-3">
-            <p className="text-sm text-(--text-muted)">{text.states.empty}</p>
+            <p className="text-sm text-(--text-muted)">{emptyStateMessage}</p>
           </Panel>
         ) : null}
 
