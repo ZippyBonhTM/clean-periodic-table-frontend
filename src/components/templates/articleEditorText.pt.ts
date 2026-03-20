@@ -1,0 +1,46 @@
+export const articleEditorTextPt = {
+  eyebrow: 'Editor de Artigos',
+  title: 'Escreva e refine um artigo.',
+  description:
+    'Escreva em markdown, ajuste o resumo, escolha a visibilidade e salve um rascunho sem expor isso publicamente ainda.',
+  internalBadge: 'Preview Interno',
+  form: {
+    titleLabel: 'Título',
+    titlePlaceholder: 'Orbitais atômicos sem intimidação',
+    excerptLabel: 'Resumo',
+    excerptPlaceholder: 'Resuma o assunto do artigo em uma ou duas frases.',
+    markdownLabel: 'Markdown',
+    markdownPlaceholder: '# Comece aqui\n\nEscreva seu artigo em Markdown.',
+    visibilityLabel: 'Visibilidade',
+    visibilityPublic: 'Público',
+    visibilityPrivate: 'Privado',
+    hashtagsLabel: 'Hashtags',
+    hashtagsPlaceholder: '#quimica, orbitais, estudo',
+    hashtagsHint: 'Use vírgulas ou espaços. O editor mantém até 10 hashtags normalizadas.',
+    slugPreviewLabel: 'Preview do slug',
+    previewLabel: 'Preview ao vivo',
+  },
+  actions: {
+    saveDraft: 'Salvar rascunho',
+    savingDraft: 'Salvando rascunho...',
+    openWorkspace: 'Abrir meus artigos',
+  },
+  notices: {
+    signInRequired: 'Entre para criar e salvar rascunhos de artigos.',
+    unavailable: 'O editor de artigos não está disponível agora.',
+    saveSucceeded: 'Rascunho salvo com sucesso.',
+    saveFailed: 'Não foi possível salvar seu rascunho agora.',
+    saveFailedNetwork: 'Não foi possível salvar seu rascunho. Verifique sua conexão e tente de novo.',
+    emptyPreview: 'Comece a escrever em Markdown para ver o preview aqui.',
+  },
+  meta: {
+    currentStatus: 'Status atual',
+    currentSlug: 'Slug atual',
+    lastSaved: 'Último salvamento',
+    unsaved: 'Ainda não salvo',
+    draft: 'Rascunho',
+    published: 'Publicado',
+    archived: 'Arquivado',
+  },
+} as const;
+

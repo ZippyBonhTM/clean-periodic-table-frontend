@@ -3,6 +3,7 @@ export const articlePrivateListTextPt = {
   description:
     'Revise seus rascunhos, posts privados e textos publicados sem expor esta rota publicamente.',
   internalBadge: 'Preview Interno',
+  createDraft: 'Novo rascunho',
   stats: {
     loadedCountLabel: 'artigos carregados',
   },
@@ -16,6 +17,7 @@ export const articlePrivateListTextPt = {
     loadingMore: 'Carregando mais artigos...',
     loadMore: 'Carregar mais',
     retry: 'Tentar novamente',
+    createFirstDraft: 'Começar seu primeiro rascunho',
   },
   cards: {
     untitled: 'Artigo sem título',
@@ -30,4 +32,3 @@ export const articlePrivateListTextPt = {
     noPublicPage: 'Somente privado',
   },
 } as const;
-

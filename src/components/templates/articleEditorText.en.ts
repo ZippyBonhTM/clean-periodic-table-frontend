@@ -1,0 +1,46 @@
+export const articleEditorTextEn = {
+  eyebrow: 'Article Editor',
+  title: 'Draft and refine an article.',
+  description:
+    'Write markdown, shape the excerpt, choose visibility, and save a draft without exposing it publicly yet.',
+  internalBadge: 'Internal Preview',
+  form: {
+    titleLabel: 'Title',
+    titlePlaceholder: 'Atomic orbitals without the intimidation',
+    excerptLabel: 'Excerpt',
+    excerptPlaceholder: 'Summarize what the article is about in one or two sentences.',
+    markdownLabel: 'Markdown source',
+    markdownPlaceholder: '# Start here\n\nWrite your article in Markdown.',
+    visibilityLabel: 'Visibility',
+    visibilityPublic: 'Public',
+    visibilityPrivate: 'Private',
+    hashtagsLabel: 'Hashtags',
+    hashtagsPlaceholder: '#chemistry, orbitals, learning',
+    hashtagsHint: 'Use commas or spaces. The editor keeps up to 10 normalized hashtags.',
+    slugPreviewLabel: 'Slug preview',
+    previewLabel: 'Live preview',
+  },
+  actions: {
+    saveDraft: 'Save draft',
+    savingDraft: 'Saving draft...',
+    openWorkspace: 'Open my articles',
+  },
+  notices: {
+    signInRequired: 'Sign in to create and save article drafts.',
+    unavailable: 'The article editor is not available right now.',
+    saveSucceeded: 'Draft saved successfully.',
+    saveFailed: 'We could not save your draft right now.',
+    saveFailedNetwork: 'We could not save your draft. Check your connection and try again.',
+    emptyPreview: 'Start writing in Markdown to see the preview here.',
+  },
+  meta: {
+    currentStatus: 'Current status',
+    currentSlug: 'Current slug',
+    lastSaved: 'Last saved',
+    unsaved: 'Not saved yet',
+    draft: 'Draft',
+    published: 'Published',
+    archived: 'Archived',
+  },
+} as const;
+

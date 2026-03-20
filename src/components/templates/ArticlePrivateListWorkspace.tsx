@@ -16,7 +16,10 @@ import { resolveSessionWorkspaceMessage } from '@/components/templates/workspace
 import { articleApi, ArticleApiConfigurationError } from '@/shared/api/articleApi';
 import { logoutSession } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
-import { buildLocalizedArticleDetailPath } from '@/shared/articles/articleRouting';
+import {
+  buildLocalizedArticleDetailPath,
+  buildLocalizedArticleEditorCreatePath,
+} from '@/shared/articles/articleRouting';
 import type { ArticleFeatureStage } from '@/shared/config/articleFeature';
 import useAuthSession from '@/shared/hooks/useAuthSession';
 import useAuthToken from '@/shared/hooks/useAuthToken';
@@ -197,6 +200,7 @@ export default function ArticlePrivateListWorkspace({
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
   const resolvedSessionMessage = resolveSessionWorkspaceMessage(authSession.message, authText);
+  const createDraftHref = buildLocalizedArticleEditorCreatePath(locale);
 
   const onLogout = useCallback(() => {
     void logoutSession().catch(() => undefined);
@@ -361,6 +365,9 @@ export default function ArticlePrivateListWorkspace({
                   {text.internalBadge}
                 </span>
               ) : null}
+              <LinkButton href={createDraftHref} variant="primary" size="sm" className="rounded-full px-4">
+                {text.createDraft}
+              </LinkButton>
               <span className="inline-flex rounded-full border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-(--text-strong)">
                 {summaryLabel}
               </span>
@@ -396,6 +403,11 @@ export default function ArticlePrivateListWorkspace({
         ) : hasLoaded && items.length === 0 ? (
           <Panel className="space-y-3">
             <p className="text-sm text-(--text-muted)">{text.states.empty}</p>
+            <div>
+              <LinkButton href={createDraftHref} variant="secondary" size="sm" className="rounded-full px-4">
+                {text.states.createFirstDraft}
+              </LinkButton>
+            </div>
           </Panel>
         ) : (
           <>
