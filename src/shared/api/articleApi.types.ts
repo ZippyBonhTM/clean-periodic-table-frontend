@@ -67,6 +67,16 @@ type ArticleUnpublishInput = {
   signal?: AbortSignal;
 };
 
+type ArticleImageUploadInput = {
+  token: string;
+  file: File;
+  signal?: AbortSignal;
+};
+
+type ArticleImageUploadResult = {
+  fileUrl: string;
+};
+
 interface ArticleApi {
   getGlobalFeed(input?: ArticleCursorInput): Promise<ArticleCursorPage<ArticleFeedItem>>;
   getMyArticleById(input: ArticleOwnedDetailInput): Promise<ArticleDetail>;
@@ -77,6 +87,7 @@ interface ArticleApi {
   updateArticle(input: UpdateArticleInput): Promise<ArticleDetail>;
   publishArticle(input: ArticlePublishInput): Promise<ArticleDetail>;
   unpublishArticle(input: ArticleUnpublishInput): Promise<ArticleDetail>;
+  uploadImage(input: ArticleImageUploadInput): Promise<ArticleImageUploadResult>;
 }
 
 export type {
@@ -88,6 +99,8 @@ export type {
   ArticleSearchInput,
   ArticlePublishInput,
   ArticleUnpublishInput,
+  ArticleImageUploadInput,
+  ArticleImageUploadResult,
   CreateArticleDraftInput,
   UpdateArticleInput,
 };

@@ -17,12 +17,17 @@ export const articleEditorTextPt = {
     hashtagsLabel: 'Hashtags',
     hashtagsPlaceholder: '#quimica, orbitais, estudo',
     hashtagsHint: 'Use vírgulas ou espaços. O editor mantém até 10 hashtags normalizadas.',
+    imageUploadLabel: 'Upload de imagem',
+    imageUploadHint:
+      'JPEG, PNG ou WebP até 5MB. O editor envia direto e insere a sintaxe markdown da imagem.',
     slugPreviewLabel: 'Preview do slug',
     previewLabel: 'Preview ao vivo',
   },
   actions: {
     saveDraft: 'Salvar rascunho',
     savingDraft: 'Salvando rascunho...',
+    uploadImage: 'Enviar imagem',
+    uploadingImage: 'Enviando imagem...',
     publish: 'Publicar',
     publishing: 'Publicando...',
     unpublish: 'Despublicar',
@@ -40,6 +45,12 @@ export const articleEditorTextPt = {
     saveSucceeded: 'Rascunho salvo com sucesso.',
     saveFailed: 'Não foi possível salvar seu rascunho agora.',
     saveFailedNetwork: 'Não foi possível salvar seu rascunho. Verifique sua conexão e tente de novo.',
+    uploadSucceeded: 'Imagem enviada e markdown atualizado.',
+    uploadFailed: 'Não foi possível enviar esta imagem agora.',
+    uploadFailedNetwork:
+      'Não foi possível enviar esta imagem. Verifique sua conexão e tente de novo.',
+    uploadInvalidType: 'Somente imagens JPEG, PNG e WebP são permitidas.',
+    uploadTooLarge: 'Esta imagem é grande demais. O limite é 5MB.',
     autosaveFailed: 'Não foi possível salvar seu rascunho automaticamente agora.',
     autosaveFailedNetwork:
       'Não foi possível salvar seu rascunho automaticamente. Verifique sua conexão e tente de novo.',
