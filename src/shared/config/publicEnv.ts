@@ -23,6 +23,24 @@ function normalizeBaseUrl(
   }
 }
 
+function normalizeOptionalBaseUrl(rawValue: string | undefined, envName: string): string | null {
+  const trimmed = rawValue?.trim();
+
+  if (trimmed === undefined || trimmed.length === 0) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    const normalizedPath =
+      parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/+$/, '');
+
+    return `${parsed.origin}${normalizedPath}`;
+  } catch {
+    throw new Error(`Invalid ${envName}: "${trimmed}". Expected an absolute URL.`);
+  }
+}
+
 function normalizeParsedUrl(parsed: URL): string {
   const normalizedPath =
     parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/+$/, '');
@@ -52,6 +70,14 @@ function resolveClientRuntimeBaseUrl(baseUrl: string): string {
   return baseUrl;
 }
 
+function resolveClientRuntimeOptionalBaseUrl(baseUrl: string | null): string | null {
+  if (baseUrl === null) {
+    return null;
+  }
+
+  return resolveClientRuntimeBaseUrl(baseUrl);
+}
+
 const configuredAuthApiUrl = normalizeBaseUrl(
   process.env.NEXT_PUBLIC_AUTH_API_URL,
   'http://localhost:3002',
@@ -64,12 +90,20 @@ const configuredBackendApiUrl = normalizeBaseUrl(
   'NEXT_PUBLIC_BACKEND_API_URL',
 );
 
+const configuredArticleApiUrl = normalizeOptionalBaseUrl(
+  process.env.NEXT_PUBLIC_ARTICLE_API_URL,
+  'NEXT_PUBLIC_ARTICLE_API_URL',
+);
+
 const publicEnv = {
   get authApiUrl() {
     return resolveClientRuntimeBaseUrl(configuredAuthApiUrl);
   },
   get backendApiUrl() {
     return resolveClientRuntimeBaseUrl(configuredBackendApiUrl);
+  },
+  get articleApiUrl() {
+    return resolveClientRuntimeOptionalBaseUrl(configuredArticleApiUrl);
   },
 };
 
