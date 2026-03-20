@@ -39,6 +39,10 @@ export const articleEditorTextEn = {
     publishing: 'Publishing...',
     unpublish: 'Unpublish',
     unpublishing: 'Unpublishing...',
+    deleteArticle: 'Delete article',
+    deletingArticle: 'Deleting article...',
+    confirmDelete: 'Confirm delete',
+    cancelDelete: 'Keep article',
     openWorkspace: 'Open my articles',
   },
   notices: {
@@ -69,6 +73,12 @@ export const articleEditorTextEn = {
     unpublishFailed: 'We could not unpublish this article right now.',
     unpublishFailedNetwork:
       'We could not unpublish this article. Check your connection and try again.',
+    deleteConfirmDraft:
+      'Delete this draft from your workspace. You will need to create it again if you want to continue later.',
+    deleteConfirmPublished:
+      'Delete this article. It will stop appearing in your workspace and it will no longer be publicly available.',
+    deleteFailed: 'We could not delete this article right now.',
+    deleteFailedNetwork: 'We could not delete this article. Check your connection and try again.',
     saveBeforePublish: 'Save the draft once before publishing it.',
     publishNeedsTitle: 'Add a title before publishing.',
     publishNeedsMarkdown: 'Add markdown content before publishing.',

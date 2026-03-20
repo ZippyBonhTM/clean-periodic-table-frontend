@@ -10,6 +10,7 @@ import type {
   ArticleImageUploadInput,
   ArticleImageUploadResult,
   ArticleOwnedDetailInput,
+  ArticleDeleteInput,
   ArticlePublishInput,
   ArticleRecordViewInput,
   ArticleSaveInput,
@@ -341,6 +342,18 @@ function createArticleApi(): ArticleApi {
         `/api/v1/articles/${encodeURIComponent(input.articleId)}/unpublish`,
         {
           method: 'POST',
+          token: input.token,
+          signal: input.signal,
+        },
+      );
+    },
+
+    async deleteArticle(input: ArticleDeleteInput) {
+      await requestJson<null>(
+        resolveArticleApiBaseUrl(),
+        `/api/v1/articles/${encodeURIComponent(input.articleId)}`,
+        {
+          method: 'DELETE',
           token: input.token,
           signal: input.signal,
         },

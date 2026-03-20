@@ -5,6 +5,7 @@ import type {
   ArticleHashtagSuggestionsInput,
   ArticleImageUploadInput,
   ArticleOwnedDetailInput,
+  ArticleDeleteInput,
   ArticlePublishInput,
   ArticleRecordViewInput,
   ArticleSaveInput,
@@ -277,6 +278,11 @@ function createMockArticleApi(): ArticleApi {
         updatedAt: '2026-03-03T09:15:00.000Z',
         publishedAt: null,
       };
+    },
+
+    async deleteArticle(input: ArticleDeleteInput) {
+      void findMockArticleById(input.articleId);
+      return;
     },
 
     async recordArticleView(_input: ArticleRecordViewInput) {

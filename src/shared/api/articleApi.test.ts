@@ -111,6 +111,10 @@ describe('articleApi', () => {
       articleId: 'article-123',
       token: 'token-1',
     });
+    await api.deleteArticle({
+      articleId: 'article-123',
+      token: 'token-1',
+    });
 
     expect(fetchSpy).toHaveBeenNthCalledWith(
       1,
@@ -136,6 +140,13 @@ describe('articleApi', () => {
       5,
       new URL('http://localhost:4010/api/v1/articles/article-123/unpublish'),
       expect.any(Object),
+    );
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      6,
+      new URL('http://localhost:4010/api/v1/articles/article-123'),
+      expect.objectContaining({
+        method: 'DELETE',
+      }),
     );
   });
 
@@ -339,6 +350,12 @@ describe('articleApi', () => {
       articleId: 'article-atomic-orbitals',
       token: 'token-1',
     });
+    await expect(
+      api.deleteArticle({
+        articleId: 'article-stoichiometry-draft',
+        token: 'token-1',
+      }),
+    ).resolves.toBeUndefined();
     const uploadedImage = await api.uploadImage({
       token: 'token-1',
       file: new File(['binary-image'], 'atomic-orbitals.webp', { type: 'image/webp' }),
