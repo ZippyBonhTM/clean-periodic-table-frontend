@@ -51,7 +51,12 @@ describe('articleApi', () => {
     const fetchSpy = vi.fn(async (input: URL | RequestInfo) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
 
-      if (url.includes('/by-slug/') || url.endsWith('/api/v1/articles/article-123')) {
+      if (
+        url.includes('/by-slug/') ||
+        url.endsWith('/api/v1/articles/article-123') ||
+        url.endsWith('/api/v1/articles/article-123/publish') ||
+        url.endsWith('/api/v1/articles/article-123/unpublish')
+      ) {
         return {
           ok: true,
           json: async () => ({
@@ -98,6 +103,14 @@ describe('articleApi', () => {
       token: 'token-1',
       title: 'Updated title',
     });
+    await api.publishArticle({
+      articleId: 'article-123',
+      token: 'token-1',
+    });
+    await api.unpublishArticle({
+      articleId: 'article-123',
+      token: 'token-1',
+    });
 
     expect(fetchSpy).toHaveBeenNthCalledWith(
       1,
@@ -114,6 +127,16 @@ describe('articleApi', () => {
       new URL('http://localhost:4010/api/v1/articles/article-123'),
       expect.any(Object),
     );
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      4,
+      new URL('http://localhost:4010/api/v1/articles/article-123/publish'),
+      expect.any(Object),
+    );
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      5,
+      new URL('http://localhost:4010/api/v1/articles/article-123/unpublish'),
+      expect.any(Object),
+    );
   });
 
   it('exposes a deterministic mock adapter under the same contract', async () => {
@@ -124,6 +147,14 @@ describe('articleApi', () => {
       articleId: 'article-stoichiometry-draft',
       token: 'token-1',
     });
+    const publishedDetail = await api.publishArticle({
+      articleId: 'article-stoichiometry-draft',
+      token: 'token-1',
+    });
+    const unpublishedDetail = await api.unpublishArticle({
+      articleId: 'article-atomic-orbitals',
+      token: 'token-1',
+    });
     const detail = await api.getArticleBySlug({
       slug: 'atomic-orbitals-for-curious-beginners',
     });
@@ -131,6 +162,10 @@ describe('articleApi', () => {
     expect(feed.items).toHaveLength(1);
     expect(feed.items[0]?.status).toBe('published');
     expect(ownDetail.id).toBe('article-stoichiometry-draft');
+    expect(publishedDetail.status).toBe('published');
+    expect(publishedDetail.publishedAt).not.toBeNull();
+    expect(unpublishedDetail.status).toBe('draft');
+    expect(unpublishedDetail.publishedAt).toBeNull();
     expect(detail.slug).toBe('atomic-orbitals-for-curious-beginners');
     expect(detail.markdownSource).toContain('Atomic Orbitals');
   });
