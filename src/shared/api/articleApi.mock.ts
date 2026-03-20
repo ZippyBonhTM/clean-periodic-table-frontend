@@ -7,6 +7,7 @@ import type {
   ArticleOwnedDetailInput,
   ArticlePublishInput,
   ArticleRecordViewInput,
+  ArticleSaveInput,
   ArticleSearchInput,
   ArticleUnpublishInput,
   CreateArticleDraftInput,
@@ -279,6 +280,11 @@ function createMockArticleApi(): ArticleApi {
     },
 
     async recordArticleView(_input: ArticleRecordViewInput) {
+      void _input;
+      return;
+    },
+
+    async saveArticle(_input: ArticleSaveInput) {
       void _input;
       return;
     },

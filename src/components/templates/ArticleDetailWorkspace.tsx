@@ -1,11 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
+import Button from '@/components/atoms/Button';
 import LinkButton from '@/components/atoms/LinkButton';
 import MarkdownContent from '@/components/atoms/MarkdownContent';
 import Panel from '@/components/atoms/Panel';
-import { articleApi } from '@/shared/api/articleApi';
+import type { AuthModalMode } from '@/components/organisms/auth/AuthModal';
+import { articleApi, ArticleApiConfigurationError } from '@/shared/api/articleApi';
+import { ApiError } from '@/shared/api/httpClient';
 import { buildLocalizedArticleFeedPath } from '@/shared/articles/articleRouting';
 import type { ArticleFeatureStage } from '@/shared/config/articleFeature';
 import type { ArticleDetail, ArticleStatus } from '@/shared/types/article';
@@ -17,6 +21,8 @@ import type { AppLocale } from '@/shared/i18n/appLocale.types';
 import AppShell from './AppShell';
 import { getArticleDetailText } from './articleDetailText';
 
+const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'));
+
 type ArticleDetailWorkspaceProps = {
   locale: AppLocale;
   featureStage: ArticleFeatureStage;
@@ -24,6 +30,36 @@ type ArticleDetailWorkspaceProps = {
   isAvailable: boolean;
   initialErrorMessage: string | null;
 };
+
+type ArticleSaveActionState = {
+  articleId: string | null;
+  status: 'idle' | 'saving' | 'saved';
+  error: string | null;
+  success: string | null;
+};
+
+function resolveSaveActionErrorMessage(
+  error: unknown,
+  text: ReturnType<typeof getArticleDetailText>,
+): string {
+  if (error instanceof ArticleApiConfigurationError) {
+    return text.notices.unavailable;
+  }
+
+  if (error instanceof ApiError && error.statusCode === 0) {
+    return text.notices.saveFailedNetwork;
+  }
+
+  if (error instanceof ApiError && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  return text.notices.saveFailed;
+}
 
 function resolveStatusLabel(status: ArticleStatus, text: ReturnType<typeof getArticleDetailText>): string {
   if (status === 'draft') {
@@ -58,11 +94,36 @@ export default function ArticleDetailWorkspace({
   const showHeaderAccountChrome = isHydrated && hasStoredSession;
   const feedHref = buildLocalizedArticleFeedPath(locale);
   const recordedViewArticleIdRef = useRef<string | null>(null);
+  const pendingSaveAfterAuthArticleIdRef = useRef<string | null>(null);
+  const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [saveActionState, setSaveActionState] = useState<ArticleSaveActionState>({
+    articleId: null,
+    status: 'idle',
+    error: null,
+    success: null,
+  });
+  const activeArticleId = article?.id ?? null;
+  const saveState =
+    saveActionState.articleId === activeArticleId ? saveActionState.status : 'idle';
+  const saveError =
+    saveActionState.articleId === activeArticleId ? saveActionState.error : null;
+  const saveSuccess =
+    saveActionState.articleId === activeArticleId ? saveActionState.success : null;
 
   const onLogout = useCallback(() => {
     void logoutSession().catch(() => undefined);
     removeToken({ blockSilentRefresh: true });
   }, [removeToken]);
+
+  const openAuthModal = useCallback((mode: AuthModalMode) => {
+    setAuthModalMode(mode);
+    setIsAuthModalOpen(true);
+  }, []);
+
+  const closeAuthModal = useCallback(() => {
+    setIsAuthModalOpen(false);
+  }, []);
 
   useEffect(() => {
     if (!isAvailable || article === null) {
@@ -86,6 +147,76 @@ export default function ArticleDetailWorkspace({
       })
       .catch(() => undefined);
   }, [article, isAvailable, token]);
+
+  const performSaveArticle = useCallback(
+    async (activeToken: string) => {
+      if (article === null) {
+        return;
+      }
+
+      setSaveActionState({
+        articleId: article.id,
+        status: 'saving',
+        error: null,
+        success: null,
+      });
+
+      try {
+        await articleApi.saveArticle({
+          articleId: article.id,
+          token: activeToken,
+        });
+
+        setSaveActionState({
+          articleId: article.id,
+          status: 'saved',
+          error: null,
+          success: text.notices.saveSucceeded,
+        });
+      } catch (caughtError: unknown) {
+        setSaveActionState({
+          articleId: article.id,
+          status: 'idle',
+          error: resolveSaveActionErrorMessage(caughtError, text),
+          success: null,
+        });
+      }
+    },
+    [article, text],
+  );
+
+  const onAuthSuccess = useCallback(
+    (nextToken: string) => {
+      persistToken(nextToken, { clearSilentRefreshBlocked: true });
+      closeAuthModal();
+
+      if (article !== null && pendingSaveAfterAuthArticleIdRef.current === article.id) {
+        pendingSaveAfterAuthArticleIdRef.current = null;
+        void performSaveArticle(nextToken);
+      }
+    },
+    [article, closeAuthModal, performSaveArticle, persistToken],
+  );
+
+  const onSaveArticle = useCallback(() => {
+    if (article === null || saveState === 'saving' || saveState === 'saved') {
+      return;
+    }
+
+    if (authSession.status !== 'authenticated' || token === null) {
+      pendingSaveAfterAuthArticleIdRef.current = article.id;
+      setSaveActionState({
+        articleId: article.id,
+        status: 'idle',
+        error: null,
+        success: null,
+      });
+      openAuthModal('login');
+      return;
+    }
+
+    void performSaveArticle(token);
+  }, [article, authSession.status, openAuthModal, performSaveArticle, saveState, token]);
 
   if (!isAvailable || article === null) {
     return (
@@ -157,6 +288,19 @@ export default function ArticleDetailWorkspace({
               <LinkButton href={feedHref} variant="secondary" size="sm" className="rounded-full px-4">
                 {text.backToFeed}
               </LinkButton>
+              <Button
+                variant={saveState === 'saved' ? 'ghost' : 'secondary'}
+                size="sm"
+                onClick={() => void onSaveArticle()}
+                disabled={authSession.status === 'checking' || saveState === 'saving' || saveState === 'saved'}
+                className="rounded-full px-4"
+              >
+                {saveState === 'saving'
+                  ? text.actions.savingArticle
+                  : saveState === 'saved'
+                    ? text.actions.savedArticle
+                    : text.actions.saveArticle}
+              </Button>
               <span className="inline-flex rounded-full border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-(--text-strong)">
                 {resolveStatusLabel(article.status, text)}
               </span>
@@ -184,6 +328,18 @@ export default function ArticleDetailWorkspace({
               {publishedLabel !== null ? <span>{`${text.meta.publishedLabel}: ${publishedLabel}`}</span> : null}
               <span>{`${text.meta.updatedLabel}: ${updatedLabel}`}</span>
             </div>
+
+            {saveError !== null ? (
+              <p className="rounded-lg border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
+                {saveError}
+              </p>
+            ) : null}
+
+            {saveSuccess !== null ? (
+              <p className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-100">
+                {saveSuccess}
+              </p>
+            ) : null}
 
             {article.coverImage !== null ? (
               <div className="overflow-hidden rounded-[2rem] border border-(--border-subtle) bg-[var(--surface-2)] shadow-[0_30px_90px_-56px_rgba(15,23,42,1)]">
@@ -237,6 +393,13 @@ export default function ArticleDetailWorkspace({
           </aside>
         </div>
       </div>
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        mode={authModalMode}
+        onClose={closeAuthModal}
+        onSuccess={onAuthSuccess}
+      />
     </AppShell>
   );
 }

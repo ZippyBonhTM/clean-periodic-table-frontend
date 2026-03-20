@@ -83,6 +83,12 @@ type ArticleRecordViewInput = {
   signal?: AbortSignal;
 };
 
+type ArticleSaveInput = {
+  articleId: string;
+  token: string;
+  signal?: AbortSignal;
+};
+
 type ArticleImageUploadInput = {
   token: string;
   file: File;
@@ -106,6 +112,7 @@ interface ArticleApi {
   publishArticle(input: ArticlePublishInput): Promise<ArticleDetail>;
   unpublishArticle(input: ArticleUnpublishInput): Promise<ArticleDetail>;
   recordArticleView(input: ArticleRecordViewInput): Promise<void>;
+  saveArticle(input: ArticleSaveInput): Promise<void>;
   uploadImage(input: ArticleImageUploadInput): Promise<ArticleImageUploadResult>;
 }
 
@@ -121,6 +128,7 @@ export type {
   ArticlePublishInput,
   ArticleUnpublishInput,
   ArticleRecordViewInput,
+  ArticleSaveInput,
   ArticleImageUploadInput,
   ArticleImageUploadResult,
   CreateArticleDraftInput,

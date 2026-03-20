@@ -2,6 +2,18 @@ export const articleDetailTextPt = {
   eyebrow: 'Detalhe do Artigo',
   backToFeed: 'Voltar para artigos',
   internalBadge: 'Preview Interno',
+  actions: {
+    saveArticle: 'Salvar artigo',
+    savingArticle: 'Salvando artigo...',
+    savedArticle: 'Salvo',
+  },
+  notices: {
+    saveRequiresLogin: 'Entre para salvar este artigo.',
+    saveSucceeded: 'Artigo salvo com sucesso.',
+    saveFailed: 'Não foi possível salvar este artigo agora.',
+    saveFailedNetwork: 'Não foi possível salvar este artigo. Verifique sua conexão e tente de novo.',
+    unavailable: 'A experiência de detalhe do artigo não está disponível agora.',
+  },
   unavailableTitle: 'Este artigo não está disponível agora.',
   unavailableDescription:
     'A rota de detalhe já está pronta, mas o frontend não conseguiu carregar o artigo solicitado na article API.',
@@ -19,4 +31,3 @@ export const articleDetailTextPt = {
     noHashtags: 'Sem hashtags',
   },
 } as const;
-
