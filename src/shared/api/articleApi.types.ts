@@ -16,6 +16,12 @@ type ArticleAuthenticatedCursorInput = ArticleCursorInput & {
   token: string;
 };
 
+type ArticleOwnedDetailInput = {
+  articleId: string;
+  token: string;
+  signal?: AbortSignal;
+};
+
 type ArticleDetailInput = {
   slug: string;
   token?: string | null;
@@ -51,6 +57,7 @@ type UpdateArticleInput = {
 
 interface ArticleApi {
   getGlobalFeed(input?: ArticleCursorInput): Promise<ArticleCursorPage<ArticleFeedItem>>;
+  getMyArticleById(input: ArticleOwnedDetailInput): Promise<ArticleDetail>;
   getArticleBySlug(input: ArticleDetailInput): Promise<ArticleDetail>;
   searchArticles(input: ArticleSearchInput): Promise<ArticleCursorPage<ArticleFeedItem>>;
   listMyArticles(input: ArticleAuthenticatedCursorInput): Promise<ArticleCursorPage<ArticleSummary>>;
@@ -63,6 +70,7 @@ export type {
   ArticleAuthenticatedCursorInput,
   ArticleCursorInput,
   ArticleDetailInput,
+  ArticleOwnedDetailInput,
   ArticleSearchInput,
   CreateArticleDraftInput,
   UpdateArticleInput,

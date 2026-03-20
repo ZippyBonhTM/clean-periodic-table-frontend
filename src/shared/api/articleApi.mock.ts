@@ -1,6 +1,7 @@
 import type {
   ArticleApi,
   ArticleCursorInput,
+  ArticleOwnedDetailInput,
   ArticleSearchInput,
   CreateArticleDraftInput,
   UpdateArticleInput,
@@ -118,6 +119,16 @@ function createMockArticleApi(): ArticleApi {
         .map(toFeedItem);
 
       return paginateItems(publishedArticles, input);
+    },
+
+    async getMyArticleById(input: ArticleOwnedDetailInput) {
+      const article = MOCK_ARTICLES.find((item) => item.id === input.articleId);
+
+      if (article === undefined) {
+        throw new Error(`Mock article not found for id "${input.articleId}".`);
+      }
+
+      return article;
     },
 
     async getArticleBySlug(input) {

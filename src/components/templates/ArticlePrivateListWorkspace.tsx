@@ -19,6 +19,7 @@ import { ApiError } from '@/shared/api/httpClient';
 import {
   buildLocalizedArticleDetailPath,
   buildLocalizedArticleEditorCreatePath,
+  buildLocalizedArticleEditorPath,
 } from '@/shared/articles/articleRouting';
 import type { ArticleFeatureStage } from '@/shared/config/articleFeature';
 import useAuthSession from '@/shared/hooks/useAuthSession';
@@ -113,6 +114,8 @@ function ArticlePrivateListCard({
     text.cards.bylineFallback;
   const canOpenPublicArticle = item.visibility === 'public' && item.status === 'published';
   const articleHref = buildLocalizedArticleDetailPath(locale, item.slug);
+  const editorHref = buildLocalizedArticleEditorPath(locale, item.id);
+  const titleLabel = item.title.trim().length > 0 ? item.title : text.cards.untitled;
 
   return (
     <article className="surface-panel flex h-full flex-col justify-between rounded-[2rem] border border-(--border-subtle) p-5 shadow-sm">
@@ -128,13 +131,9 @@ function ArticlePrivateListCard({
 
         <div className="space-y-3">
           <h2 className="text-2xl font-black leading-tight text-(--text-strong)">
-            {canOpenPublicArticle ? (
-              <Link href={articleHref} className="transition hover:text-(--accent)">
-                {item.title.trim().length > 0 ? item.title : text.cards.untitled}
-              </Link>
-            ) : (
-              item.title.trim().length > 0 ? item.title : text.cards.untitled
-            )}
+            <Link href={editorHref} className="transition hover:text-(--accent)">
+              {titleLabel}
+            </Link>
           </h2>
           <p className="text-sm leading-7 text-(--text-muted)">
             {item.excerpt.trim().length > 0 ? item.excerpt : text.cards.noExcerpt}
@@ -161,15 +160,20 @@ function ArticlePrivateListCard({
           <p className="truncate text-xs text-(--text-muted)">{updatedLabel}</p>
         </div>
 
-        {canOpenPublicArticle ? (
-          <LinkButton href={articleHref} variant="ghost" size="sm" className="rounded-full px-4">
-            {text.cards.openPublicArticle}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <LinkButton href={editorHref} variant="secondary" size="sm" className="rounded-full px-4">
+            {text.cards.openEditor}
           </LinkButton>
-        ) : (
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
-            {text.cards.noPublicPage}
-          </span>
-        )}
+          {canOpenPublicArticle ? (
+            <LinkButton href={articleHref} variant="ghost" size="sm" className="rounded-full px-4">
+              {text.cards.openPublicArticle}
+            </LinkButton>
+          ) : (
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
+              {text.cards.noPublicPage}
+            </span>
+          )}
+        </div>
       </div>
     </article>
   );

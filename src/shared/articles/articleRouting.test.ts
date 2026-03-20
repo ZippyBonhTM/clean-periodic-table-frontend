@@ -6,6 +6,7 @@ import {
   ARTICLE_PRIVATE_LIST_PATHNAME,
   buildLocalizedArticleDetailPath,
   buildLocalizedArticleEditorCreatePath,
+  buildLocalizedArticleEditorPath,
   buildLocalizedArticleFeedPath,
   buildLocalizedArticlePrivateListPath,
 } from '@/shared/articles/articleRouting';
@@ -27,6 +28,11 @@ describe('articleRouting', () => {
     expect(ARTICLE_EDITOR_CREATE_PATHNAME).toBe('/me/articles/new');
     expect(buildLocalizedArticleEditorCreatePath('en-US')).toBe('/en/me/articles/new');
     expect(buildLocalizedArticleEditorCreatePath('pt-BR')).toBe('/pt/me/articles/new');
+  });
+
+  it('builds the localized article editor path for an owned article id', () => {
+    expect(buildLocalizedArticleEditorPath('en-US', 'article-123')).toBe('/en/me/articles/article-123');
+    expect(buildLocalizedArticleEditorPath('pt-BR', '/article-456/')).toBe('/pt/me/articles/article-456');
   });
 
   it('builds a localized article detail path using the slug segment', () => {

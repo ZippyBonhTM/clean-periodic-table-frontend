@@ -28,6 +28,7 @@ export const articlePrivateListTextEn = {
     draft: 'Draft',
     archived: 'Archived',
     bylineFallback: 'Unknown author',
+    openEditor: 'Open editor',
     openPublicArticle: 'Open public page',
     noPublicPage: 'Private only',
   },

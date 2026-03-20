@@ -5,6 +5,7 @@ import type {
   ArticleApi,
   ArticleCursorInput,
   ArticleDetailInput,
+  ArticleOwnedDetailInput,
   ArticleSearchInput,
   CreateArticleDraftInput,
   UpdateArticleInput,
@@ -68,6 +69,18 @@ function createArticleApi(): ArticleApi {
         `/api/v1/feed${buildCursorQuery(input)}`,
         {
           method: 'GET',
+          signal: input.signal,
+        },
+      );
+    },
+
+    async getMyArticleById(input) {
+      return await requestJson<ArticleDetail>(
+        resolveArticleApiBaseUrl(),
+        `/api/v1/articles/${encodeURIComponent(input.articleId)}`,
+        {
+          method: 'GET',
+          token: input.token,
           signal: input.signal,
         },
       );
@@ -158,6 +171,7 @@ export { ArticleApiConfigurationError, articleApi, createArticleApi };
 export type {
   ArticleApi,
   ArticleDetailInput,
+  ArticleOwnedDetailInput,
   CreateArticleDraftInput,
   UpdateArticleInput,
   ArticleSearchInput,
