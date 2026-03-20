@@ -1,0 +1,33 @@
+export const articlePrivateListTextEn = {
+  title: 'Your article workspace.',
+  description:
+    'Review your drafts, private posts, and published writing without exposing this route publicly.',
+  internalBadge: 'Internal Preview',
+  stats: {
+    loadedCountLabel: 'articles loaded',
+  },
+  states: {
+    loading: 'Loading your articles...',
+    unavailable: 'The article workspace is not available right now.',
+    loadFailed: 'We could not load your articles right now.',
+    loadFailedNetwork: 'We could not load your articles. Check your connection and try again.',
+    empty: 'You do not have any saved articles yet.',
+    signInRequired: 'Sign in to open your private article workspace.',
+    loadingMore: 'Loading more articles...',
+    loadMore: 'Load more',
+    retry: 'Try again',
+  },
+  cards: {
+    untitled: 'Untitled article',
+    noExcerpt: 'No excerpt available yet.',
+    publicVisibility: 'Public',
+    privateVisibility: 'Private',
+    published: 'Published',
+    draft: 'Draft',
+    archived: 'Archived',
+    bylineFallback: 'Unknown author',
+    openPublicArticle: 'Open public page',
+    noPublicPage: 'Private only',
+  },
+} as const;
+
