@@ -17,6 +17,11 @@ import { articleApi, ArticleApiConfigurationError } from '@/shared/api/articleAp
 import { logoutSession } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
 import {
+  countPrivateArticlesByStatus,
+  filterPrivateArticlesByStatus,
+  type ArticlePrivateListStatusFilter,
+} from '@/shared/articles/articlePrivateListFilters';
+import {
   buildLocalizedArticleDetailPath,
   buildLocalizedArticleEditorCreatePath,
   buildLocalizedArticleEditorPath,
@@ -200,6 +205,7 @@ export default function ArticlePrivateListWorkspace({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<ArticlePrivateListStatusFilter>('all');
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
@@ -320,9 +326,29 @@ export default function ArticlePrivateListWorkspace({
       'linear-gradient(160deg, color-mix(in oklab, var(--surface-2) 94%, var(--background-top)), color-mix(in oklab, var(--surface-1) 88%, var(--background-base)))',
     ].join(', '),
   } as const;
+  const statusCounts = useMemo(() => countPrivateArticlesByStatus(items), [items]);
+  const filteredItems = useMemo(
+    () => filterPrivateArticlesByStatus(items, activeFilter),
+    [activeFilter, items],
+  );
   const summaryLabel = useMemo(
-    () => `${items.length} ${text.stats.loadedCountLabel}`,
-    [items.length, text.stats.loadedCountLabel],
+    () =>
+      activeFilter === 'all'
+        ? `${items.length} ${text.stats.loadedCountLabel}`
+        : `${filteredItems.length} ${text.stats.visibleCountLabel} · ${items.length} ${text.stats.loadedCountLabel}`,
+    [activeFilter, filteredItems.length, items.length, text.stats.loadedCountLabel, text.stats.visibleCountLabel],
+  );
+  const filterOptions: Array<{
+    key: ArticlePrivateListStatusFilter;
+    label: string;
+  }> = useMemo(
+    () => [
+      { key: 'all', label: text.filters.all },
+      { key: 'draft', label: text.filters.draft },
+      { key: 'published', label: text.filters.published },
+      { key: 'archived', label: text.filters.archived },
+    ],
+    [text.filters.all, text.filters.archived, text.filters.draft, text.filters.published],
   );
 
   if (!isHydrated) {
@@ -415,11 +441,49 @@ export default function ArticlePrivateListWorkspace({
           </Panel>
         ) : (
           <>
-            <section className="grid gap-4 lg:grid-cols-2">
-              {items.map((item) => (
-                <ArticlePrivateListCard key={item.id} item={item} locale={locale} text={text} />
-              ))}
-            </section>
+            <Panel className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {filterOptions.map((filterOption) => {
+                  const isActive = filterOption.key === activeFilter;
+
+                  return (
+                    <Button
+                      key={filterOption.key}
+                      variant={isActive ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className="rounded-full px-4"
+                      onClick={() => setActiveFilter(filterOption.key)}
+                    >
+                      {filterOption.label} ({statusCounts[filterOption.key]})
+                    </Button>
+                  );
+                })}
+              </div>
+            </Panel>
+
+            {filteredItems.length === 0 ? (
+              <Panel className="space-y-3">
+                <p className="text-sm text-(--text-muted)">{text.states.filteredEmpty}</p>
+                {activeFilter !== 'all' ? (
+                  <div>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="rounded-full px-4"
+                      onClick={() => setActiveFilter('all')}
+                    >
+                      {text.filters.clear}
+                    </Button>
+                  </div>
+                ) : null}
+              </Panel>
+            ) : (
+              <section className="grid gap-4 lg:grid-cols-2">
+                {filteredItems.map((item) => (
+                  <ArticlePrivateListCard key={item.id} item={item} locale={locale} text={text} />
+                ))}
+              </section>
+            )}
 
             {nextCursor !== null ? (
               <div className="flex flex-col items-center gap-3 py-4">

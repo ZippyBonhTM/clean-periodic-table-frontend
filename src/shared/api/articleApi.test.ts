@@ -386,7 +386,7 @@ describe('articleApi', () => {
     expect(ownDetail.id).toBe('article-stoichiometry-draft');
     expect(publishedDetail.status).toBe('published');
     expect(publishedDetail.publishedAt).not.toBeNull();
-    expect(unpublishedDetail.status).toBe('draft');
+    expect(unpublishedDetail.status).toBe('archived');
     expect(unpublishedDetail.publishedAt).toBeNull();
     expect(uploadedImage.fileUrl).toBe(
       'https://cdn.example.com/articles/mock/atomic-orbitals.webp',
