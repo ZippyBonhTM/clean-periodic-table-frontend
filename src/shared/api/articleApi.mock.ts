@@ -2,7 +2,9 @@ import type {
   ArticleApi,
   ArticleCursorInput,
   ArticleOwnedDetailInput,
+  ArticlePublishInput,
   ArticleSearchInput,
+  ArticleUnpublishInput,
   CreateArticleDraftInput,
   UpdateArticleInput,
 } from './articleApi.types';
@@ -111,6 +113,16 @@ function paginateItems<TItem>(
   };
 }
 
+function findMockArticleById(articleId: string): ArticleDetail {
+  const article = MOCK_ARTICLES.find((item) => item.id === articleId);
+
+  if (article === undefined) {
+    throw new Error(`Mock article not found for id "${articleId}".`);
+  }
+
+  return article;
+}
+
 function createMockArticleApi(): ArticleApi {
   return {
     async getGlobalFeed(input = {}) {
@@ -122,13 +134,7 @@ function createMockArticleApi(): ArticleApi {
     },
 
     async getMyArticleById(input: ArticleOwnedDetailInput) {
-      const article = MOCK_ARTICLES.find((item) => item.id === input.articleId);
-
-      if (article === undefined) {
-        throw new Error(`Mock article not found for id "${input.articleId}".`);
-      }
-
-      return article;
+      return findMockArticleById(input.articleId);
     },
 
     async getArticleBySlug(input) {
@@ -187,7 +193,7 @@ function createMockArticleApi(): ArticleApi {
     },
 
     async updateArticle(input: UpdateArticleInput) {
-      const baseArticle = MOCK_ARTICLES.find((article) => article.id === input.articleId) ?? MOCK_ARTICLES[0];
+      const baseArticle = findMockArticleById(input.articleId);
 
       return {
         ...baseArticle,
@@ -205,6 +211,28 @@ function createMockArticleApi(): ArticleApi {
                 name: hashtag,
               })),
         updatedAt: '2026-03-03T08:30:00.000Z',
+      };
+    },
+
+    async publishArticle(input: ArticlePublishInput) {
+      const baseArticle = findMockArticleById(input.articleId);
+
+      return {
+        ...baseArticle,
+        status: 'published',
+        updatedAt: '2026-03-03T09:00:00.000Z',
+        publishedAt: '2026-03-03T09:00:00.000Z',
+      };
+    },
+
+    async unpublishArticle(input: ArticleUnpublishInput) {
+      const baseArticle = findMockArticleById(input.articleId);
+
+      return {
+        ...baseArticle,
+        status: 'draft',
+        updatedAt: '2026-03-03T09:15:00.000Z',
+        publishedAt: null,
       };
     },
   };

@@ -23,4 +23,26 @@ function parseArticleHashtags(input: string): string[] {
   return uniqueTokens.slice(0, 10);
 }
 
-export { buildArticleSlugPreview, parseArticleHashtags };
+type ArticlePublishValidationCode = 'missing_title' | 'missing_markdown';
+
+function validateArticlePublishInput(input: {
+  title: string;
+  markdownSource: string;
+}): ArticlePublishValidationCode | null {
+  if (input.title.trim().length === 0) {
+    return 'missing_title';
+  }
+
+  if (input.markdownSource.trim().length === 0) {
+    return 'missing_markdown';
+  }
+
+  return null;
+}
+
+export {
+  buildArticleSlugPreview,
+  parseArticleHashtags,
+  validateArticlePublishInput,
+};
+export type { ArticlePublishValidationCode };

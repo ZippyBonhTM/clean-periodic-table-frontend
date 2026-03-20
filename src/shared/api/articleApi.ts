@@ -6,7 +6,9 @@ import type {
   ArticleCursorInput,
   ArticleDetailInput,
   ArticleOwnedDetailInput,
+  ArticlePublishInput,
   ArticleSearchInput,
+  ArticleUnpublishInput,
   CreateArticleDraftInput,
   UpdateArticleInput,
 } from './articleApi.types';
@@ -162,6 +164,30 @@ function createArticleApi(): ArticleApi {
         },
       );
     },
+
+    async publishArticle(input) {
+      return await requestJson<ArticleDetail>(
+        resolveArticleApiBaseUrl(),
+        `/api/v1/articles/${encodeURIComponent(input.articleId)}/publish`,
+        {
+          method: 'POST',
+          token: input.token,
+          signal: input.signal,
+        },
+      );
+    },
+
+    async unpublishArticle(input) {
+      return await requestJson<ArticleDetail>(
+        resolveArticleApiBaseUrl(),
+        `/api/v1/articles/${encodeURIComponent(input.articleId)}/unpublish`,
+        {
+          method: 'POST',
+          token: input.token,
+          signal: input.signal,
+        },
+      );
+    },
   };
 }
 
@@ -172,6 +198,8 @@ export type {
   ArticleApi,
   ArticleDetailInput,
   ArticleOwnedDetailInput,
+  ArticlePublishInput,
+  ArticleUnpublishInput,
   CreateArticleDraftInput,
   UpdateArticleInput,
   ArticleSearchInput,

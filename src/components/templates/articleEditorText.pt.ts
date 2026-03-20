@@ -23,6 +23,10 @@ export const articleEditorTextPt = {
   actions: {
     saveDraft: 'Salvar rascunho',
     savingDraft: 'Salvando rascunho...',
+    publish: 'Publicar',
+    publishing: 'Publicando...',
+    unpublish: 'Despublicar',
+    unpublishing: 'Despublicando...',
     openWorkspace: 'Abrir meus artigos',
   },
   notices: {
@@ -36,12 +40,24 @@ export const articleEditorTextPt = {
     saveSucceeded: 'Rascunho salvo com sucesso.',
     saveFailed: 'Não foi possível salvar seu rascunho agora.',
     saveFailedNetwork: 'Não foi possível salvar seu rascunho. Verifique sua conexão e tente de novo.',
+    publishSucceeded: 'Artigo publicado com sucesso.',
+    publishFailed: 'Não foi possível publicar este artigo agora.',
+    publishFailedNetwork:
+      'Não foi possível publicar este artigo. Verifique sua conexão e tente de novo.',
+    unpublishSucceeded: 'Artigo voltou para rascunho com sucesso.',
+    unpublishFailed: 'Não foi possível despublicar este artigo agora.',
+    unpublishFailedNetwork:
+      'Não foi possível despublicar este artigo. Verifique sua conexão e tente de novo.',
+    saveBeforePublish: 'Salve o rascunho pelo menos uma vez antes de publicar.',
+    publishNeedsTitle: 'Adicione um título antes de publicar.',
+    publishNeedsMarkdown: 'Adicione conteúdo em markdown antes de publicar.',
     emptyPreview: 'Comece a escrever em Markdown para ver o preview aqui.',
   },
   meta: {
     currentStatus: 'Status atual',
     currentSlug: 'Slug atual',
     lastSaved: 'Último salvamento',
+    publishedAt: 'Publicado em',
     unsaved: 'Ainda não salvo',
     draft: 'Rascunho',
     published: 'Publicado',

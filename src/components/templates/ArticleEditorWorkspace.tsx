@@ -20,6 +20,7 @@ import { ApiError } from '@/shared/api/httpClient';
 import {
   buildArticleSlugPreview,
   parseArticleHashtags,
+  validateArticlePublishInput,
 } from '@/shared/articles/articleEditorUtils';
 import {
   buildLocalizedArticleEditorPath,
@@ -39,16 +40,18 @@ type ArticleEditorWorkspaceProps = {
   articleId?: string;
 };
 
-function resolveSaveErrorMessage(
+function resolveMutationErrorMessage(
   error: unknown,
   text: ReturnType<typeof getArticleEditorText>,
+  fallbackMessage: string,
+  networkMessage: string,
 ): string {
   if (error instanceof ArticleApiConfigurationError) {
     return text.notices.unavailable;
   }
 
   if (error instanceof ApiError && error.statusCode === 0) {
-    return text.notices.saveFailedNetwork;
+    return networkMessage;
   }
 
   if (error instanceof ApiError && error.message.trim().length > 0) {
@@ -59,7 +62,7 @@ function resolveSaveErrorMessage(
     return error.message;
   }
 
-  return text.notices.saveFailed;
+  return fallbackMessage;
 }
 
 function resolveLoadErrorMessage(
@@ -108,6 +111,34 @@ function resolveStatusLabel(
   return text.meta.draft;
 }
 
+function resolvePublishValidationMessage(
+  text: ReturnType<typeof getArticleEditorText>,
+  input: {
+    articleId?: string;
+    title: string;
+    markdownSource: string;
+  },
+): string | null {
+  if (input.articleId === undefined) {
+    return text.notices.saveBeforePublish;
+  }
+
+  const validationCode = validateArticlePublishInput({
+    title: input.title,
+    markdownSource: input.markdownSource,
+  });
+
+  if (validationCode === 'missing_title') {
+    return text.notices.publishNeedsTitle;
+  }
+
+  if (validationCode === 'missing_markdown') {
+    return text.notices.publishNeedsMarkdown;
+  }
+
+  return null;
+}
+
 export default function ArticleEditorWorkspace({
   locale,
   featureStage,
@@ -134,9 +165,9 @@ export default function ArticleEditorWorkspace({
   const [isLoadingArticle, setIsLoadingArticle] = useState(articleId !== undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [activeMutation, setActiveMutation] = useState<'save' | 'publish' | 'unpublish' | null>(null);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null);
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const resolvedSessionMessage = resolveSessionWorkspaceMessage(authSession.message, authText);
@@ -189,8 +220,8 @@ export default function ArticleEditorWorkspace({
 
     setIsLoadingArticle(true);
     setLoadError(null);
-    setSaveError(null);
-    setSaveSuccess(null);
+    setFeedbackError(null);
+    setFeedbackSuccess(null);
     setSavedArticle(null);
     setTitle('');
     setExcerpt('');
@@ -234,6 +265,19 @@ export default function ArticleEditorWorkspace({
   const hashtagList = useMemo(() => parseArticleHashtags(hashtagsInput), [hashtagsInput]);
   const slugPreview = useMemo(() => buildArticleSlugPreview(title), [title]);
   const renderedPreview = markdownSource.trim().length > 0 ? markdownSource : null;
+  const publishValidationMessage = useMemo(
+    () =>
+      resolvePublishValidationMessage(text, {
+        articleId: savedArticle?.id,
+        title,
+        markdownSource,
+      }),
+    [markdownSource, savedArticle?.id, text, title],
+  );
+  const canPublish =
+    savedArticle !== null &&
+    savedArticle.status !== 'published' &&
+    publishValidationMessage === null;
   const lastSavedLabel = useMemo(() => {
     if (savedArticle === null) {
       return text.meta.unsaved;
@@ -254,9 +298,9 @@ export default function ArticleEditorWorkspace({
       return;
     }
 
-    setIsSaving(true);
-    setSaveError(null);
-    setSaveSuccess(null);
+    setActiveMutation('save');
+    setFeedbackError(null);
+    setFeedbackSuccess(null);
 
     try {
       const isCreatingDraft = savedArticle === null;
@@ -281,15 +325,22 @@ export default function ArticleEditorWorkspace({
             });
 
       applyLoadedArticle(response);
-      setSaveSuccess(text.notices.saveSucceeded);
+      setFeedbackSuccess(text.notices.saveSucceeded);
 
       if (isCreatingDraft) {
         router.replace(buildLocalizedArticleEditorPath(locale, response.id));
       }
     } catch (caughtError: unknown) {
-      setSaveError(resolveSaveErrorMessage(caughtError, text));
+      setFeedbackError(
+        resolveMutationErrorMessage(
+          caughtError,
+          text,
+          text.notices.saveFailed,
+          text.notices.saveFailedNetwork,
+        ),
+      );
     } finally {
-      setIsSaving(false);
+      setActiveMutation(null);
     }
   }, [
     applyLoadedArticle,
@@ -304,6 +355,74 @@ export default function ArticleEditorWorkspace({
     token,
     visibility,
   ]);
+
+  const onPublishArticle = useCallback(async () => {
+    if (token === null || savedArticle === null) {
+      return;
+    }
+
+    if (publishValidationMessage !== null) {
+      setFeedbackError(publishValidationMessage);
+      setFeedbackSuccess(null);
+      return;
+    }
+
+    setActiveMutation('publish');
+    setFeedbackError(null);
+    setFeedbackSuccess(null);
+
+    try {
+      const response = await articleApi.publishArticle({
+        articleId: savedArticle.id,
+        token,
+      });
+
+      applyLoadedArticle(response);
+      setFeedbackSuccess(text.notices.publishSucceeded);
+    } catch (caughtError: unknown) {
+      setFeedbackError(
+        resolveMutationErrorMessage(
+          caughtError,
+          text,
+          text.notices.publishFailed,
+          text.notices.publishFailedNetwork,
+        ),
+      );
+    } finally {
+      setActiveMutation(null);
+    }
+  }, [applyLoadedArticle, publishValidationMessage, savedArticle, text, token]);
+
+  const onUnpublishArticle = useCallback(async () => {
+    if (token === null || savedArticle === null) {
+      return;
+    }
+
+    setActiveMutation('unpublish');
+    setFeedbackError(null);
+    setFeedbackSuccess(null);
+
+    try {
+      const response = await articleApi.unpublishArticle({
+        articleId: savedArticle.id,
+        token,
+      });
+
+      applyLoadedArticle(response);
+      setFeedbackSuccess(text.notices.unpublishSucceeded);
+    } catch (caughtError: unknown) {
+      setFeedbackError(
+        resolveMutationErrorMessage(
+          caughtError,
+          text,
+          text.notices.unpublishFailed,
+          text.notices.unpublishFailedNetwork,
+        ),
+      );
+    } finally {
+      setActiveMutation(null);
+    }
+  }, [applyLoadedArticle, savedArticle, text, token]);
 
   if (!isHydrated) {
     return (
@@ -491,23 +610,52 @@ export default function ArticleEditorWorkspace({
                   />
                 </div>
 
-                {saveError !== null ? (
+                {feedbackError !== null ? (
                   <p className="rounded-lg border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
-                    {saveError}
+                    {feedbackError}
                   </p>
                 ) : null}
 
-                {saveSuccess !== null ? (
+                {feedbackSuccess !== null ? (
                   <p className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-100">
-                    {saveSuccess}
+                    {feedbackSuccess}
                   </p>
                 ) : null}
 
                 <div className="flex flex-wrap gap-3">
-                  <Button onClick={() => void onSaveDraft()} disabled={isSaving || isLoadingArticle}>
-                    {isSaving ? text.actions.savingDraft : text.actions.saveDraft}
+                  <Button
+                    onClick={() => void onSaveDraft()}
+                    disabled={activeMutation !== null || isLoadingArticle}
+                  >
+                    {activeMutation === 'save' ? text.actions.savingDraft : text.actions.saveDraft}
                   </Button>
+
+                  {savedArticle?.status === 'published' ? (
+                    <Button
+                      variant="ghost"
+                      onClick={() => void onUnpublishArticle()}
+                      disabled={activeMutation !== null || isLoadingArticle}
+                    >
+                      {activeMutation === 'unpublish'
+                        ? text.actions.unpublishing
+                        : text.actions.unpublish}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      onClick={() => void onPublishArticle()}
+                      disabled={!canPublish || activeMutation !== null || isLoadingArticle}
+                    >
+                      {activeMutation === 'publish' ? text.actions.publishing : text.actions.publish}
+                    </Button>
+                  )}
                 </div>
+
+                {savedArticle?.status !== 'published' && publishValidationMessage !== null ? (
+                  <p className="text-xs leading-relaxed text-(--text-muted)">
+                    {publishValidationMessage}
+                  </p>
+                ) : null}
               </Panel>
             </section>
 
@@ -536,6 +684,19 @@ export default function ArticleEditorWorkspace({
                   {text.meta.lastSaved}
                 </p>
                 <p className="text-sm text-(--text-muted)">{lastSavedLabel}</p>
+                {savedArticle !== null && savedArticle.publishedAt !== null ? (
+                  <>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-(--text-muted)">
+                      {text.meta.publishedAt}
+                    </p>
+                    <p className="text-sm text-(--text-muted)">
+                      {new Intl.DateTimeFormat(locale, {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      }).format(new Date(savedArticle.publishedAt))}
+                    </p>
+                  </>
+                ) : null}
               </Panel>
 
               <Panel className="space-y-3">
