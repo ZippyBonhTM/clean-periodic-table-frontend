@@ -163,6 +163,7 @@ export default function ArticleEditorWorkspace({
   const hasValidSession = authSession.status === 'authenticated';
   const [title, setTitle] = useState('');
   const [excerpt, setExcerpt] = useState('');
+  const [coverImage, setCoverImage] = useState<string | null>(null);
   const [markdownSource, setMarkdownSource] = useState('');
   const [hashtagsInput, setHashtagsInput] = useState('');
   const [visibility, setVisibility] = useState<ArticleVisibility>('private');
@@ -171,7 +172,7 @@ export default function ArticleEditorWorkspace({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [activeMutation, setActiveMutation] = useState<
-    'save' | 'autosave' | 'upload' | 'publish' | 'unpublish' | null
+    'save' | 'autosave' | 'upload' | 'upload-cover' | 'publish' | 'unpublish' | null
   >(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null);
@@ -182,6 +183,7 @@ export default function ArticleEditorWorkspace({
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const coverImageInputRef = useRef<HTMLInputElement | null>(null);
   const resolvedSessionMessage = resolveSessionWorkspaceMessage(authSession.message, authText);
   const workspaceHref = buildLocalizedArticlePrivateListPath(locale);
 
@@ -211,6 +213,7 @@ export default function ArticleEditorWorkspace({
     setSavedArticle(article);
     setTitle(article.title);
     setExcerpt(article.excerpt);
+    setCoverImage(article.coverImage);
     setMarkdownSource(article.markdownSource);
     setVisibility(article.visibility);
     setHashtagsInput(article.hashtags.map((hashtag) => `#${hashtag.name}`).join(', '));
@@ -239,6 +242,7 @@ export default function ArticleEditorWorkspace({
     setSavedArticle(null);
     setTitle('');
     setExcerpt('');
+    setCoverImage(null);
     setMarkdownSource('');
     setHashtagsInput('');
     setVisibility('private');
@@ -283,11 +287,12 @@ export default function ArticleEditorWorkspace({
     () => ({
       title,
       excerpt,
+      coverImage,
       markdownSource,
       visibility,
       hashtags: hashtagList,
     }),
-    [excerpt, hashtagList, markdownSource, title, visibility],
+    [coverImage, excerpt, hashtagList, markdownSource, title, visibility],
   );
   const savedDraftSnapshot = useMemo(
     () =>
@@ -296,6 +301,7 @@ export default function ArticleEditorWorkspace({
         : {
             title: savedArticle.title,
             excerpt: savedArticle.excerpt,
+            coverImage: savedArticle.coverImage,
             markdownSource: savedArticle.markdownSource,
             visibility: savedArticle.visibility,
             hashtags: savedArticle.hashtags.map((hashtag) => hashtag.name),
@@ -382,6 +388,7 @@ export default function ArticleEditorWorkspace({
               title,
               markdownSource,
               excerpt,
+              coverImage,
               visibility,
               hashtags: hashtagList,
             })
@@ -391,6 +398,7 @@ export default function ArticleEditorWorkspace({
               title,
               markdownSource,
               excerpt,
+              coverImage,
               visibility,
               hashtags: hashtagList,
             });
@@ -433,6 +441,7 @@ export default function ArticleEditorWorkspace({
     }
   }, [
     applyLoadedArticle,
+    coverImage,
     excerpt,
     hashtagList,
     locale,
@@ -452,6 +461,16 @@ export default function ArticleEditorWorkspace({
   const onRequestImageUpload = useCallback(() => {
     imageInputRef.current?.click();
   }, []);
+
+  const onRequestCoverImageUpload = useCallback(() => {
+    coverImageInputRef.current?.click();
+  }, []);
+
+  const onClearCoverImage = useCallback(() => {
+    setCoverImage(null);
+    setFeedbackError(null);
+    setFeedbackSuccess(text.notices.coverCleared);
+  }, [text.notices.coverCleared]);
 
   const onImageFileSelected = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
@@ -499,6 +518,58 @@ export default function ArticleEditorWorkspace({
           return `${trimmedValue}\n\n${imageMarkdown}`;
         });
         setFeedbackSuccess(text.notices.uploadSucceeded);
+      } catch (caughtError: unknown) {
+        setFeedbackError(
+          resolveMutationErrorMessage(
+            caughtError,
+            text,
+            text.notices.uploadFailed,
+            text.notices.uploadFailedNetwork,
+          ),
+        );
+      } finally {
+        setActiveMutation(null);
+      }
+    },
+    [text, token],
+  );
+
+  const onCoverImageFileSelected = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const selectedFile = event.target.files?.[0] ?? null;
+      event.target.value = '';
+
+      if (selectedFile === null || token === null) {
+        return;
+      }
+
+      const validationCode = validateArticleImageFile({
+        type: selectedFile.type,
+        size: selectedFile.size,
+      });
+
+      if (validationCode !== null) {
+        setFeedbackSuccess(null);
+        setFeedbackError(
+          validationCode === 'invalid_type'
+            ? text.notices.uploadInvalidType
+            : text.notices.uploadTooLarge,
+        );
+        return;
+      }
+
+      setActiveMutation('upload-cover');
+      setFeedbackError(null);
+      setFeedbackSuccess(null);
+
+      try {
+        const response = await articleApi.uploadImage({
+          token,
+          file: selectedFile,
+        });
+
+        setCoverImage(response.fileUrl);
+        setFeedbackSuccess(text.notices.coverUploadSucceeded);
       } catch (caughtError: unknown) {
         setFeedbackError(
           resolveMutationErrorMessage(
@@ -753,6 +824,65 @@ export default function ArticleEditorWorkspace({
                   />
                 </div>
 
+                <div className="space-y-3 rounded-[1.6rem] border border-(--border-subtle) bg-(--surface-overlay-soft) p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)">
+                        {text.form.coverImageLabel}
+                      </p>
+                      <p className="text-xs leading-relaxed text-(--text-muted)">
+                        {text.form.coverImageHint}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onRequestCoverImageUpload}
+                        disabled={activeMutation !== null || isLoadingArticle}
+                      >
+                        {activeMutation === 'upload-cover'
+                          ? text.actions.uploadingCoverImage
+                          : text.actions.uploadCoverImage}
+                      </Button>
+                      {coverImage !== null ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={onClearCoverImage}
+                          disabled={activeMutation !== null || isLoadingArticle}
+                        >
+                          {text.actions.clearCoverImage}
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                  <input
+                    ref={coverImageInputRef}
+                    id="article-editor-cover-image-upload"
+                    name="article-editor-cover-image-upload"
+                    type="file"
+                    accept={ARTICLE_IMAGE_UPLOAD_ACCEPTED_MIME_TYPES.join(',')}
+                    className="hidden"
+                    onChange={(event) => {
+                      void onCoverImageFileSelected(event);
+                    }}
+                  />
+                  {coverImage !== null ? (
+                    <div className="overflow-hidden rounded-[1.4rem] border border-(--border-subtle) bg-[var(--surface-2)]">
+                      {/* Cover URLs come from runtime storage/CDN configuration, so we render them directly here. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={coverImage}
+                        alt={title.trim().length > 0 ? title : text.form.coverImageLabel}
+                        className="h-56 w-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-sm text-(--text-muted)">{text.form.coverImageEmpty}</p>
+                  )}
+                </div>
+
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
                   <div className="space-y-1.5">
                     <label
@@ -906,6 +1036,25 @@ export default function ArticleEditorWorkspace({
                   {text.form.slugPreviewLabel}
                 </p>
                 <p className="break-all text-sm font-semibold text-(--text-strong)">{slugPreview}</p>
+              </Panel>
+
+              <Panel className="space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-(--text-muted)">
+                  {text.form.coverImageLabel}
+                </p>
+                {coverImage !== null ? (
+                  <div className="overflow-hidden rounded-[1.4rem] border border-(--border-subtle) bg-[var(--surface-2)]">
+                    {/* Cover URLs come from runtime storage/CDN configuration, so we render them directly here. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={coverImage}
+                      alt={title.trim().length > 0 ? title : text.form.coverImageLabel}
+                      className="h-40 w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <p className="text-sm text-(--text-muted)">{text.form.coverImageEmpty}</p>
+                )}
               </Panel>
 
               <Panel className="space-y-3">

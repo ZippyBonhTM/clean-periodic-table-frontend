@@ -120,6 +120,19 @@ function ArticleFeedCard({
   return (
     <article className="surface-panel flex h-full flex-col justify-between rounded-[2rem] border border-(--border-subtle) p-5 shadow-sm">
       <div className="space-y-4">
+        {item.coverImage !== null ? (
+          <div className="overflow-hidden rounded-[1.6rem] border border-(--border-subtle) bg-[var(--surface-2)]">
+            {/* Cover URLs come from runtime storage/CDN configuration, so we render them directly here. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.coverImage}
+              alt={item.title.trim().length > 0 ? item.title : text.cards.untitled}
+              className="h-48 w-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="inline-flex rounded-full border border-(--border-subtle) bg-white/6 px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">
             {resolveStatusLabel(item.status, text)}

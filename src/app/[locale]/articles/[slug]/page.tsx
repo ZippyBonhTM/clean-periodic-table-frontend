@@ -91,6 +91,15 @@ export async function generateMetadata({
       locale: resolvedLocale,
       type: 'article',
       url: canonicalUrl,
+      images:
+        result.article.coverImage === null
+          ? undefined
+          : [
+              {
+                url: result.article.coverImage,
+                alt: result.article.title,
+              },
+            ],
     },
   };
 }
@@ -127,4 +136,3 @@ export default async function LocalizedArticleDetailPage({
     />
   );
 }
-

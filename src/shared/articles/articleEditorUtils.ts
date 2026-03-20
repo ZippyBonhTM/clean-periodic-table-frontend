@@ -38,6 +38,7 @@ type ArticleEditorDraftSnapshot = {
   title: string;
   excerpt: string;
   markdownSource: string;
+  coverImage: string | null;
   visibility: ArticleVisibility;
   hashtags: string[];
 };
@@ -95,6 +96,7 @@ function hasArticleEditorChanges(
       currentDraft.title.trim().length > 0 ||
       currentDraft.excerpt.trim().length > 0 ||
       currentDraft.markdownSource.trim().length > 0 ||
+      currentDraft.coverImage !== null ||
       currentDraft.visibility !== 'private' ||
       currentDraft.hashtags.length > 0
     );
@@ -104,6 +106,7 @@ function hasArticleEditorChanges(
     currentDraft.title !== savedDraft.title ||
     currentDraft.excerpt !== savedDraft.excerpt ||
     currentDraft.markdownSource !== savedDraft.markdownSource ||
+    currentDraft.coverImage !== savedDraft.coverImage ||
     currentDraft.visibility !== savedDraft.visibility ||
     currentDraft.hashtags.join('|') !== savedDraft.hashtags.join('|')
   );

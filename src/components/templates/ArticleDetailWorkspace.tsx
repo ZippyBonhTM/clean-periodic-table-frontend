@@ -159,6 +159,18 @@ export default function ArticleDetailWorkspace({
               {publishedLabel !== null ? <span>{`${text.meta.publishedLabel}: ${publishedLabel}`}</span> : null}
               <span>{`${text.meta.updatedLabel}: ${updatedLabel}`}</span>
             </div>
+
+            {article.coverImage !== null ? (
+              <div className="overflow-hidden rounded-[2rem] border border-(--border-subtle) bg-[var(--surface-2)] shadow-[0_30px_90px_-56px_rgba(15,23,42,1)]">
+                {/* Cover URLs come from runtime storage/CDN configuration, so we render them directly here. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={article.coverImage}
+                  alt={article.title}
+                  className="h-auto w-full object-cover"
+                />
+              </div>
+            ) : null}
           </div>
         </section>
 
@@ -203,4 +215,3 @@ export default function ArticleDetailWorkspace({
     </AppShell>
   );
 }
-
