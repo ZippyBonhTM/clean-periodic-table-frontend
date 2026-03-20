@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import ArticleFeedWorkspace from '@/components/templates/ArticleFeedWorkspace';
 import { getArticleFeedText } from '@/components/templates/articleFeedText';
 import { listPublicArticleFeedServer } from '@/shared/api/articleServerApi';
+import { resolveArticleFeedBrowseFilters } from '@/shared/articles/articleFeedFilters';
 import {
   getArticleFeatureStage,
   isArticleFeatureEnabled,
@@ -17,12 +18,18 @@ type LocalizedArticleFeedPageProps = {
   params: Promise<{
     locale: string;
   }>;
+  searchParams: Promise<{
+    q?: string | string[];
+    tag?: string | string[];
+  }>;
 };
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: LocalizedArticleFeedPageProps): Promise<Metadata> {
   const { locale } = await params;
+  const resolvedFilters = resolveArticleFeedBrowseFilters(await searchParams);
   const resolvedLocale = resolveAppLocaleFromSegment(locale);
 
   if (resolvedLocale === null) {
@@ -34,9 +41,16 @@ export async function generateMetadata({
   const localizedPath = buildLocalizedArticleFeedPath(resolvedLocale);
   const canonicalUrl = buildAbsoluteAppUrl(localizedPath);
   const isPublic = isArticleFeaturePublic(featureStage);
+  const isIndexable = isPublic && resolvedFilters.mode === 'feed';
+  const title =
+    resolvedFilters.mode === 'search'
+      ? `${text.filters.searchingFor}: ${resolvedFilters.query} | Clean Periodic Table`
+      : resolvedFilters.mode === 'hashtag'
+        ? `${text.filters.hashtag}: #${resolvedFilters.hashtag} | Clean Periodic Table`
+        : `${text.title} | Clean Periodic Table`;
 
   return {
-    title: `${text.title} | Clean Periodic Table`,
+    title,
     description: text.description,
     alternates: {
       canonical: canonicalUrl,
@@ -45,7 +59,7 @@ export async function generateMetadata({
         pt: buildAbsoluteAppUrl(buildLocalizedArticleFeedPath('pt-BR')),
       },
     },
-    robots: isPublic
+    robots: isIndexable
       ? {
           index: true,
           follow: true,
@@ -53,9 +67,9 @@ export async function generateMetadata({
       : {
           index: false,
           follow: false,
-        },
+    },
     openGraph: {
-      title: `${text.title} | Clean Periodic Table`,
+      title,
       description: text.description,
       siteName: 'Clean Periodic Table',
       locale: resolvedLocale,
@@ -67,8 +81,10 @@ export async function generateMetadata({
 
 export default async function LocalizedArticleFeedPage({
   params,
+  searchParams,
 }: LocalizedArticleFeedPageProps) {
   const { locale } = await params;
+  const resolvedFilters = resolveArticleFeedBrowseFilters(await searchParams);
   const resolvedLocale = resolveAppLocaleFromSegment(locale);
 
   if (resolvedLocale === null) {
@@ -83,6 +99,8 @@ export default async function LocalizedArticleFeedPage({
 
   const { feed, isAvailable, errorMessage } = await listPublicArticleFeedServer({
     limit: 12,
+    query: resolvedFilters.query,
+    hashtag: resolvedFilters.hashtag,
   });
 
   return (
@@ -90,9 +108,11 @@ export default async function LocalizedArticleFeedPage({
       locale={resolvedLocale}
       featureStage={featureStage}
       initialFeed={feed}
+      initialBrowseMode={resolvedFilters.mode}
+      initialQuery={resolvedFilters.query}
+      initialHashtag={resolvedFilters.hashtag}
       isFeedAvailable={isAvailable}
       initialErrorMessage={errorMessage}
     />
   );
 }
-

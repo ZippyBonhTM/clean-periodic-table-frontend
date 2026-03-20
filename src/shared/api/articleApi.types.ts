@@ -2,6 +2,7 @@ import type {
   ArticleCursorPage,
   ArticleDetail,
   ArticleFeedItem,
+  ArticleHashtag,
   ArticleSummary,
   ArticleVisibility,
 } from '@/shared/types/article';
@@ -30,6 +31,15 @@ type ArticleDetailInput = {
 
 type ArticleSearchInput = ArticleCursorInput & {
   query: string;
+};
+
+type ArticleHashtagFeedInput = ArticleCursorInput & {
+  hashtag: string;
+};
+
+type ArticleHashtagSuggestionsInput = {
+  query: string;
+  signal?: AbortSignal;
 };
 
 type CreateArticleDraftInput = {
@@ -82,6 +92,8 @@ interface ArticleApi {
   getMyArticleById(input: ArticleOwnedDetailInput): Promise<ArticleDetail>;
   getArticleBySlug(input: ArticleDetailInput): Promise<ArticleDetail>;
   searchArticles(input: ArticleSearchInput): Promise<ArticleCursorPage<ArticleFeedItem>>;
+  getHashtagFeed(input: ArticleHashtagFeedInput): Promise<ArticleCursorPage<ArticleFeedItem>>;
+  getHashtagSuggestions(input: ArticleHashtagSuggestionsInput): Promise<ArticleHashtag[]>;
   listMyArticles(input: ArticleAuthenticatedCursorInput): Promise<ArticleCursorPage<ArticleSummary>>;
   createDraft(input: CreateArticleDraftInput): Promise<ArticleDetail>;
   updateArticle(input: UpdateArticleInput): Promise<ArticleDetail>;
@@ -95,6 +107,8 @@ export type {
   ArticleAuthenticatedCursorInput,
   ArticleCursorInput,
   ArticleDetailInput,
+  ArticleHashtagFeedInput,
+  ArticleHashtagSuggestionsInput,
   ArticleOwnedDetailInput,
   ArticleSearchInput,
   ArticlePublishInput,

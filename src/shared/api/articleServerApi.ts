@@ -1,8 +1,12 @@
 import publicEnv from '@/shared/config/publicEnv';
+import { normalizeHashtagValue } from '@/shared/articles/articleFeedFilters';
 import type { ArticleCursorPage, ArticleDetail, ArticleFeedItem } from '@/shared/types/article';
 
 type ListPublicArticleFeedServerInput = {
   limit?: number;
+  cursor?: string | null;
+  query?: string | null;
+  hashtag?: string | null;
 };
 
 type ListPublicArticleFeedServerResult = {
@@ -36,6 +40,48 @@ function buildEmptyFeed(): ArticleCursorPage<ArticleFeedItem> {
   };
 }
 
+function applyCursorSearchParams(
+  url: URL,
+  input: {
+    cursor?: string | null;
+    limit?: number;
+  },
+): void {
+  if (input.cursor !== undefined && input.cursor !== null && input.cursor.length > 0) {
+    url.searchParams.set('cursor', input.cursor);
+  }
+
+  if (input.limit !== undefined) {
+    url.searchParams.set('limit', String(input.limit));
+  }
+}
+
+function buildPublicArticleFeedUrl(
+  baseUrl: string,
+  input: ListPublicArticleFeedServerInput,
+): URL {
+  const normalizedQuery = input.query?.trim() ?? '';
+
+  if (normalizedQuery.length > 0) {
+    const url = new URL('/api/v1/search', baseUrl);
+    url.searchParams.set('q', normalizedQuery);
+    applyCursorSearchParams(url, input);
+    return url;
+  }
+
+  const normalizedHashtag = normalizeHashtagValue(input.hashtag ?? undefined);
+
+  if (normalizedHashtag !== null) {
+    const url = new URL(`/api/v1/feed/hashtag/${encodeURIComponent(normalizedHashtag)}`, baseUrl);
+    applyCursorSearchParams(url, input);
+    return url;
+  }
+
+  const url = new URL('/api/v1/feed', baseUrl);
+  applyCursorSearchParams(url, input);
+  return url;
+}
+
 export async function listPublicArticleFeedServer(
   input: ListPublicArticleFeedServerInput = {},
 ): Promise<ListPublicArticleFeedServerResult> {
@@ -50,11 +96,7 @@ export async function listPublicArticleFeedServer(
   }
 
   try {
-    const url = new URL('/api/v1/feed', baseUrl);
-
-    if (input.limit !== undefined) {
-      url.searchParams.set('limit', String(input.limit));
-    }
+    const url = buildPublicArticleFeedUrl(baseUrl, input);
 
     const response = await fetch(url, {
       headers: {

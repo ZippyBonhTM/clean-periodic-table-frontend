@@ -1,6 +1,8 @@
 import type {
   ArticleApi,
   ArticleCursorInput,
+  ArticleHashtagFeedInput,
+  ArticleHashtagSuggestionsInput,
   ArticleImageUploadInput,
   ArticleOwnedDetailInput,
   ArticlePublishInput,
@@ -96,6 +98,10 @@ function toSummary(article: ArticleDetail): ArticleSummary {
   };
 }
 
+function isDiscoverableArticle(article: ArticleDetail): boolean {
+  return article.status === 'published' && article.visibility === 'public';
+}
+
 function paginateItems<TItem>(
   items: TItem[],
   input: ArticleCursorInput = {},
@@ -128,7 +134,7 @@ function createMockArticleApi(): ArticleApi {
   return {
     async getGlobalFeed(input = {}) {
       const publishedArticles = MOCK_ARTICLES
-        .filter((article) => article.status === 'published' && article.visibility === 'public')
+        .filter(isDiscoverableArticle)
         .map(toFeedItem);
 
       return paginateItems(publishedArticles, input);
@@ -151,6 +157,7 @@ function createMockArticleApi(): ArticleApi {
     async searchArticles(input: ArticleSearchInput) {
       const normalizedQuery = input.query.trim().toLowerCase();
       const filteredArticles = MOCK_ARTICLES
+        .filter(isDiscoverableArticle)
         .filter((article) => {
           const searchableText = [
             article.title,
@@ -166,6 +173,39 @@ function createMockArticleApi(): ArticleApi {
         .map(toFeedItem);
 
       return paginateItems(filteredArticles, input);
+    },
+
+    async getHashtagFeed(input: ArticleHashtagFeedInput) {
+      const normalizedHashtag = input.hashtag.trim().toLowerCase();
+      const filteredArticles = MOCK_ARTICLES
+        .filter(isDiscoverableArticle)
+        .filter((article) =>
+          article.hashtags.some((hashtag) => hashtag.name.toLowerCase() === normalizedHashtag),
+        )
+        .map(toFeedItem);
+
+      return paginateItems(filteredArticles, input);
+    },
+
+    async getHashtagSuggestions(input: ArticleHashtagSuggestionsInput) {
+      const normalizedQuery = input.query.trim().toLowerCase();
+      const hashtagMap = new Map<string, ArticleDetail['hashtags'][number]>();
+
+      for (const article of MOCK_ARTICLES.filter(isDiscoverableArticle)) {
+        for (const hashtag of article.hashtags) {
+          if (hashtagMap.has(hashtag.name)) {
+            continue;
+          }
+
+          if (normalizedQuery.length > 0 && !hashtag.name.toLowerCase().includes(normalizedQuery)) {
+            continue;
+          }
+
+          hashtagMap.set(hashtag.name, hashtag);
+        }
+      }
+
+      return Array.from(hashtagMap.values());
     },
 
     async listMyArticles(input) {
