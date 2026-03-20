@@ -1,10 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Button from '@/components/atoms/Button';
+import LinkButton from '@/components/atoms/LinkButton';
 import Panel from '@/components/atoms/Panel';
 import { articleApi } from '@/shared/api/articleApi';
+import { buildLocalizedArticleDetailPath } from '@/shared/articles/articleRouting';
 import type { ArticleFeatureStage } from '@/shared/config/articleFeature';
 import type { ArticleCursorPage, ArticleFeedItem, ArticleStatus } from '@/shared/types/article';
 import { logoutSession } from '@/shared/api/authApi';
@@ -72,6 +75,7 @@ function ArticleFeedCard({
     text.cards.bylineFallback;
   const hashtagLabels =
     item.hashtags.length > 0 ? item.hashtags.map((hashtag) => `#${hashtag.name}`) : [text.cards.hashtagFallback];
+  const articleHref = buildLocalizedArticleDetailPath(locale, item.slug);
 
   return (
     <article className="surface-panel flex h-full flex-col justify-between rounded-[2rem] border border-(--border-subtle) p-5 shadow-sm">
@@ -89,7 +93,9 @@ function ArticleFeedCard({
 
         <div className="space-y-3">
           <h2 className="text-2xl font-black leading-tight text-(--text-strong)">
-            {item.title.trim().length > 0 ? item.title : text.cards.untitled}
+            <Link href={articleHref} className="transition hover:text-(--accent)">
+              {item.title.trim().length > 0 ? item.title : text.cards.untitled}
+            </Link>
           </h2>
           <p className="text-sm leading-7 text-(--text-muted)">
             {item.excerpt.trim().length > 0 ? item.excerpt : text.cards.noExcerpt}
@@ -113,14 +119,19 @@ function ArticleFeedCard({
           <p className="truncate text-sm font-semibold text-(--text-strong)">{authorLabel}</p>
           <p className="truncate text-xs text-(--text-muted)">{item.slug}</p>
         </div>
-        {item.relevanceScore !== null ? (
-          <div className="text-right">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-(--text-muted)">
-              {text.cards.scoreLabel}
-            </p>
-            <p className="text-base font-black text-(--text-strong)">{Math.round(item.relevanceScore)}</p>
-          </div>
-        ) : null}
+        <div className="flex items-center gap-3">
+          {item.relevanceScore !== null ? (
+            <div className="text-right">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-(--text-muted)">
+                {text.cards.scoreLabel}
+              </p>
+              <p className="text-base font-black text-(--text-strong)">{Math.round(item.relevanceScore)}</p>
+            </div>
+          ) : null}
+          <LinkButton href={articleHref} variant="ghost" size="sm" className="rounded-full px-4">
+            {text.cards.openArticle}
+          </LinkButton>
+        </div>
       </div>
     </article>
   );
@@ -308,4 +319,3 @@ export default function ArticleFeedWorkspace({
     </AppShell>
   );
 }
-

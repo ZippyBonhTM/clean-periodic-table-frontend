@@ -26,6 +26,6 @@ export const articleFeedTextEn = {
     bylineFallback: 'Unknown author',
     hashtagFallback: 'No hashtags',
     scoreLabel: 'Score',
+    openArticle: 'Open article',
   },
 } as const;
-
