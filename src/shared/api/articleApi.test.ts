@@ -139,6 +139,77 @@ describe('articleApi', () => {
     );
   });
 
+  it('uploads article images through the signed upload flow and normalizes the final file url', async () => {
+    process.env.NEXT_PUBLIC_ARTICLE_API_URL = 'http://localhost:4010';
+
+    const uploadUrl = 'https://storage.example.com/uploads/article-image-1';
+    const publicFileUrl = 'https://cdn.example.com/articles/article-image-1.webp';
+    const fetchSpy = vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+
+      if (url.endsWith('/api/v1/uploads')) {
+        return {
+          ok: true,
+          json: async () => ({
+            upload_url: uploadUrl,
+            public_file_url: publicFileUrl,
+            upload_id: 'upload-1',
+          }),
+        };
+      }
+
+      if (url === uploadUrl) {
+        expect(init?.method).toBe('PUT');
+        expect(init?.body).toBeInstanceOf(File);
+
+        return {
+          ok: true,
+          status: 200,
+        };
+      }
+
+      if (url.endsWith('/api/v1/uploads/confirm')) {
+        return {
+          ok: true,
+          json: async () => ({
+            file_url: publicFileUrl,
+          }),
+        };
+      }
+
+      throw new Error(`Unexpected fetch call for ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const { createArticleApi } = await import('@/shared/api/articleApi');
+    const api: ArticleApi = createArticleApi();
+    const file = new File(['binary-image'], 'orbitals.webp', { type: 'image/webp' });
+    const response = await api.uploadImage({
+      token: 'token-1',
+      file,
+    });
+
+    expect(response).toEqual({
+      fileUrl: publicFileUrl,
+    });
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      1,
+      new URL('http://localhost:4010/api/v1/uploads'),
+      expect.any(Object),
+    );
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      2,
+      new URL(uploadUrl),
+      expect.any(Object),
+    );
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      3,
+      new URL('http://localhost:4010/api/v1/uploads/confirm'),
+      expect.any(Object),
+    );
+  });
+
   it('exposes a deterministic mock adapter under the same contract', async () => {
     const api: ArticleApi = createMockArticleApi();
 
@@ -155,6 +226,10 @@ describe('articleApi', () => {
       articleId: 'article-atomic-orbitals',
       token: 'token-1',
     });
+    const uploadedImage = await api.uploadImage({
+      token: 'token-1',
+      file: new File(['binary-image'], 'atomic-orbitals.webp', { type: 'image/webp' }),
+    });
     const detail = await api.getArticleBySlug({
       slug: 'atomic-orbitals-for-curious-beginners',
     });
@@ -166,6 +241,9 @@ describe('articleApi', () => {
     expect(publishedDetail.publishedAt).not.toBeNull();
     expect(unpublishedDetail.status).toBe('draft');
     expect(unpublishedDetail.publishedAt).toBeNull();
+    expect(uploadedImage.fileUrl).toBe(
+      'https://cdn.example.com/articles/mock/atomic-orbitals.webp',
+    );
     expect(detail.slug).toBe('atomic-orbitals-for-curious-beginners');
     expect(detail.markdownSource).toContain('Atomic Orbitals');
   });

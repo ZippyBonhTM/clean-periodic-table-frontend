@@ -1,5 +1,12 @@
 import type { ArticleVisibility } from '@/shared/types/article';
 
+const ARTICLE_IMAGE_UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
+const ARTICLE_IMAGE_UPLOAD_ACCEPTED_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+] as const;
+
 function normalizeAsciiToken(value: string): string {
   return value
     .normalize('NFKD')
@@ -26,6 +33,7 @@ function parseArticleHashtags(input: string): string[] {
 }
 
 type ArticlePublishValidationCode = 'missing_title' | 'missing_markdown';
+type ArticleImageValidationCode = 'invalid_type' | 'file_too_large';
 type ArticleEditorDraftSnapshot = {
   title: string;
   excerpt: string;
@@ -47,6 +55,35 @@ function validateArticlePublishInput(input: {
   }
 
   return null;
+}
+
+function validateArticleImageFile(input: {
+  type: string;
+  size: number;
+}): ArticleImageValidationCode | null {
+  if (!ARTICLE_IMAGE_UPLOAD_ACCEPTED_MIME_TYPES.includes(input.type as never)) {
+    return 'invalid_type';
+  }
+
+  if (input.size > ARTICLE_IMAGE_UPLOAD_MAX_BYTES) {
+    return 'file_too_large';
+  }
+
+  return null;
+}
+
+function buildArticleImageAltText(fileName: string): string {
+  const cleanedName = fileName
+    .replace(/\.[a-z0-9]+$/i, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return cleanedName.length > 0 ? cleanedName : 'article image';
+}
+
+function buildArticleImageMarkdown(fileName: string, fileUrl: string): string {
+  return `![${buildArticleImageAltText(fileName)}](${fileUrl})`;
 }
 
 function hasArticleEditorChanges(
@@ -73,12 +110,18 @@ function hasArticleEditorChanges(
 }
 
 export {
+  ARTICLE_IMAGE_UPLOAD_ACCEPTED_MIME_TYPES,
+  ARTICLE_IMAGE_UPLOAD_MAX_BYTES,
+  buildArticleImageAltText,
+  buildArticleImageMarkdown,
   buildArticleSlugPreview,
   hasArticleEditorChanges,
   parseArticleHashtags,
+  validateArticleImageFile,
   validateArticlePublishInput,
 };
 export type {
   ArticleEditorDraftSnapshot,
+  ArticleImageValidationCode,
   ArticlePublishValidationCode,
 };

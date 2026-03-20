@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 
 import Button from '@/components/atoms/Button';
 import LinkButton from '@/components/atoms/LinkButton';
@@ -18,9 +18,12 @@ import { articleApi, ArticleApiConfigurationError } from '@/shared/api/articleAp
 import { logoutSession } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
 import {
+  ARTICLE_IMAGE_UPLOAD_ACCEPTED_MIME_TYPES,
   buildArticleSlugPreview,
+  buildArticleImageMarkdown,
   hasArticleEditorChanges,
   parseArticleHashtags,
+  validateArticleImageFile,
   validateArticlePublishInput,
 } from '@/shared/articles/articleEditorUtils';
 import {
@@ -167,7 +170,9 @@ export default function ArticleEditorWorkspace({
   const [isLoadingArticle, setIsLoadingArticle] = useState(articleId !== undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const [activeMutation, setActiveMutation] = useState<'save' | 'autosave' | 'publish' | 'unpublish' | null>(null);
+  const [activeMutation, setActiveMutation] = useState<
+    'save' | 'autosave' | 'upload' | 'publish' | 'unpublish' | null
+  >(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null);
   const [autosaveState, setAutosaveState] = useState<
@@ -176,6 +181,7 @@ export default function ArticleEditorWorkspace({
   const [autosaveError, setAutosaveError] = useState<string | null>(null);
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const resolvedSessionMessage = resolveSessionWorkspaceMessage(authSession.message, authText);
   const workspaceHref = buildLocalizedArticlePrivateListPath(locale);
 
@@ -442,6 +448,72 @@ export default function ArticleEditorWorkspace({
   const onSaveDraft = useCallback(async () => {
     await performSave('manual');
   }, [performSave]);
+
+  const onRequestImageUpload = useCallback(() => {
+    imageInputRef.current?.click();
+  }, []);
+
+  const onImageFileSelected = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const selectedFile = event.target.files?.[0] ?? null;
+      event.target.value = '';
+
+      if (selectedFile === null || token === null) {
+        return;
+      }
+
+      const validationCode = validateArticleImageFile({
+        type: selectedFile.type,
+        size: selectedFile.size,
+      });
+
+      if (validationCode !== null) {
+        setFeedbackSuccess(null);
+        setFeedbackError(
+          validationCode === 'invalid_type'
+            ? text.notices.uploadInvalidType
+            : text.notices.uploadTooLarge,
+        );
+        return;
+      }
+
+      setActiveMutation('upload');
+      setFeedbackError(null);
+      setFeedbackSuccess(null);
+
+      try {
+        const response = await articleApi.uploadImage({
+          token,
+          file: selectedFile,
+        });
+
+        const imageMarkdown = buildArticleImageMarkdown(selectedFile.name, response.fileUrl);
+
+        setMarkdownSource((currentValue) => {
+          const trimmedValue = currentValue.replace(/\s+$/g, '');
+
+          if (trimmedValue.length === 0) {
+            return imageMarkdown;
+          }
+
+          return `${trimmedValue}\n\n${imageMarkdown}`;
+        });
+        setFeedbackSuccess(text.notices.uploadSucceeded);
+      } catch (caughtError: unknown) {
+        setFeedbackError(
+          resolveMutationErrorMessage(
+            caughtError,
+            text,
+            text.notices.uploadFailed,
+            text.notices.uploadFailedNetwork,
+          ),
+        );
+      } finally {
+        setActiveMutation(null);
+      }
+    },
+    [text, token],
+  );
 
   useEffect(() => {
     if (!hasValidSession || token === null || isLoadingArticle || loadError !== null) {
@@ -721,6 +793,41 @@ export default function ArticleEditorWorkspace({
                       <option value="public">{text.form.visibilityPublic}</option>
                     </select>
                   </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <label
+                      htmlFor="article-editor-image-upload"
+                      className="text-[11px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)"
+                    >
+                      {text.form.imageUploadLabel}
+                    </label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={onRequestImageUpload}
+                      disabled={activeMutation !== null || isLoadingArticle}
+                    >
+                      {activeMutation === 'upload'
+                        ? text.actions.uploadingImage
+                        : text.actions.uploadImage}
+                    </Button>
+                  </div>
+                  <input
+                    ref={imageInputRef}
+                    id="article-editor-image-upload"
+                    name="article-editor-image-upload"
+                    type="file"
+                    accept={ARTICLE_IMAGE_UPLOAD_ACCEPTED_MIME_TYPES.join(',')}
+                    className="hidden"
+                    onChange={(event) => {
+                      void onImageFileSelected(event);
+                    }}
+                  />
+                  <p className="text-xs leading-relaxed text-(--text-muted)">
+                    {text.form.imageUploadHint}
+                  </p>
                 </div>
 
                 <div className="space-y-1.5">

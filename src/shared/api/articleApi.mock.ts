@@ -1,6 +1,7 @@
 import type {
   ArticleApi,
   ArticleCursorInput,
+  ArticleImageUploadInput,
   ArticleOwnedDetailInput,
   ArticlePublishInput,
   ArticleSearchInput,
@@ -233,6 +234,12 @@ function createMockArticleApi(): ArticleApi {
         status: 'draft',
         updatedAt: '2026-03-03T09:15:00.000Z',
         publishedAt: null,
+      };
+    },
+
+    async uploadImage(input: ArticleImageUploadInput) {
+      return {
+        fileUrl: `https://cdn.example.com/articles/mock/${encodeURIComponent(input.file.name)}`,
       };
     },
   };

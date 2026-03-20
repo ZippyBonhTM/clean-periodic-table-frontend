@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  ARTICLE_IMAGE_UPLOAD_MAX_BYTES,
+  buildArticleImageMarkdown,
   buildArticleSlugPreview,
   hasArticleEditorChanges,
   parseArticleHashtags,
+  validateArticleImageFile,
   validateArticlePublishInput,
 } from '@/shared/articles/articleEditorUtils';
 
@@ -112,5 +115,34 @@ describe('articleEditorUtils', () => {
         },
       ),
     ).toBe(true);
+  });
+
+  it('validates image upload files for type and size', () => {
+    expect(
+      validateArticleImageFile({
+        type: 'image/png',
+        size: ARTICLE_IMAGE_UPLOAD_MAX_BYTES,
+      }),
+    ).toBeNull();
+
+    expect(
+      validateArticleImageFile({
+        type: 'image/svg+xml',
+        size: 1024,
+      }),
+    ).toBe('invalid_type');
+
+    expect(
+      validateArticleImageFile({
+        type: 'image/webp',
+        size: ARTICLE_IMAGE_UPLOAD_MAX_BYTES + 1,
+      }),
+    ).toBe('file_too_large');
+  });
+
+  it('builds markdown image syntax from the uploaded file name and url', () => {
+    expect(
+      buildArticleImageMarkdown('atomic-orbitals_chart.webp', 'https://cdn.example.com/orbitals.webp'),
+    ).toBe('![atomic orbitals chart](https://cdn.example.com/orbitals.webp)');
   });
 });

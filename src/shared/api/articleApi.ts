@@ -1,10 +1,12 @@
 import publicEnv from '@/shared/config/publicEnv';
+import { ApiError, requestJson } from './httpClient';
 
-import { requestJson } from './httpClient';
 import type {
   ArticleApi,
   ArticleCursorInput,
   ArticleDetailInput,
+  ArticleImageUploadInput,
+  ArticleImageUploadResult,
   ArticleOwnedDetailInput,
   ArticlePublishInput,
   ArticleSearchInput,
@@ -22,6 +24,26 @@ class ArticleApiConfigurationError extends Error {
     this.name = 'ArticleApiConfigurationError';
   }
 }
+
+type ArticleUploadReservationResponse = {
+  upload_url?: string;
+  uploadUrl?: string;
+  file_url?: string;
+  fileUrl?: string;
+  public_file_url?: string;
+  publicFileUrl?: string;
+  upload_id?: string;
+  uploadId?: string;
+  storage_key?: string;
+  storageKey?: string;
+};
+
+type ArticleUploadConfirmationResponse = {
+  file_url?: string;
+  fileUrl?: string;
+  public_file_url?: string;
+  publicFileUrl?: string;
+};
 
 function resolveArticleApiBaseUrl(): string {
   const baseUrl = publicEnv.articleApiUrl;
@@ -61,6 +83,99 @@ function buildSearchQuery(input: ArticleSearchInput): string {
   }
 
   return `?${searchParams.toString()}`;
+}
+
+function resolveArticleUploadFileUrl(
+  payload: ArticleUploadReservationResponse | ArticleUploadConfirmationResponse,
+): string | null {
+  const candidates = [
+    payload.public_file_url,
+    payload.publicFileUrl,
+    payload.file_url,
+    payload.fileUrl,
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate !== undefined && candidate !== null && candidate.trim().length > 0) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function resolveArticleUploadReservation(
+  payload: ArticleUploadReservationResponse,
+): {
+  uploadUrl: string;
+  fileUrl: string;
+  uploadId: string | null;
+  storageKey: string | null;
+} {
+  const uploadUrl = payload.upload_url ?? payload.uploadUrl ?? null;
+  const fileUrl = resolveArticleUploadFileUrl(payload);
+
+  if (uploadUrl === null || uploadUrl.trim().length === 0 || fileUrl === null) {
+    throw new ApiError('', 500, 'ARTICLE_UPLOAD_RESERVATION_INVALID');
+  }
+
+  return {
+    uploadUrl,
+    fileUrl,
+    uploadId: payload.upload_id ?? payload.uploadId ?? null,
+    storageKey: payload.storage_key ?? payload.storageKey ?? null,
+  };
+}
+
+async function uploadArticleFileToStorage(input: {
+  uploadUrl: string;
+  file: ArticleImageUploadInput['file'];
+  signal?: AbortSignal;
+}): Promise<void> {
+  let response: Response;
+
+  try {
+    response = await fetch(new URL(input.uploadUrl), {
+      method: 'PUT',
+      headers: new Headers({
+        'Content-Type': input.file.type,
+      }),
+      body: input.file,
+      signal: input.signal,
+    });
+  } catch (caughtError: unknown) {
+    const fallbackMessage = 'Network error while uploading article image to storage.';
+
+    if (caughtError instanceof Error && caughtError.message.trim().length > 0) {
+      throw new ApiError(`${fallbackMessage} (${caughtError.message})`, 0, 'NETWORK_ERROR');
+    }
+
+    throw new ApiError(fallbackMessage, 0, 'NETWORK_ERROR');
+  }
+
+  if (!response.ok) {
+    throw new ApiError('', response.status, 'ARTICLE_UPLOAD_STORAGE_REJECTED');
+  }
+}
+
+function buildArticleUploadConfirmBody(input: {
+  fileUrl: string;
+  uploadId: string | null;
+  storageKey: string | null;
+}): Record<string, string> {
+  const body: Record<string, string> = {
+    file_url: input.fileUrl,
+  };
+
+  if (input.uploadId !== null) {
+    body.upload_id = input.uploadId;
+  }
+
+  if (input.storageKey !== null) {
+    body.storage_key = input.storageKey;
+  }
+
+  return body;
 }
 
 function createArticleApi(): ArticleApi {
@@ -188,6 +303,45 @@ function createArticleApi(): ArticleApi {
         },
       );
     },
+
+    async uploadImage(input): Promise<ArticleImageUploadResult> {
+      const reservationResponse = await requestJson<ArticleUploadReservationResponse>(
+        resolveArticleApiBaseUrl(),
+        '/api/v1/uploads',
+        {
+          method: 'POST',
+          token: input.token,
+          signal: input.signal,
+          body: {
+            filename: input.file.name,
+            content_type: input.file.type,
+            size_bytes: input.file.size,
+          },
+        },
+      );
+      const reservation = resolveArticleUploadReservation(reservationResponse);
+
+      await uploadArticleFileToStorage({
+        uploadUrl: reservation.uploadUrl,
+        file: input.file,
+        signal: input.signal,
+      });
+
+      const confirmationResponse = await requestJson<ArticleUploadConfirmationResponse>(
+        resolveArticleApiBaseUrl(),
+        '/api/v1/uploads/confirm',
+        {
+          method: 'POST',
+          token: input.token,
+          signal: input.signal,
+          body: buildArticleUploadConfirmBody(reservation),
+        },
+      );
+
+      return {
+        fileUrl: resolveArticleUploadFileUrl(confirmationResponse) ?? reservation.fileUrl,
+      };
+    },
   };
 }
 
@@ -197,6 +351,8 @@ export { ArticleApiConfigurationError, articleApi, createArticleApi };
 export type {
   ArticleApi,
   ArticleDetailInput,
+  ArticleImageUploadInput,
+  ArticleImageUploadResult,
   ArticleOwnedDetailInput,
   ArticlePublishInput,
   ArticleUnpublishInput,
