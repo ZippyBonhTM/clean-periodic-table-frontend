@@ -70,6 +70,7 @@ export const articleEditorTextEn = {
     publishFailed: 'We could not publish this article right now.',
     publishFailedNetwork: 'We could not publish this article. Check your connection and try again.',
     unpublishSucceeded: 'Article moved back to draft successfully.',
+    unpublishArchivedSucceeded: 'Article archived successfully.',
     unpublishFailed: 'We could not unpublish this article right now.',
     unpublishFailedNetwork:
       'We could not unpublish this article. Check your connection and try again.',

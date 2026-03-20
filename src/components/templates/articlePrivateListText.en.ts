@@ -6,6 +6,14 @@ export const articlePrivateListTextEn = {
   createDraft: 'New draft',
   stats: {
     loadedCountLabel: 'articles loaded',
+    visibleCountLabel: 'visible',
+  },
+  filters: {
+    all: 'All',
+    draft: 'Drafts',
+    published: 'Published',
+    archived: 'Archived',
+    clear: 'Show all',
   },
   states: {
     loading: 'Loading your articles...',
@@ -18,6 +26,7 @@ export const articlePrivateListTextEn = {
     loadMore: 'Load more',
     retry: 'Try again',
     createFirstDraft: 'Start your first draft',
+    filteredEmpty: 'No loaded articles match this status yet.',
   },
   cards: {
     untitled: 'Untitled article',

@@ -72,6 +72,7 @@ export const articleEditorTextPt = {
     publishFailedNetwork:
       'Não foi possível publicar este artigo. Verifique sua conexão e tente de novo.',
     unpublishSucceeded: 'Artigo voltou para rascunho com sucesso.',
+    unpublishArchivedSucceeded: 'Artigo arquivado com sucesso.',
     unpublishFailed: 'Não foi possível despublicar este artigo agora.',
     unpublishFailedNetwork:
       'Não foi possível despublicar este artigo. Verifique sua conexão e tente de novo.',

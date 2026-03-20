@@ -144,6 +144,15 @@ function resolvePublishValidationMessage(
   return null;
 }
 
+function resolveUnpublishSuccessMessage(
+  status: ArticleStatus,
+  text: ReturnType<typeof getArticleEditorText>,
+): string {
+  return status === 'archived'
+    ? text.notices.unpublishArchivedSucceeded
+    : text.notices.unpublishSucceeded;
+}
+
 export default function ArticleEditorWorkspace({
   locale,
   featureStage,
@@ -701,7 +710,7 @@ export default function ArticleEditorWorkspace({
       });
 
       applyLoadedArticle(response);
-      setFeedbackSuccess(text.notices.unpublishSucceeded);
+      setFeedbackSuccess(resolveUnpublishSuccessMessage(response.status, text));
     } catch (caughtError: unknown) {
       setFeedbackError(
         resolveMutationErrorMessage(

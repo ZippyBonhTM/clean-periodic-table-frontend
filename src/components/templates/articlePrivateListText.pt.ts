@@ -6,6 +6,14 @@ export const articlePrivateListTextPt = {
   createDraft: 'Novo rascunho',
   stats: {
     loadedCountLabel: 'artigos carregados',
+    visibleCountLabel: 'visíveis',
+  },
+  filters: {
+    all: 'Todos',
+    draft: 'Rascunhos',
+    published: 'Publicados',
+    archived: 'Arquivados',
+    clear: 'Mostrar todos',
   },
   states: {
     loading: 'Carregando seus artigos...',
@@ -18,6 +26,7 @@ export const articlePrivateListTextPt = {
     loadMore: 'Carregar mais',
     retry: 'Tentar novamente',
     createFirstDraft: 'Começar seu primeiro rascunho',
+    filteredEmpty: 'Nenhum artigo carregado combina com este status ainda.',
   },
   cards: {
     untitled: 'Artigo sem título',
