@@ -3,6 +3,7 @@ export const articlePrivateListTextEn = {
   description:
     'Review your drafts, private posts, and published writing without exposing this route publicly.',
   internalBadge: 'Internal Preview',
+  createDraft: 'New draft',
   stats: {
     loadedCountLabel: 'articles loaded',
   },
@@ -16,6 +17,7 @@ export const articlePrivateListTextEn = {
     loadingMore: 'Loading more articles...',
     loadMore: 'Load more',
     retry: 'Try again',
+    createFirstDraft: 'Start your first draft',
   },
   cards: {
     untitled: 'Untitled article',
@@ -30,4 +32,3 @@ export const articlePrivateListTextEn = {
     noPublicPage: 'Private only',
   },
 } as const;
-

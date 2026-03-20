@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  ARTICLE_EDITOR_CREATE_PATHNAME,
   ARTICLE_FEED_PATHNAME,
   ARTICLE_PRIVATE_LIST_PATHNAME,
   buildLocalizedArticleDetailPath,
+  buildLocalizedArticleEditorCreatePath,
   buildLocalizedArticleFeedPath,
   buildLocalizedArticlePrivateListPath,
 } from '@/shared/articles/articleRouting';
@@ -19,6 +21,12 @@ describe('articleRouting', () => {
     expect(ARTICLE_PRIVATE_LIST_PATHNAME).toBe('/me/articles');
     expect(buildLocalizedArticlePrivateListPath('en-US')).toBe('/en/me/articles');
     expect(buildLocalizedArticlePrivateListPath('pt-BR')).toBe('/pt/me/articles');
+  });
+
+  it('builds the localized article editor create path outside global app routing', () => {
+    expect(ARTICLE_EDITOR_CREATE_PATHNAME).toBe('/me/articles/new');
+    expect(buildLocalizedArticleEditorCreatePath('en-US')).toBe('/en/me/articles/new');
+    expect(buildLocalizedArticleEditorCreatePath('pt-BR')).toBe('/pt/me/articles/new');
   });
 
   it('builds a localized article detail path using the slug segment', () => {
