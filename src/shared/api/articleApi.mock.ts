@@ -6,6 +6,7 @@ import type {
   ArticleImageUploadInput,
   ArticleOwnedDetailInput,
   ArticlePublishInput,
+  ArticleRecordViewInput,
   ArticleSearchInput,
   ArticleUnpublishInput,
   CreateArticleDraftInput,
@@ -275,6 +276,11 @@ function createMockArticleApi(): ArticleApi {
         updatedAt: '2026-03-03T09:15:00.000Z',
         publishedAt: null,
       };
+    },
+
+    async recordArticleView(_input: ArticleRecordViewInput) {
+      void _input;
+      return;
     },
 
     async uploadImage(input: ArticleImageUploadInput) {

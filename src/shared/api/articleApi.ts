@@ -11,6 +11,7 @@ import type {
   ArticleImageUploadResult,
   ArticleOwnedDetailInput,
   ArticlePublishInput,
+  ArticleRecordViewInput,
   ArticleSearchInput,
   ArticleUnpublishInput,
   CreateArticleDraftInput,
@@ -345,6 +346,19 @@ function createArticleApi(): ArticleApi {
       );
     },
 
+    async recordArticleView(input: ArticleRecordViewInput) {
+      await requestJson<null>(
+        resolveArticleApiBaseUrl(),
+        `/api/v1/articles/${encodeURIComponent(input.articleId)}/view`,
+        {
+          method: 'POST',
+          token: input.token ?? null,
+          signal: input.signal,
+          keepalive: true,
+        },
+      );
+    },
+
     async uploadImage(input): Promise<ArticleImageUploadResult> {
       const reservationResponse = await requestJson<ArticleUploadReservationResponse>(
         resolveArticleApiBaseUrl(),
@@ -398,6 +412,7 @@ export type {
   ArticleImageUploadResult,
   ArticleOwnedDetailInput,
   ArticlePublishInput,
+  ArticleRecordViewInput,
   ArticleUnpublishInput,
   CreateArticleDraftInput,
   UpdateArticleInput,
