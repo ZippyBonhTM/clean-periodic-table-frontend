@@ -1,3 +1,8 @@
+import {
+  clearClientServerAccessTokenCookie,
+  persistClientServerAccessTokenCookie,
+} from '@/shared/auth/clientAccessTokenCookie';
+
 const ACCESS_TOKEN_KEY = 'clean_periodic_table_access_token';
 const SILENT_REFRESH_BLOCKED_KEY = 'clean_periodic_table_silent_refresh_blocked';
 
@@ -17,6 +22,7 @@ function saveAccessToken(token: string): void {
   }
 
   window.localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  persistClientServerAccessTokenCookie(token);
 }
 
 function clearAccessToken(): void {
@@ -25,6 +31,7 @@ function clearAccessToken(): void {
   }
 
   window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+  clearClientServerAccessTokenCookie();
 }
 
 function readSilentRefreshBlocked(): boolean {

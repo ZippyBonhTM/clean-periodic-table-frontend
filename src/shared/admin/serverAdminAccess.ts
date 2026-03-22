@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 
 import {
@@ -8,6 +8,10 @@ import {
   resolveRequestOrigin,
   shouldRequireAdminForArticleStage,
 } from '@/shared/admin/adminAccess';
+import {
+  CLIENT_SERVER_ACCESS_TOKEN_COOKIE_KEY,
+  SERVER_ACCESS_TOKEN_COOKIE_KEY,
+} from '@/shared/auth/serverAccessTokenCookie';
 import type { ArticleFeatureStage } from '@/shared/config/articleFeature';
 import type { AuthUserProfile, ProfileResponse, RefreshResponse } from '@/shared/types/auth';
 
@@ -22,18 +26,22 @@ async function requestServerAuthJson<ResponseType>(
 ): Promise<ResponseType | null> {
   const requestHeaders = await headers();
   const cookieHeader = requestHeaders.get('cookie');
+  const normalizedToken = input.token?.trim() ?? '';
 
-  if (cookieHeader === null || cookieHeader.trim().length === 0) {
+  if ((cookieHeader === null || cookieHeader.trim().length === 0) && normalizedToken.length === 0) {
     return null;
   }
 
   const outgoingHeaders = new Headers({
     Accept: 'application/json',
-    cookie: cookieHeader,
   });
 
-  if (input.token !== undefined && input.token.trim().length > 0) {
-    outgoingHeaders.set('authorization', `Bearer ${input.token}`);
+  if (cookieHeader !== null && cookieHeader.trim().length > 0) {
+    outgoingHeaders.set('cookie', cookieHeader);
+  }
+
+  if (normalizedToken.length > 0) {
+    outgoingHeaders.set('authorization', `Bearer ${normalizedToken}`);
   }
 
   let response: Response;
@@ -57,6 +65,26 @@ async function requestServerAuthJson<ResponseType>(
 }
 
 async function resolveServerUserProfile(): Promise<AuthUserProfile | null> {
+  const requestCookies = await cookies();
+  const mirroredAccessToken = requestCookies.get(SERVER_ACCESS_TOKEN_COOKIE_KEY)?.value?.trim() ?? '';
+  const clientMirroredAccessToken =
+    requestCookies.get(CLIENT_SERVER_ACCESS_TOKEN_COOKIE_KEY)?.value?.trim() ?? '';
+
+  for (const candidateToken of [mirroredAccessToken, clientMirroredAccessToken]) {
+    if (candidateToken.length === 0) {
+      continue;
+    }
+
+    const profileFromMirroredToken = await requestServerAuthJson<ProfileResponse>('/api/auth/profile', {
+      method: 'GET',
+      token: candidateToken,
+    });
+
+    if (profileFromMirroredToken?.userProfile !== undefined) {
+      return profileFromMirroredToken.userProfile;
+    }
+  }
+
   const refreshResponse = await requestServerAuthJson<RefreshResponse>('/api/auth/refresh', {
     method: 'POST',
   });
