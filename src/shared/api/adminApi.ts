@@ -1,6 +1,7 @@
 import { requestJson } from '@/shared/api/httpClient';
 import type {
   AdminApi,
+  AdminAuthenticatedInput,
   AdminChangeUserRoleInput,
   AdminGetUserInput,
   AdminListAuditInput,
@@ -11,6 +12,8 @@ import type {
 import type {
   AdminAuditEntry,
   AdminCursorPage,
+  AdminSession,
+  AdminSessionUser,
   AdminUserDetail,
   AdminUserModerationMutationResult,
   AdminUserRoleMutationResult,
@@ -79,10 +82,41 @@ function buildAdminAuditPath(input: AdminListAuditInput): string {
   return `${url.pathname}${url.search}`;
 }
 
+type AdminSessionPayload = {
+  user?: AdminSessionUser;
+  userProfile?: AdminSessionUser;
+};
+
+function resolveAdminSession(payload: AdminSessionPayload): AdminSession {
+  if (payload.user !== undefined) {
+    return {
+      user: payload.user,
+    };
+  }
+
+  if (payload.userProfile !== undefined) {
+    return {
+      user: payload.userProfile,
+    };
+  }
+
+  throw new Error('Admin session response is missing the user payload.');
+}
+
 function createAdminApi(): AdminApi {
   const baseUrl = resolveAdminRequestBaseUrl();
 
   return {
+    async getSession(input: AdminAuthenticatedInput): Promise<AdminSession> {
+      const payload = await requestJson<AdminSessionPayload>(baseUrl, '/api/admin/session', {
+        method: 'GET',
+        token: input.token,
+        signal: input.signal,
+        credentials: 'include',
+      });
+
+      return resolveAdminSession(payload);
+    },
     async listUsers(input: AdminListUsersInput): Promise<AdminCursorPage<AdminUserSummary>> {
       return await requestJson<AdminCursorPage<AdminUserSummary>>(baseUrl, buildAdminUsersPath(input), {
         method: 'GET',

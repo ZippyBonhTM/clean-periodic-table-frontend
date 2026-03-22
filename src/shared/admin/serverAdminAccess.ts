@@ -8,8 +8,11 @@ import {
   shouldRequireAdminForArticleStage,
 } from '@/shared/admin/adminAccess';
 import {
+  shouldFallbackToLegacyAdminAuthorizationAfterBackendResolution,
+  type BackendAdminSessionResolution,
+} from '@/shared/admin/adminAuthorizationResolution';
+import {
   buildAdminUpstreamApiUrl,
-  canFallbackToLegacyAdminAuthorization,
   resolveAdminAuthorizationSource,
 } from '@/shared/admin/adminUpstream';
 import {
@@ -32,6 +35,16 @@ type AdminSessionResponse = {
   user?: AuthUserProfile;
   userProfile?: AuthUserProfile;
 };
+
+type BackendAdminSessionResult =
+  | {
+      resolution: 'granted';
+      userProfile: AuthUserProfile;
+    }
+  | {
+      resolution: Exclude<BackendAdminSessionResolution, 'granted'>;
+      userProfile: null;
+    };
 
 async function requestServerAuthJson<ResponseType>(
   path: string,
@@ -81,12 +94,15 @@ async function requestServerAuthJson<ResponseType>(
   return (await response.json().catch(() => null)) as ResponseType | null;
 }
 
-async function requestServerAdminSession(token: string): Promise<AuthUserProfile | null> {
+async function requestServerAdminSession(token: string): Promise<BackendAdminSessionResult> {
   const normalizedToken = token.trim();
   const upstreamUrl = buildAdminUpstreamApiUrl('/api/v1/admin/session');
 
   if (upstreamUrl === null || normalizedToken.length === 0) {
-    return null;
+    return {
+      resolution: 'unavailable',
+      userProfile: null,
+    };
   }
 
   let response: Response;
@@ -102,20 +118,40 @@ async function requestServerAdminSession(token: string): Promise<AuthUserProfile
       redirect: 'manual',
     });
   } catch {
-    return null;
+    return {
+      resolution: 'unavailable',
+      userProfile: null,
+    };
+  }
+
+  if (response.status === 403) {
+    return {
+      resolution: 'forbidden',
+      userProfile: null,
+    };
   }
 
   if (!response.ok) {
-    return null;
+    return {
+      resolution: 'unavailable',
+      userProfile: null,
+    };
   }
 
   const payload = (await response.json().catch(() => null)) as AdminSessionResponse | null;
+  const userProfile = payload?.user ?? payload?.userProfile ?? null;
 
-  if (payload?.user !== undefined) {
-    return payload.user;
+  if (userProfile !== null) {
+    return {
+      resolution: 'granted',
+      userProfile,
+    };
   }
 
-  return payload?.userProfile ?? null;
+  return {
+    resolution: 'unavailable',
+    userProfile: null,
+  };
 }
 
 async function resolveAuthTokensForServerRequests(): Promise<string[]> {
@@ -160,18 +196,21 @@ async function resolveServerUserProfileFromLegacyAuth(): Promise<AuthUserProfile
   return null;
 }
 
-async function resolveServerUserProfileFromBackend(): Promise<AuthUserProfile | null> {
+async function resolveServerUserProfileFromBackend(): Promise<BackendAdminSessionResult> {
   const candidateTokens = await resolveAuthTokensForServerRequests();
 
   for (const candidateToken of candidateTokens) {
     const adminProfile = await requestServerAdminSession(candidateToken);
 
-    if (adminProfile !== null) {
+    if (adminProfile.resolution === 'granted' || adminProfile.resolution === 'forbidden') {
       return adminProfile;
     }
   }
 
-  return null;
+  return {
+    resolution: 'unavailable',
+    userProfile: null,
+  };
 }
 
 async function resolveServerUserProfile(): Promise<AuthUserProfile | null> {
@@ -182,16 +221,22 @@ async function resolveServerUserProfile(): Promise<AuthUserProfile | null> {
   }
 
   if (authorizationSource === 'backend') {
-    return await resolveServerUserProfileFromBackend();
+    const backendProfile = await resolveServerUserProfileFromBackend();
+    return backendProfile.resolution === 'granted' ? backendProfile.userProfile : null;
   }
 
   const backendProfile = await resolveServerUserProfileFromBackend();
 
-  if (backendProfile !== null) {
-    return backendProfile;
+  if (backendProfile.resolution === 'granted') {
+    return backendProfile.userProfile;
   }
 
-  if (canFallbackToLegacyAdminAuthorization()) {
+  if (
+    shouldFallbackToLegacyAdminAuthorizationAfterBackendResolution(
+      authorizationSource,
+      backendProfile.resolution,
+    )
+  ) {
     return await resolveServerUserProfileFromLegacyAuth();
   }
 

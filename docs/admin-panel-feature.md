@@ -38,9 +38,11 @@ The admin frontend now supports an incremental migration path:
 
 - `ADMIN_AUTHZ_SOURCE=legacy-auth`: keep current compatibility and resolve admin authority from the auth service
 - `ADMIN_AUTHZ_SOURCE=backend`: resolve admin authority from the product backend only
-- `ADMIN_AUTHZ_SOURCE=auto`: prefer the product backend and fall back to the legacy auth source when the backend admin contract is not ready yet
+- `ADMIN_AUTHZ_SOURCE=auto`: prefer the product backend and fall back to the legacy auth source only when the backend authority is unavailable, not when it explicitly denies access
 
 The default remains `legacy-auth` to avoid downtime while the backend admin contract is being implemented.
+
+The user-menu shortcut to `/admin` now follows the same product-backed authority through `/api/admin/session`, with client-side caching used only as a display optimization.
 
 ## Current Guarantees
 

@@ -57,10 +57,14 @@ function resolveAllowedAdminUpstreamPath(
 async function proxyAdminRequest(request: NextRequest, context: RouteContext): Promise<NextResponse> {
   const params = await context.params;
   const pathSegments = params.path ?? [];
-  const upstreamPath = resolveAllowedAdminUpstreamPath(pathSegments, request.method);
   const proxyTarget = resolveAdminProxyTarget();
+  const isSessionRequest =
+    request.method === 'GET' && pathSegments.length === 1 && pathSegments[0] === 'session';
+  const upstreamPath = isSessionRequest
+    ? null
+    : resolveAllowedAdminUpstreamPath(pathSegments, request.method);
 
-  if (upstreamPath === null) {
+  if (!isSessionRequest && upstreamPath === null) {
     return NextResponse.json({ message: 'Not found' }, { status: 404 });
   }
 
@@ -83,8 +87,8 @@ async function proxyAdminRequest(request: NextRequest, context: RouteContext): P
 
   const upstreamUrl =
     proxyTarget === 'backend'
-      ? buildAdminUpstreamApiUrl(upstreamPath)
-      : buildAuthUpstreamApiUrl(upstreamPath);
+      ? buildAdminUpstreamApiUrl(isSessionRequest ? '/api/v1/admin/session' : upstreamPath!)
+      : buildAuthUpstreamApiUrl(isSessionRequest ? '/api/auth/profile' : upstreamPath!);
 
   if (upstreamUrl === null) {
     return NextResponse.json(

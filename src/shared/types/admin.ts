@@ -1,6 +1,11 @@
 import type { AuthUserProfile } from '@/shared/types/auth';
 
 type AdminUserRole = AuthUserProfile['role'];
+type AdminSessionUser = Pick<AuthUserProfile, 'id' | 'name' | 'email' | 'role'>;
+
+type AdminSession = {
+  user: AdminSessionUser;
+};
 
 type AdminUserAccountStatus = 'active' | 'restricted' | 'suspended';
 
@@ -86,6 +91,8 @@ export type {
   AdminAuditEntry,
   AdminAuditTarget,
   AdminCursorPage,
+  AdminSession,
+  AdminSessionUser,
   AdminUserAccountStatus,
   AdminUserCapabilities,
   AdminUserDetail,

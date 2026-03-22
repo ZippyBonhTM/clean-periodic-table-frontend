@@ -1,6 +1,7 @@
 import type {
   AdminAuditEntry,
   AdminCursorPage,
+  AdminSession,
   AdminUserAccountStatus,
   AdminUserDetail,
   AdminUserRole,
@@ -59,6 +60,7 @@ type AdminListAuditInput = AdminCursorInput & {
 };
 
 interface AdminApi {
+  getSession(input: AdminAuthenticatedInput): Promise<AdminSession>;
   listUsers(input: AdminListUsersInput): Promise<AdminCursorPage<AdminUserSummary>>;
   getUserById(input: AdminGetUserInput): Promise<AdminUserDetail>;
   changeUserRole(input: AdminChangeUserRoleInput): Promise<AdminUserRoleMutationResult>;

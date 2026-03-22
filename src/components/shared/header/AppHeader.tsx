@@ -122,6 +122,7 @@ function AppHeader({
     userProfileStatus,
     userProfile,
     userProfileError,
+    hasAdminAccess,
     userDisplayName,
     userMenuPanelStyle,
     openUserMenu,
@@ -329,6 +330,7 @@ function AppHeader({
           userProfileStatus={userProfileStatus}
           userProfile={userProfile}
           userProfileError={userProfileError}
+          hasAdminAccess={hasAdminAccess}
           isLogoutConfirmOpen={isLogoutConfirmOpen}
           userMenuPanelStyle={userMenuPanelStyle}
           adminHref={adminHref}

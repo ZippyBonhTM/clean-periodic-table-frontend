@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { isAdminUserProfile } from '@/shared/admin/adminAccess';
+import { createAdminApi } from '@/shared/api/adminApi';
 import { fetchProfile } from '@/shared/api/authApi';
+import {
+  persistCachedAdminSession,
+  readCachedAdminSession,
+} from '@/shared/storage/adminSessionStorage';
 import {
   persistCachedAuthProfile,
   readCachedAuthProfile,
@@ -40,10 +46,13 @@ export default function useAppHeaderUserMenu({
   const [userProfile, setUserProfile] = useState<AuthUserProfile | null>(null);
   const [userProfileToken, setUserProfileToken] = useState<string | null>(null);
   const [userProfileError, setUserProfileError] = useState<string | null>(null);
+  const [hasAdminAccess, setHasAdminAccess] = useState(false);
   const userMenuDragPointerIdRef = useRef<number | null>(null);
   const userMenuDragStartXRef = useRef<number | null>(null);
   const userMenuDragOffsetRef = useRef(0);
   const fetchedProfileTokenRef = useRef<string | null>(null);
+  const fetchedAdminSessionTokenRef = useRef<string | null>(null);
+  const adminApi = useMemo(() => createAdminApi(), []);
 
   const userDisplayName = useMemo(() => {
     const cachedUserProfile = token === null ? null : readCachedAuthProfile(token);
@@ -78,28 +87,37 @@ export default function useAppHeaderUserMenu({
 
   const openUserMenu = useCallback(() => {
     const cachedUserProfile = token === null ? null : readCachedAuthProfile(token);
+    const cachedAdminSession = token === null ? null : readCachedAdminSession(token);
 
     if (!hasToken || token === null) {
       fetchedProfileTokenRef.current = null;
+      fetchedAdminSessionTokenRef.current = null;
       setUserProfileStatus('idle');
       setUserProfile(null);
       setUserProfileToken(null);
       setUserProfileError(null);
+      setHasAdminAccess(false);
     } else if (cachedUserProfile !== null) {
       fetchedProfileTokenRef.current = token;
       setUserProfileStatus('success');
       setUserProfile(cachedUserProfile);
       setUserProfileToken(token);
       setUserProfileError(null);
+      fetchedAdminSessionTokenRef.current = cachedAdminSession === null ? null : token;
+      setHasAdminAccess(cachedAdminSession?.hasAdminAccess ?? false);
     } else if (fetchedProfileTokenRef.current === token && userProfile !== null) {
       setUserProfileStatus('success');
       setUserProfileToken(token);
       setUserProfileError(null);
+      fetchedAdminSessionTokenRef.current = cachedAdminSession === null ? null : token;
+      setHasAdminAccess(cachedAdminSession?.hasAdminAccess ?? false);
     } else {
       fetchedProfileTokenRef.current = null;
+      fetchedAdminSessionTokenRef.current = cachedAdminSession === null ? null : token;
       setUserProfileStatus('loading');
       setUserProfileToken(null);
       setUserProfileError(null);
+      setHasAdminAccess(cachedAdminSession?.hasAdminAccess ?? false);
     }
 
     setIsLogoutConfirmOpen(false);
@@ -179,6 +197,64 @@ export default function useAppHeaderUserMenu({
     };
   }, [hasToken, isUserMenuOpen, onPersistToken, profileLoadErrorFallback, token]);
 
+  useEffect(() => {
+    if (!isUserMenuOpen) {
+      return;
+    }
+
+    if (!hasToken || token === null) {
+      return;
+    }
+
+    const cachedAdminSession = readCachedAdminSession(token);
+
+    if (cachedAdminSession !== null) {
+      fetchedAdminSessionTokenRef.current = token;
+      return;
+    }
+
+    if (fetchedAdminSessionTokenRef.current === token) {
+      return;
+    }
+
+    fetchedAdminSessionTokenRef.current = token;
+    let isCancelled = false;
+
+    void adminApi
+      .getSession({
+        token,
+      })
+      .then((adminSession) => {
+        if (isCancelled) {
+          return;
+        }
+
+        const nextHasAdminAccess = isAdminUserProfile(adminSession.user);
+
+        persistCachedAdminSession({
+          token,
+          hasAdminAccess: nextHasAdminAccess,
+          user: nextHasAdminAccess ? adminSession.user : null,
+        });
+        setHasAdminAccess(nextHasAdminAccess);
+      })
+      .catch(() => {
+        if (isCancelled) {
+          return;
+        }
+
+        persistCachedAdminSession({
+          token,
+          hasAdminAccess: false,
+        });
+        setHasAdminAccess(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [adminApi, hasToken, isUserMenuOpen, token]);
+
   const requestLogoutConfirm = useCallback(() => {
     setIsLogoutConfirmOpen(true);
   }, []);
@@ -251,6 +327,7 @@ export default function useAppHeaderUserMenu({
     userProfileStatus,
     userProfile,
     userProfileError,
+    hasAdminAccess,
     userDisplayName,
     userMenuPanelStyle,
     openUserMenu,

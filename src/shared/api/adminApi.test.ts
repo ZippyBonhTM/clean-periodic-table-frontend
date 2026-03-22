@@ -9,6 +9,49 @@ describe('adminApi', () => {
     vi.restoreAllMocks();
   });
 
+  it('normalizes the admin session response from the local proxy', async () => {
+    vi.stubGlobal('window', {
+      location: {
+        origin: 'http://localhost:3000',
+      },
+    });
+
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        userProfile: {
+          id: 'admin-1',
+          name: 'Admin One',
+          email: 'admin@example.com',
+          role: 'ADMIN',
+        },
+      }),
+    }));
+
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const api: AdminApi = createAdminApi();
+    const session = await api.getSession({
+      token: 'token-1',
+    });
+
+    expect(session).toEqual({
+      user: {
+        id: 'admin-1',
+        name: 'Admin One',
+        email: 'admin@example.com',
+        role: 'ADMIN',
+      },
+    });
+    expect(fetchSpy).toHaveBeenCalledWith(
+      new URL('http://localhost:3000/api/admin/session'),
+      expect.objectContaining({
+        method: 'GET',
+        credentials: 'include',
+      }),
+    );
+  });
+
   it('calls the expected admin directory and detail endpoints through the local proxy', async () => {
     vi.stubGlobal('window', {
       location: {
