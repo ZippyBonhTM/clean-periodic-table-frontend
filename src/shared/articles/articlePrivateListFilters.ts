@@ -1,6 +1,26 @@
 import type { ArticleStatus, ArticleSummary } from '@/shared/types/article';
 
 type ArticlePrivateListStatusFilter = 'all' | ArticleStatus;
+type ArticlePrivateListStatusFilterSearchParamsInput = {
+  status?: string | string[] | null | undefined;
+};
+
+function resolveArticlePrivateListStatusFilter(
+  input: ArticlePrivateListStatusFilterSearchParamsInput,
+): ArticlePrivateListStatusFilter {
+  const rawValue = Array.isArray(input.status) ? input.status[0] : input.status;
+  const normalizedValue = rawValue?.trim().toLowerCase() ?? '';
+
+  if (
+    normalizedValue === 'draft' ||
+    normalizedValue === 'published' ||
+    normalizedValue === 'archived'
+  ) {
+    return normalizedValue;
+  }
+
+  return 'all';
+}
 
 function filterPrivateArticlesByStatus(
   items: ArticleSummary[],
@@ -30,5 +50,28 @@ function countPrivateArticlesByStatus(
   return counts;
 }
 
-export { countPrivateArticlesByStatus, filterPrivateArticlesByStatus };
-export type { ArticlePrivateListStatusFilter };
+function buildArticlePrivateListSearchParams(input: {
+  status?: ArticlePrivateListStatusFilter | null;
+}): URLSearchParams {
+  const searchParams = new URLSearchParams();
+  const resolvedStatus = resolveArticlePrivateListStatusFilter({
+    status: input.status,
+  });
+
+  if (resolvedStatus !== 'all') {
+    searchParams.set('status', resolvedStatus);
+  }
+
+  return searchParams;
+}
+
+export {
+  buildArticlePrivateListSearchParams,
+  countPrivateArticlesByStatus,
+  filterPrivateArticlesByStatus,
+  resolveArticlePrivateListStatusFilter,
+};
+export type {
+  ArticlePrivateListStatusFilter,
+  ArticlePrivateListStatusFilterSearchParamsInput,
+};

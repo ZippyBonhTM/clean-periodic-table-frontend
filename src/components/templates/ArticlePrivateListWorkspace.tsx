@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Button from '@/components/atoms/Button';
@@ -25,6 +26,7 @@ import {
   buildLocalizedArticleDetailPath,
   buildLocalizedArticleEditorCreatePath,
   buildLocalizedArticleEditorPath,
+  buildLocalizedArticlePrivateListBrowsePath,
 } from '@/shared/articles/articleRouting';
 import type { ArticleFeatureStage } from '@/shared/config/articleFeature';
 import useAuthSession from '@/shared/hooks/useAuthSession';
@@ -42,6 +44,7 @@ const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'))
 type ArticlePrivateListWorkspaceProps = {
   locale: AppLocale;
   featureStage: ArticleFeatureStage;
+  initialFilter: ArticlePrivateListStatusFilter;
 };
 
 function resolveArticleStatusLabel(
@@ -187,7 +190,9 @@ function ArticlePrivateListCard({
 export default function ArticlePrivateListWorkspace({
   locale,
   featureStage,
+  initialFilter,
 }: ArticlePrivateListWorkspaceProps) {
+  const router = useRouter();
   const text = getArticlePrivateListText(locale);
   const authText = useAuthText();
   const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
@@ -205,12 +210,16 @@ export default function ArticlePrivateListWorkspace({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<ArticlePrivateListStatusFilter>('all');
+  const [activeFilter, setActiveFilter] = useState<ArticlePrivateListStatusFilter>(initialFilter);
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
   const resolvedSessionMessage = resolveSessionWorkspaceMessage(authSession.message, authText);
   const createDraftHref = buildLocalizedArticleEditorCreatePath(locale);
+
+  useEffect(() => {
+    setActiveFilter(initialFilter);
+  }, [initialFilter]);
 
   const onLogout = useCallback(() => {
     void logoutSession().catch(() => undefined);
@@ -295,6 +304,22 @@ export default function ArticlePrivateListWorkspace({
 
     await loadArticles(nextCursor, 'append');
   }, [isLoadingMore, loadArticles, nextCursor]);
+
+  const onApplyFilter = useCallback(
+    (nextFilter: ArticlePrivateListStatusFilter) => {
+      if (nextFilter === activeFilter) {
+        return;
+      }
+
+      setActiveFilter(nextFilter);
+      router.push(
+        buildLocalizedArticlePrivateListBrowsePath(locale, {
+          status: nextFilter,
+        }),
+      );
+    },
+    [activeFilter, locale, router],
+  );
 
   useEffect(() => {
     if (nextCursor === null || loadMoreSentinelRef.current === null || !hasValidSession) {
@@ -452,7 +477,7 @@ export default function ArticlePrivateListWorkspace({
                       variant={isActive ? 'secondary' : 'ghost'}
                       size="sm"
                       className="rounded-full px-4"
-                      onClick={() => setActiveFilter(filterOption.key)}
+                      onClick={() => onApplyFilter(filterOption.key)}
                     >
                       {filterOption.label} ({statusCounts[filterOption.key]})
                     </Button>
@@ -470,7 +495,7 @@ export default function ArticlePrivateListWorkspace({
                       variant="secondary"
                       size="sm"
                       className="rounded-full px-4"
-                      onClick={() => setActiveFilter('all')}
+                      onClick={() => onApplyFilter('all')}
                     >
                       {text.filters.clear}
                     </Button>
