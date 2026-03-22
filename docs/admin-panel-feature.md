@@ -27,6 +27,7 @@ All admin routes are:
 - server-guarded
 - deny-by-default on auth uncertainty
 - noindex
+- validated against the auth upstream directly during SSR
 
 ## Current Guarantees
 

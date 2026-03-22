@@ -56,7 +56,7 @@ export const adminWorkspaceTextEn = {
       articleMode: 'Article mode',
       authSource: 'Auth source',
     },
-    authSourceValue: 'Auth proxy + refresh cookie',
+    authSourceValue: 'Direct auth upstream + mirrored token fallback',
     quickActionsTitle: 'Quick actions',
     quickActionsDescription: 'Jump directly to the protected areas you are most likely to inspect during development and moderation work.',
     openUsers: 'Open users area',

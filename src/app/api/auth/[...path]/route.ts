@@ -5,8 +5,12 @@ import {
   readServerAccessTokenFromResponseBody,
   resolveTokenMaxAgeSeconds,
   SERVER_ACCESS_TOKEN_COOKIE_KEY,
-  stripServerAccessTokenCookie,
 } from '@/shared/auth/serverAccessTokenCookie';
+import {
+  buildAuthUpstreamUrl,
+  resolveAuthUpstreamBaseUrl,
+  stripForwardedAuthCookieHeader,
+} from '@/shared/auth/authUpstream';
 
 type RouteContext = {
   params: Promise<{ path?: string[] }> | { path?: string[] };
@@ -28,30 +32,7 @@ const ACCESS_TOKEN_RESPONSE_PATHS = new Set([
   'profile',
 ]);
 
-const CLEAR_ACCESS_TOKEN_PATHS = new Set([
-  'logout',
-  'refresh',
-  'profile',
-  'validate-token',
-]);
-
-function resolveAuthUpstreamBaseUrl(): string | null {
-  const rawBaseUrl = process.env.AUTH_API_URL ?? process.env.NEXT_PUBLIC_AUTH_API_URL ?? '';
-  const trimmed = rawBaseUrl.trim();
-
-  if (trimmed.length === 0) {
-    return null;
-  }
-
-  try {
-    const parsed = new URL(trimmed);
-    const normalizedPath =
-      parsed.pathname === '/' ? '' : parsed.pathname.replace(/\/+$/, '');
-    return `${parsed.origin}${normalizedPath}`;
-  } catch {
-    return null;
-  }
-}
+const CLEAR_ACCESS_TOKEN_PATHS = new Set(['logout', 'refresh', 'profile', 'validate-token']);
 
 function copySetCookieHeaders(upstreamResponse: Response, response: NextResponse): void {
   const headersWithGetSetCookie = upstreamResponse.headers as Headers & {
@@ -141,13 +122,21 @@ async function proxyAuthRequest(request: NextRequest, context: RouteContext): Pr
     );
   }
 
-  const upstreamUrl = new URL(pathSegments[0], `${baseUrl}/`);
+  const upstreamUrl = buildAuthUpstreamUrl(pathSegments[0]);
+
+  if (upstreamUrl === null) {
+    return NextResponse.json(
+      { message: 'Could not resolve auth upstream URL for this request.' },
+      { status: 500 },
+    );
+  }
+
   const headers = new Headers();
 
   const accept = request.headers.get('accept');
   const contentType = request.headers.get('content-type');
   const authorization = request.headers.get('authorization');
-  const cookie = stripServerAccessTokenCookie(request.headers.get('cookie'));
+  const cookie = stripForwardedAuthCookieHeader(request.headers.get('cookie'));
 
   if (accept !== null) {
     headers.set('accept', accept);

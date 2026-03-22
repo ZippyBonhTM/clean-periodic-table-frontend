@@ -5,9 +5,12 @@ import { notFound } from 'next/navigation';
 
 import {
   isAdminUserProfile,
-  resolveRequestOrigin,
   shouldRequireAdminForArticleStage,
 } from '@/shared/admin/adminAccess';
+import {
+  buildAuthUpstreamUrl,
+  stripForwardedAuthCookieHeader,
+} from '@/shared/auth/authUpstream';
 import {
   CLIENT_SERVER_ACCESS_TOKEN_COOKIE_KEY,
   SERVER_ACCESS_TOKEN_COOKIE_KEY,
@@ -25,10 +28,14 @@ async function requestServerAuthJson<ResponseType>(
   input: ServerAuthRequestInput = {},
 ): Promise<ResponseType | null> {
   const requestHeaders = await headers();
-  const cookieHeader = requestHeaders.get('cookie');
+  const cookieHeader = stripForwardedAuthCookieHeader(requestHeaders.get('cookie'));
   const normalizedToken = input.token?.trim() ?? '';
+  const upstreamUrl = buildAuthUpstreamUrl(path);
 
-  if ((cookieHeader === null || cookieHeader.trim().length === 0) && normalizedToken.length === 0) {
+  if (
+    upstreamUrl === null ||
+    ((cookieHeader === null || cookieHeader.trim().length === 0) && normalizedToken.length === 0)
+  ) {
     return null;
   }
 
@@ -47,7 +54,7 @@ async function requestServerAuthJson<ResponseType>(
   let response: Response;
 
   try {
-    response = await fetch(new URL(path, resolveRequestOrigin(requestHeaders)), {
+    response = await fetch(upstreamUrl, {
       method: input.method ?? 'GET',
       headers: outgoingHeaders,
       cache: 'no-store',
