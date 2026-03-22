@@ -34,6 +34,7 @@ function buildLocalizedArticlePrivateListBrowsePath(
   input: {
     status?: 'all' | 'draft' | 'published' | 'archived' | null;
     query?: string | null;
+    sort?: 'updated-desc' | 'updated-asc' | 'created-desc' | 'created-asc' | null;
   } = {},
 ): string {
   const basePath = buildLocalizedArticlePrivateListPath(locale);

@@ -10,6 +10,13 @@ export const articlePrivateListTextPt = {
     submit: 'Buscar',
     clear: 'Limpar busca',
   },
+  sort: {
+    label: 'Ordenar artigos carregados',
+    updatedDesc: 'Atualizados recentemente',
+    updatedAsc: 'Menos atualizados recentemente',
+    createdDesc: 'Criados mais recentemente',
+    createdAsc: 'Criados há mais tempo',
+  },
   stats: {
     loadedCountLabel: 'artigos carregados',
     visibleCountLabel: 'visíveis',

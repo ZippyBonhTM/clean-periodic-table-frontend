@@ -10,6 +10,13 @@ export const articlePrivateListTextEn = {
     submit: 'Search',
     clear: 'Clear search',
   },
+  sort: {
+    label: 'Sort loaded articles',
+    updatedDesc: 'Recently updated',
+    updatedAsc: 'Least recently updated',
+    createdDesc: 'Newest created',
+    createdAsc: 'Oldest created',
+  },
   stats: {
     loadedCountLabel: 'articles loaded',
     visibleCountLabel: 'visible',
