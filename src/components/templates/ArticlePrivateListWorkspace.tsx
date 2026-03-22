@@ -3,9 +3,10 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 
 import Button from '@/components/atoms/Button';
+import Input from '@/components/atoms/Input';
 import LinkButton from '@/components/atoms/LinkButton';
 import Panel from '@/components/atoms/Panel';
 import useAuthText from '@/components/organisms/auth/useAuthText';
@@ -18,8 +19,10 @@ import { articleApi, ArticleApiConfigurationError } from '@/shared/api/articleAp
 import { logoutSession } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
 import {
+  filterPrivateArticles,
   countPrivateArticlesByStatus,
-  filterPrivateArticlesByStatus,
+  normalizeArticlePrivateListQuery,
+  type ArticlePrivateListBrowseFilters,
   type ArticlePrivateListStatusFilter,
 } from '@/shared/articles/articlePrivateListFilters';
 import {
@@ -44,7 +47,7 @@ const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'))
 type ArticlePrivateListWorkspaceProps = {
   locale: AppLocale;
   featureStage: ArticleFeatureStage;
-  initialFilter: ArticlePrivateListStatusFilter;
+  initialFilters: ArticlePrivateListBrowseFilters;
 };
 
 function resolveArticleStatusLabel(
@@ -190,7 +193,7 @@ function ArticlePrivateListCard({
 export default function ArticlePrivateListWorkspace({
   locale,
   featureStage,
-  initialFilter,
+  initialFilters,
 }: ArticlePrivateListWorkspaceProps) {
   const router = useRouter();
   const text = getArticlePrivateListText(locale);
@@ -210,7 +213,11 @@ export default function ArticlePrivateListWorkspace({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<ArticlePrivateListStatusFilter>(initialFilter);
+  const [activeFilter, setActiveFilter] = useState<ArticlePrivateListStatusFilter>(
+    initialFilters.status,
+  );
+  const [activeQuery, setActiveQuery] = useState(initialFilters.query);
+  const [searchInput, setSearchInput] = useState(initialFilters.query ?? '');
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
@@ -218,8 +225,10 @@ export default function ArticlePrivateListWorkspace({
   const createDraftHref = buildLocalizedArticleEditorCreatePath(locale);
 
   useEffect(() => {
-    setActiveFilter(initialFilter);
-  }, [initialFilter]);
+    setActiveFilter(initialFilters.status);
+    setActiveQuery(initialFilters.query);
+    setSearchInput(initialFilters.query ?? '');
+  }, [initialFilters]);
 
   const onLogout = useCallback(() => {
     void logoutSession().catch(() => undefined);
@@ -307,18 +316,23 @@ export default function ArticlePrivateListWorkspace({
 
   const onApplyFilter = useCallback(
     (nextFilter: ArticlePrivateListStatusFilter) => {
-      if (nextFilter === activeFilter) {
+      const normalizedQuery = normalizeArticlePrivateListQuery(searchInput);
+
+      if (nextFilter === activeFilter && normalizedQuery === activeQuery) {
         return;
       }
 
       setActiveFilter(nextFilter);
+      setActiveQuery(normalizedQuery);
+      setSearchInput(normalizedQuery ?? '');
       router.push(
         buildLocalizedArticlePrivateListBrowsePath(locale, {
           status: nextFilter,
+          query: normalizedQuery,
         }),
       );
     },
-    [activeFilter, locale, router],
+    [activeFilter, activeQuery, locale, router, searchInput],
   );
 
   useEffect(() => {
@@ -353,15 +367,26 @@ export default function ArticlePrivateListWorkspace({
   } as const;
   const statusCounts = useMemo(() => countPrivateArticlesByStatus(items), [items]);
   const filteredItems = useMemo(
-    () => filterPrivateArticlesByStatus(items, activeFilter),
-    [activeFilter, items],
+    () =>
+      filterPrivateArticles(items, {
+        status: activeFilter,
+        query: activeQuery,
+      }),
+    [activeFilter, activeQuery, items],
   );
+  const hasAppliedBrowseFilters = activeFilter !== 'all' || activeQuery !== null;
   const summaryLabel = useMemo(
     () =>
-      activeFilter === 'all'
+      !hasAppliedBrowseFilters
         ? `${items.length} ${text.stats.loadedCountLabel}`
         : `${filteredItems.length} ${text.stats.visibleCountLabel} · ${items.length} ${text.stats.loadedCountLabel}`,
-    [activeFilter, filteredItems.length, items.length, text.stats.loadedCountLabel, text.stats.visibleCountLabel],
+    [
+      filteredItems.length,
+      hasAppliedBrowseFilters,
+      items.length,
+      text.stats.loadedCountLabel,
+      text.stats.visibleCountLabel,
+    ],
   );
   const filterOptions: Array<{
     key: ArticlePrivateListStatusFilter;
@@ -375,6 +400,34 @@ export default function ArticlePrivateListWorkspace({
     ],
     [text.filters.all, text.filters.archived, text.filters.draft, text.filters.published],
   );
+  const hasActiveSearch =
+    normalizeArticlePrivateListQuery(searchInput) !== null || activeQuery !== null;
+  const onSubmitSearch = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+
+      const normalizedQuery = normalizeArticlePrivateListQuery(searchInput);
+
+      setActiveQuery(normalizedQuery);
+      setSearchInput(normalizedQuery ?? '');
+      router.push(
+        buildLocalizedArticlePrivateListBrowsePath(locale, {
+          status: activeFilter,
+          query: normalizedQuery,
+        }),
+      );
+    },
+    [activeFilter, locale, router, searchInput],
+  );
+  const onClearSearch = useCallback(() => {
+    setActiveQuery(null);
+    setSearchInput('');
+    router.push(
+      buildLocalizedArticlePrivateListBrowsePath(locale, {
+        status: activeFilter,
+      }),
+    );
+  }, [activeFilter, locale, router]);
 
   if (!isHydrated) {
     return (
@@ -467,6 +520,40 @@ export default function ArticlePrivateListWorkspace({
         ) : (
           <>
             <Panel className="space-y-4">
+              <form className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto]" onSubmit={onSubmitSearch}>
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="article-private-list-search"
+                    className="text-[11px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)"
+                  >
+                    {text.search.label}
+                  </label>
+                  <Input
+                    id="article-private-list-search"
+                    name="article-private-list-search"
+                    placeholder={text.search.placeholder}
+                    value={searchInput}
+                    onChange={setSearchInput}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button type="submit" variant="secondary" size="sm" className="rounded-full px-4">
+                    {text.search.submit}
+                  </Button>
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-full px-4"
+                    onClick={onClearSearch}
+                    disabled={!hasActiveSearch}
+                  >
+                    {text.search.clear}
+                  </Button>
+                </div>
+              </form>
               <div className="flex flex-wrap gap-2">
                 {filterOptions.map((filterOption) => {
                   const isActive = filterOption.key === activeFilter;

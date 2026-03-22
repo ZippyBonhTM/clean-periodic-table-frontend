@@ -4,6 +4,12 @@ export const articlePrivateListTextPt = {
     'Revise seus rascunhos, posts privados e textos publicados sem expor esta rota publicamente.',
   internalBadge: 'Preview Interno',
   createDraft: 'Novo rascunho',
+  search: {
+    label: 'Buscar entre os artigos carregados',
+    placeholder: 'Busque por título, resumo, slug, autor ou hashtag',
+    submit: 'Buscar',
+    clear: 'Limpar busca',
+  },
   stats: {
     loadedCountLabel: 'artigos carregados',
     visibleCountLabel: 'visíveis',
@@ -26,7 +32,7 @@ export const articlePrivateListTextPt = {
     loadMore: 'Carregar mais',
     retry: 'Tentar novamente',
     createFirstDraft: 'Começar seu primeiro rascunho',
-    filteredEmpty: 'Nenhum artigo carregado combina com este status ainda.',
+    filteredEmpty: 'Nenhum artigo carregado combina com a busca e os filtros atuais.',
   },
   cards: {
     untitled: 'Artigo sem título',
