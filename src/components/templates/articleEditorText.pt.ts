@@ -30,6 +30,8 @@ export const articleEditorTextPt = {
   actions: {
     saveDraft: 'Salvar rascunho',
     savingDraft: 'Salvando rascunho...',
+    restoreRecovery: 'Restaurar rascunho',
+    dismissRecovery: 'Dispensar recuperação',
     uploadImage: 'Enviar imagem',
     uploadingImage: 'Enviando imagem...',
     uploadCoverImage: 'Enviar capa',
@@ -67,6 +69,10 @@ export const articleEditorTextPt = {
     autosaveFailed: 'Não foi possível salvar seu rascunho automaticamente agora.',
     autosaveFailedNetwork:
       'Não foi possível salvar seu rascunho automaticamente. Verifique sua conexão e tente de novo.',
+    recoveryAvailable:
+      'Encontramos um snapshot local de recuperação para este editor. Restaure se quiser continuar das últimas mudanças não salvas.',
+    recoveryRestored: 'As alterações locais recuperadas foram aplicadas no editor.',
+    recoveryDiscarded: 'O snapshot local de recuperação deste editor foi descartado.',
     publishSucceeded: 'Artigo publicado com sucesso.',
     publishFailed: 'Não foi possível publicar este artigo agora.',
     publishFailedNetwork:
@@ -93,6 +99,7 @@ export const articleEditorTextPt = {
     currentSlug: 'Slug atual',
     lastSaved: 'Último salvamento',
     publishedAt: 'Publicado em',
+    recoverySavedAt: 'Recuperação salva em',
     autosaveStatus: 'Auto-save',
     autosaveIdle: 'Sem alterações pendentes',
     autosavePending: 'Alterações pendentes',
