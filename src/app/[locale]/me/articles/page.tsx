@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import ArticlePrivateListWorkspace from '@/components/templates/ArticlePrivateListWorkspace';
 import { getArticlePrivateListText } from '@/components/templates/articlePrivateListText';
+import { requireAdminForInternalArticleStage } from '@/shared/admin/serverAdminAccess';
 import { resolveArticlePrivateListBrowseFilters } from '@/shared/articles/articlePrivateListFilters';
 import {
   getArticleFeatureStage,
@@ -66,6 +67,8 @@ export default async function LocalizedArticlePrivateListPage({
   if (!isArticleFeatureEnabled(featureStage)) {
     notFound();
   }
+
+  await requireAdminForInternalArticleStage(featureStage);
 
   return (
     <ArticlePrivateListWorkspace
