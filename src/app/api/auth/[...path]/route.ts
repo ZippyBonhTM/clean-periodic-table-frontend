@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import {
+  CLIENT_SERVER_ACCESS_TOKEN_COOKIE_KEY,
   readServerAccessTokenFromResponseBody,
   resolveTokenMaxAgeSeconds,
   SERVER_ACCESS_TOKEN_COOKIE_KEY,
@@ -106,6 +107,15 @@ function syncMirroredAccessTokenCookie(
       name: SERVER_ACCESS_TOKEN_COOKIE_KEY,
       value: '',
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+    });
+    response.cookies.set({
+      name: CLIENT_SERVER_ACCESS_TOKEN_COOKIE_KEY,
+      value: '',
+      httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',

@@ -1,4 +1,5 @@
 const SERVER_ACCESS_TOKEN_COOKIE_KEY = 'clean_periodic_table_server_access_token';
+const CLIENT_SERVER_ACCESS_TOKEN_COOKIE_KEY = 'clean_periodic_table_server_access_token_client';
 
 type JwtPayload = {
   exp?: unknown;
@@ -79,7 +80,12 @@ function stripServerAccessTokenCookie(cookieHeader: string | null): string | nul
   const filteredCookies = cookieHeader
     .split(';')
     .map((part) => part.trim())
-    .filter((part) => part.length > 0 && !part.startsWith(`${SERVER_ACCESS_TOKEN_COOKIE_KEY}=`));
+    .filter(
+      (part) =>
+        part.length > 0 &&
+        !part.startsWith(`${SERVER_ACCESS_TOKEN_COOKIE_KEY}=`) &&
+        !part.startsWith(`${CLIENT_SERVER_ACCESS_TOKEN_COOKIE_KEY}=`),
+    );
 
   if (filteredCookies.length === 0) {
     return null;
@@ -89,6 +95,7 @@ function stripServerAccessTokenCookie(cookieHeader: string | null): string | nul
 }
 
 export {
+  CLIENT_SERVER_ACCESS_TOKEN_COOKIE_KEY,
   SERVER_ACCESS_TOKEN_COOKIE_KEY,
   readServerAccessTokenFromResponseBody,
   resolveTokenMaxAgeSeconds,
