@@ -47,6 +47,7 @@ export const appHeaderTextEn = {
     confirmLogout: 'Confirm logout?',
     cancel: 'Cancel',
     logout: 'Logout',
+    adminPanel: 'Admin panel',
     guest: 'Guest',
     userFallback: 'User',
     profileLoadErrorFallback: 'Could not load user profile right now.',

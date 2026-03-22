@@ -8,6 +8,7 @@ import Button from '@/components/atoms/Button';
 import TokenStatus from '@/components/molecules/TokenStatus';
 import type { TokenStatusType } from '@/components/molecules/TokenStatus';
 import UserAvatarPlaceholder from '@/components/molecules/UserAvatarPlaceholder';
+import { buildLocalizedAdminPath } from '@/shared/admin/adminRouting';
 import useAuthToken from '@/shared/hooks/useAuthToken';
 import { buildLocalizedAppPath } from '@/shared/i18n/appLocaleRouting';
 import useAppLocale from '@/shared/i18n/useAppLocale';
@@ -108,6 +109,7 @@ function AppHeader({
   const { locale } = useAppLocale();
   const text = useAppHeaderText();
   const { token, persistToken } = useAuthToken();
+  const adminHref = buildLocalizedAdminPath(locale);
   const loginHref = buildLocalizedAppPath(locale, '/login');
   const registerHref = buildLocalizedAppPath(locale, '/register');
 
@@ -329,6 +331,7 @@ function AppHeader({
           userProfileError={userProfileError}
           isLogoutConfirmOpen={isLogoutConfirmOpen}
           userMenuPanelStyle={userMenuPanelStyle}
+          adminHref={adminHref}
           text={text.userMenu}
           profileText={text.profile}
           onClose={closeUserMenu}

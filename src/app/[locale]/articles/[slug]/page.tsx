@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import ArticleDetailWorkspace from '@/components/templates/ArticleDetailWorkspace';
 import { getArticleDetailText } from '@/components/templates/articleDetailText';
 import { getPublicArticleBySlugServer } from '@/shared/api/articleServerApi';
+import { requireAdminForInternalArticleStage } from '@/shared/admin/serverAdminAccess';
 import {
   getArticleFeatureStage,
   isArticleFeatureEnabled,
@@ -36,6 +37,20 @@ export async function generateMetadata({
 
   if (!isFeatureEnabled) {
     return {
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
+  if (!isArticleFeaturePublic(featureStage)) {
+    return {
+      title: `${text.unavailableTitle} | Clean Periodic Table`,
+      description: text.unavailableDescription,
+      alternates: {
+        canonical: buildAbsoluteAppUrl(buildLocalizedArticleDetailPath(resolvedLocale, slug)),
+      },
       robots: {
         index: false,
         follow: false,
@@ -119,6 +134,8 @@ export default async function LocalizedArticleDetailPage({
   if (!isArticleFeatureEnabled(featureStage)) {
     notFound();
   }
+
+  await requireAdminForInternalArticleStage(featureStage);
 
   const result = await getPublicArticleBySlugServer({ slug });
 

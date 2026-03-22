@@ -47,6 +47,7 @@ export const appHeaderTextPt = {
     confirmLogout: 'Confirmar saída?',
     cancel: 'Cancelar',
     logout: 'Sair',
+    adminPanel: 'Painel ADMIN',
     guest: 'Visitante',
     userFallback: 'Usuário',
     profileLoadErrorFallback: 'Não foi possível carregar o perfil agora.',

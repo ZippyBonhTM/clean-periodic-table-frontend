@@ -1,4 +1,5 @@
 import type * as React from 'react';
+import Link from 'next/link';
 
 import Button from '@/components/atoms/Button';
 import type { AppHeaderTextCatalog } from '@/components/shared/header/appHeaderText';
@@ -16,6 +17,7 @@ type AppHeaderUserMenuProps = {
   userProfileError: string | null;
   isLogoutConfirmOpen: boolean;
   userMenuPanelStyle: React.CSSProperties;
+  adminHref: string;
   text: AppHeaderTextCatalog['userMenu'];
   profileText: AppHeaderTextCatalog['profile'];
   onClose: () => void;
@@ -38,6 +40,7 @@ export default function AppHeaderUserMenu({
   userProfileError,
   isLogoutConfirmOpen,
   userMenuPanelStyle,
+  adminHref,
   text,
   profileText,
   onClose,
@@ -109,6 +112,18 @@ export default function AppHeaderUserMenu({
           userProfileError={userProfileError}
           text={profileText}
         />
+
+        {userProfile?.role === 'ADMIN' ? (
+          <div className="mt-4 rounded-lg border border-sky-400/30 bg-sky-400/10 p-2">
+            <Link
+              href={adminHref}
+              onClick={onClose}
+              className="inline-flex w-full items-center justify-center rounded-full border border-sky-300/40 px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-sky-100 transition hover:bg-sky-300/10"
+            >
+              {text.adminPanel}
+            </Link>
+          </div>
+        ) : null}
 
         <div className="mt-4">
           {hasToken ? (

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 
 import ArticleEditorWorkspace from '@/components/templates/ArticleEditorWorkspace';
 import { getArticleEditorText } from '@/components/templates/articleEditorText';
+import { requireAdminForInternalArticleStage } from '@/shared/admin/serverAdminAccess';
 import {
   getArticleFeatureStage,
   isArticleFeatureEnabled,
@@ -58,6 +59,8 @@ export default async function Page({
   if (!isArticleFeatureEnabled(featureStage)) {
     notFound();
   }
+
+  await requireAdminForInternalArticleStage(featureStage);
 
   return (
     <ArticleEditorWorkspace

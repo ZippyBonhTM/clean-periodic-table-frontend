@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import ArticleFeedWorkspace from '@/components/templates/ArticleFeedWorkspace';
 import { getArticleFeedText } from '@/components/templates/articleFeedText';
 import { listPublicArticleFeedServer } from '@/shared/api/articleServerApi';
+import { requireAdminForInternalArticleStage } from '@/shared/admin/serverAdminAccess';
 import { resolveArticleFeedBrowseFilters } from '@/shared/articles/articleFeedFilters';
 import {
   getArticleFeatureStage,
@@ -96,6 +97,8 @@ export default async function LocalizedArticleFeedPage({
   if (!isArticleFeatureEnabled(featureStage)) {
     notFound();
   }
+
+  await requireAdminForInternalArticleStage(featureStage);
 
   const { feed, isAvailable, errorMessage } = await listPublicArticleFeedServer({
     limit: 12,
