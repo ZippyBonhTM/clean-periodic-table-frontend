@@ -19,7 +19,8 @@ import { articleApi, ArticleApiConfigurationError } from '@/shared/api/articleAp
 import { logoutSession } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
 import {
-  filterPrivateArticles,
+  filterAndSortPrivateArticles,
+  type ArticlePrivateListSort,
   countPrivateArticlesByStatus,
   normalizeArticlePrivateListQuery,
   type ArticlePrivateListBrowseFilters,
@@ -217,6 +218,7 @@ export default function ArticlePrivateListWorkspace({
     initialFilters.status,
   );
   const [activeQuery, setActiveQuery] = useState(initialFilters.query);
+  const [activeSort, setActiveSort] = useState<ArticlePrivateListSort>(initialFilters.sort);
   const [searchInput, setSearchInput] = useState(initialFilters.query ?? '');
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -227,6 +229,7 @@ export default function ArticlePrivateListWorkspace({
   useEffect(() => {
     setActiveFilter(initialFilters.status);
     setActiveQuery(initialFilters.query);
+    setActiveSort(initialFilters.sort);
     setSearchInput(initialFilters.query ?? '');
   }, [initialFilters]);
 
@@ -318,7 +321,10 @@ export default function ArticlePrivateListWorkspace({
     (nextFilter: ArticlePrivateListStatusFilter) => {
       const normalizedQuery = normalizeArticlePrivateListQuery(searchInput);
 
-      if (nextFilter === activeFilter && normalizedQuery === activeQuery) {
+      if (
+        nextFilter === activeFilter &&
+        normalizedQuery === activeQuery
+      ) {
         return;
       }
 
@@ -329,10 +335,11 @@ export default function ArticlePrivateListWorkspace({
         buildLocalizedArticlePrivateListBrowsePath(locale, {
           status: nextFilter,
           query: normalizedQuery,
+          sort: activeSort,
         }),
       );
     },
-    [activeFilter, activeQuery, locale, router, searchInput],
+    [activeFilter, activeQuery, activeSort, locale, router, searchInput],
   );
 
   useEffect(() => {
@@ -368,11 +375,12 @@ export default function ArticlePrivateListWorkspace({
   const statusCounts = useMemo(() => countPrivateArticlesByStatus(items), [items]);
   const filteredItems = useMemo(
     () =>
-      filterPrivateArticles(items, {
+      filterAndSortPrivateArticles(items, {
         status: activeFilter,
         query: activeQuery,
+        sort: activeSort,
       }),
-    [activeFilter, activeQuery, items],
+    [activeFilter, activeQuery, activeSort, items],
   );
   const hasAppliedBrowseFilters = activeFilter !== 'all' || activeQuery !== null;
   const summaryLabel = useMemo(
@@ -414,10 +422,11 @@ export default function ArticlePrivateListWorkspace({
         buildLocalizedArticlePrivateListBrowsePath(locale, {
           status: activeFilter,
           query: normalizedQuery,
+          sort: activeSort,
         }),
       );
     },
-    [activeFilter, locale, router, searchInput],
+    [activeFilter, activeSort, locale, router, searchInput],
   );
   const onClearSearch = useCallback(() => {
     setActiveQuery(null);
@@ -425,9 +434,44 @@ export default function ArticlePrivateListWorkspace({
     router.push(
       buildLocalizedArticlePrivateListBrowsePath(locale, {
         status: activeFilter,
+        sort: activeSort,
       }),
     );
-  }, [activeFilter, locale, router]);
+  }, [activeFilter, activeSort, locale, router]);
+  const onChangeSort = useCallback(
+    (nextSort: ArticlePrivateListSort) => {
+      if (nextSort === activeSort) {
+        return;
+      }
+
+      setActiveSort(nextSort);
+      router.push(
+        buildLocalizedArticlePrivateListBrowsePath(locale, {
+          status: activeFilter,
+          query: activeQuery,
+          sort: nextSort,
+        }),
+      );
+    },
+    [activeFilter, activeQuery, activeSort, locale, router],
+  );
+  const sortOptions: Array<{
+    key: ArticlePrivateListSort;
+    label: string;
+  }> = useMemo(
+    () => [
+      { key: 'updated-desc', label: text.sort.updatedDesc },
+      { key: 'updated-asc', label: text.sort.updatedAsc },
+      { key: 'created-desc', label: text.sort.createdDesc },
+      { key: 'created-asc', label: text.sort.createdAsc },
+    ],
+    [
+      text.sort.createdAsc,
+      text.sort.createdDesc,
+      text.sort.updatedAsc,
+      text.sort.updatedDesc,
+    ],
+  );
 
   if (!isHydrated) {
     return (
@@ -554,6 +598,27 @@ export default function ArticlePrivateListWorkspace({
                   </Button>
                 </div>
               </form>
+              <div className="grid gap-3 lg:max-w-sm">
+                <label
+                  htmlFor="article-private-list-sort"
+                  className="text-[11px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)"
+                >
+                  {text.sort.label}
+                </label>
+                <select
+                  id="article-private-list-sort"
+                  name="article-private-list-sort"
+                  value={activeSort}
+                  onChange={(event) => onChangeSort(event.target.value as ArticlePrivateListSort)}
+                  className="w-full rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-soft) px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-(--accent)"
+                >
+                  {sortOptions.map((sortOption) => (
+                    <option key={sortOption.key} value={sortOption.key}>
+                      {sortOption.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {filterOptions.map((filterOption) => {
                   const isActive = filterOption.key === activeFilter;
