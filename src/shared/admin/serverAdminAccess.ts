@@ -8,7 +8,10 @@ import {
   resolveRequestOrigin,
   shouldRequireAdminForArticleStage,
 } from '@/shared/admin/adminAccess';
-import { SERVER_ACCESS_TOKEN_COOKIE_KEY } from '@/shared/auth/serverAccessTokenCookie';
+import {
+  CLIENT_SERVER_ACCESS_TOKEN_COOKIE_KEY,
+  SERVER_ACCESS_TOKEN_COOKIE_KEY,
+} from '@/shared/auth/serverAccessTokenCookie';
 import type { ArticleFeatureStage } from '@/shared/config/articleFeature';
 import type { AuthUserProfile, ProfileResponse, RefreshResponse } from '@/shared/types/auth';
 
@@ -64,11 +67,17 @@ async function requestServerAuthJson<ResponseType>(
 async function resolveServerUserProfile(): Promise<AuthUserProfile | null> {
   const requestCookies = await cookies();
   const mirroredAccessToken = requestCookies.get(SERVER_ACCESS_TOKEN_COOKIE_KEY)?.value?.trim() ?? '';
+  const clientMirroredAccessToken =
+    requestCookies.get(CLIENT_SERVER_ACCESS_TOKEN_COOKIE_KEY)?.value?.trim() ?? '';
 
-  if (mirroredAccessToken.length > 0) {
+  for (const candidateToken of [mirroredAccessToken, clientMirroredAccessToken]) {
+    if (candidateToken.length === 0) {
+      continue;
+    }
+
     const profileFromMirroredToken = await requestServerAuthJson<ProfileResponse>('/api/auth/profile', {
       method: 'GET',
-      token: mirroredAccessToken,
+      token: candidateToken,
     });
 
     if (profileFromMirroredToken?.userProfile !== undefined) {

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  CLIENT_SERVER_ACCESS_TOKEN_COOKIE_KEY,
   readServerAccessTokenFromResponseBody,
   resolveTokenMaxAgeSeconds,
+  SERVER_ACCESS_TOKEN_COOKIE_KEY,
   stripServerAccessTokenCookie,
 } from '@/shared/auth/serverAccessTokenCookie';
 
@@ -37,12 +39,12 @@ describe('serverAccessTokenCookie', () => {
   it('strips the mirrored server access token from forwarded cookie headers', () => {
     expect(
       stripServerAccessTokenCookie(
-        'foo=bar; clean_periodic_table_server_access_token=abc; theme=dark',
+        `foo=bar; ${SERVER_ACCESS_TOKEN_COOKIE_KEY}=abc; ${CLIENT_SERVER_ACCESS_TOKEN_COOKIE_KEY}=def; theme=dark`,
       ),
     ).toBe('foo=bar; theme=dark');
     expect(
       stripServerAccessTokenCookie(
-        'clean_periodic_table_server_access_token=abc',
+        `${SERVER_ACCESS_TOKEN_COOKIE_KEY}=abc; ${CLIENT_SERVER_ACCESS_TOKEN_COOKIE_KEY}=def`,
       ),
     ).toBeNull();
   });

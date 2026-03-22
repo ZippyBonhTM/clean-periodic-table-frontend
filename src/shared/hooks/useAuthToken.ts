@@ -1,8 +1,12 @@
 'use client';
 
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
 
 import { clearElementsCache } from '@/shared/api/backendApi';
+import {
+  clearClientServerAccessTokenCookie,
+  persistClientServerAccessTokenCookie,
+} from '@/shared/auth/clientAccessTokenCookie';
 import {
   clearAccessToken,
   readAccessToken,
@@ -56,6 +60,19 @@ function useAuthToken() {
     readSilentRefreshBlocked,
     () => false,
   );
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    if (token === null) {
+      clearClientServerAccessTokenCookie();
+      return;
+    }
+
+    persistClientServerAccessTokenCookie(token);
+  }, [isHydrated, token]);
 
   const persistToken = useCallback((nextToken: string, options: PersistTokenOptions = {}) => {
     const shouldClearSilentRefreshBlocked = options.clearSilentRefreshBlocked === true;
