@@ -99,10 +99,12 @@ function resolveStatusLabel(status: ArticleStatus, text: ReturnType<typeof getAr
 function ArticleFeedCard({
   item,
   locale,
+  token,
   text,
 }: {
   item: ArticleFeedItem;
   locale: AppLocale;
+  token: string | null;
   text: ReturnType<typeof getArticleFeedText>;
 }) {
   const publishedLabel =
@@ -116,6 +118,14 @@ function ArticleFeedCard({
     item.author.username?.trim() ||
     text.cards.bylineFallback;
   const articleHref = buildLocalizedArticleDetailPath(locale, item.slug);
+  const onOpenArticle = useCallback(() => {
+    void articleApi
+      .recordArticleOpen({
+        articleId: item.id,
+        token,
+      })
+      .catch(() => undefined);
+  }, [item.id, token]);
 
   return (
     <article className="surface-panel flex h-full flex-col justify-between rounded-[2rem] border border-(--border-subtle) p-5 shadow-sm">
@@ -146,7 +156,11 @@ function ArticleFeedCard({
 
         <div className="space-y-3">
           <h2 className="text-2xl font-black leading-tight text-(--text-strong)">
-            <Link href={articleHref} className="transition hover:text-(--accent)">
+            <Link
+              href={articleHref}
+              className="transition hover:text-(--accent)"
+              onClick={onOpenArticle}
+            >
               {item.title.trim().length > 0 ? item.title : text.cards.untitled}
             </Link>
           </h2>
@@ -193,9 +207,11 @@ function ArticleFeedCard({
               <p className="text-base font-black text-(--text-strong)">{Math.round(item.relevanceScore)}</p>
             </div>
           ) : null}
-          <LinkButton href={articleHref} variant="ghost" size="sm" className="rounded-full px-4">
-            {text.cards.openArticle}
-          </LinkButton>
+          <span onClick={onOpenArticle}>
+            <LinkButton href={articleHref} variant="ghost" size="sm" className="rounded-full px-4">
+              {text.cards.openArticle}
+            </LinkButton>
+          </span>
         </div>
       </div>
     </article>
@@ -529,7 +545,13 @@ export default function ArticleFeedWorkspace({
         {canShowFeed ? (
           <section className="grid gap-4 lg:grid-cols-2">
             {items.map((item) => (
-              <ArticleFeedCard key={item.id} item={item} locale={locale} text={text} />
+              <ArticleFeedCard
+                key={item.id}
+                item={item}
+                locale={locale}
+                token={token}
+                text={text}
+              />
             ))}
           </section>
         ) : null}

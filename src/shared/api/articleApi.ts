@@ -11,6 +11,7 @@ import type {
   ArticleImageUploadResult,
   ArticleOwnedDetailInput,
   ArticleDeleteInput,
+  ArticleRecordOpenInput,
   ArticlePublishInput,
   ArticleRecordViewInput,
   ArticleSaveInput,
@@ -364,6 +365,19 @@ function createArticleApi(): ArticleApi {
       await requestJson<null>(
         resolveArticleApiBaseUrl(),
         `/api/v1/articles/${encodeURIComponent(input.articleId)}/view`,
+        {
+          method: 'POST',
+          token: input.token ?? null,
+          signal: input.signal,
+          keepalive: true,
+        },
+      );
+    },
+
+    async recordArticleOpen(input: ArticleRecordOpenInput) {
+      await requestJson<null>(
+        resolveArticleApiBaseUrl(),
+        `/api/v1/articles/${encodeURIComponent(input.articleId)}/open`,
         {
           method: 'POST',
           token: input.token ?? null,
