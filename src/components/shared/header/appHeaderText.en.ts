@@ -59,7 +59,7 @@ export const appHeaderTextEn = {
     unavailable: 'Profile unavailable.',
     name: 'Name',
     email: 'Email',
-    role: 'Role',
+    role: 'Auth role',
     id: 'ID',
   },
 } as const;

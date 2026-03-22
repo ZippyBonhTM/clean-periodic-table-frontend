@@ -43,6 +43,7 @@ The admin frontend now supports an incremental migration path:
 The default remains `legacy-auth` to avoid downtime while the backend admin contract is being implemented.
 
 The user-menu shortcut to `/admin` now follows the same product-backed authority through `/api/admin/session`, with client-side caching used only as a display optimization.
+The auth profile shown in the header is informational only and must not be treated as the source of product admin authority.
 
 ## Current Guarantees
 

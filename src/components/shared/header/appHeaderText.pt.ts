@@ -59,7 +59,7 @@ export const appHeaderTextPt = {
     unavailable: 'Perfil indisponível.',
     name: 'Nome',
     email: 'E-mail',
-    role: 'Função',
+    role: 'Função no auth',
     id: 'ID',
   },
 } as const;
