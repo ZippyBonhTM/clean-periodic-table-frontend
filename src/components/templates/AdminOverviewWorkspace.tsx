@@ -3,6 +3,7 @@ import Panel from '@/components/atoms/Panel';
 import { getAdminWorkspaceText } from '@/components/templates/adminWorkspaceText';
 import {
   buildLocalizedAdminAccessPath,
+  buildLocalizedAdminAuditPath,
   buildLocalizedAdminContentPath,
   buildLocalizedAdminUsersPath,
 } from '@/shared/admin/adminRouting';
@@ -14,8 +15,8 @@ import {
 import type { ArticleFeatureStage } from '@/shared/config/articleFeature';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
-const ADMIN_AREA_COUNT = 4;
-const PROTECTED_ROUTE_COUNT = 9;
+const ADMIN_AREA_COUNT = 5;
+const PROTECTED_ROUTE_COUNT = 11;
 
 type AdminOverviewWorkspaceProps = {
   locale: AppLocale;
@@ -87,6 +88,9 @@ export default function AdminOverviewWorkspace({
             <div className="flex flex-wrap gap-3">
               <LinkButton href={buildLocalizedAdminUsersPath(locale)} variant="secondary" size="sm" className="rounded-full px-4">
                 {text.overview.openUsers}
+              </LinkButton>
+              <LinkButton href={buildLocalizedAdminAuditPath(locale)} variant="secondary" size="sm" className="rounded-full px-4">
+                {text.overview.openAudit}
               </LinkButton>
               <LinkButton href={buildLocalizedAdminAccessPath(locale)} variant="secondary" size="sm" className="rounded-full px-4">
                 {text.overview.openAccess}

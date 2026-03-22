@@ -1,34 +1,23 @@
-type AdminUsersCapabilityStatus = 'available' | 'guarded' | 'planned';
-type AdminUsersCapabilityTrack =
-  | 'session'
-  | 'access'
-  | 'directory'
-  | 'roles'
-  | 'moderation'
-  | 'audit';
-type AdminUsersStatusFilter = 'all' | AdminUsersCapabilityStatus;
-type AdminUsersTrackFilter = 'all' | AdminUsersCapabilityTrack;
+import type { AdminUserAccountStatus, AdminUserRole } from '@/shared/types/admin';
+
+type AdminUsersRoleFilter = 'all' | AdminUserRole;
+type AdminUsersStatusFilter = 'all' | AdminUserAccountStatus;
+type AdminUsersSort = 'created-desc' | 'created-asc' | 'last-seen-desc' | 'last-seen-asc';
 
 type AdminUsersBrowseFilters = {
+  role: AdminUsersRoleFilter;
   status: AdminUsersStatusFilter;
-  track: AdminUsersTrackFilter;
+  sort: AdminUsersSort;
   query: string | null;
+  cursor: string | null;
 };
 
 type AdminUsersSearchParamsInput = {
+  role?: string | string[] | null | undefined;
   status?: string | string[] | null | undefined;
-  track?: string | string[] | null | undefined;
+  sort?: string | string[] | null | undefined;
   q?: string | string[] | null | undefined;
-};
-
-type AdminUsersCapabilityRecord = {
-  title: string;
-  description: string;
-  dependency: string;
-  securityNote: string;
-  contract: string;
-  status: AdminUsersCapabilityStatus;
-  track: AdminUsersCapabilityTrack;
+  cursor?: string | string[] | null | undefined;
 };
 
 function normalizeAdminUsersQuery(value: string | string[] | null | undefined): string | null {
@@ -38,8 +27,22 @@ function normalizeAdminUsersQuery(value: string | string[] | null | undefined): 
   return normalizedValue.length > 0 ? normalizedValue : null;
 }
 
-function normalizeAdminUsersSearchText(value: string): string {
-  return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function normalizeAdminUsersCursor(value: string | string[] | null | undefined): string | null {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  const normalizedValue = rawValue?.trim() ?? '';
+
+  return normalizedValue.length > 0 ? normalizedValue : null;
+}
+
+function resolveAdminUsersRoleFilter(input: AdminUsersSearchParamsInput): AdminUsersRoleFilter {
+  const rawValue = Array.isArray(input.role) ? input.role[0] : input.role;
+  const normalizedValue = rawValue?.trim().toUpperCase() ?? '';
+
+  if (normalizedValue === 'USER' || normalizedValue === 'ADMIN') {
+    return normalizedValue;
+  }
+
+  return 'all';
 }
 
 function resolveAdminUsersStatusFilter(input: AdminUsersSearchParamsInput): AdminUsersStatusFilter {
@@ -47,9 +50,9 @@ function resolveAdminUsersStatusFilter(input: AdminUsersSearchParamsInput): Admi
   const normalizedValue = rawValue?.trim().toLowerCase() ?? '';
 
   if (
-    normalizedValue === 'available' ||
-    normalizedValue === 'guarded' ||
-    normalizedValue === 'planned'
+    normalizedValue === 'active' ||
+    normalizedValue === 'restricted' ||
+    normalizedValue === 'suspended'
   ) {
     return normalizedValue;
   }
@@ -57,110 +60,65 @@ function resolveAdminUsersStatusFilter(input: AdminUsersSearchParamsInput): Admi
   return 'all';
 }
 
-function resolveAdminUsersTrackFilter(input: AdminUsersSearchParamsInput): AdminUsersTrackFilter {
-  const rawValue = Array.isArray(input.track) ? input.track[0] : input.track;
+function resolveAdminUsersSort(input: AdminUsersSearchParamsInput): AdminUsersSort {
+  const rawValue = Array.isArray(input.sort) ? input.sort[0] : input.sort;
   const normalizedValue = rawValue?.trim().toLowerCase() ?? '';
 
   if (
-    normalizedValue === 'session' ||
-    normalizedValue === 'access' ||
-    normalizedValue === 'directory' ||
-    normalizedValue === 'roles' ||
-    normalizedValue === 'moderation' ||
-    normalizedValue === 'audit'
+    normalizedValue === 'created-asc' ||
+    normalizedValue === 'last-seen-desc' ||
+    normalizedValue === 'last-seen-asc'
   ) {
     return normalizedValue;
   }
 
-  return 'all';
+  return 'created-desc';
 }
 
 function resolveAdminUsersBrowseFilters(input: AdminUsersSearchParamsInput): AdminUsersBrowseFilters {
   return {
+    role: resolveAdminUsersRoleFilter(input),
     status: resolveAdminUsersStatusFilter(input),
-    track: resolveAdminUsersTrackFilter(input),
+    sort: resolveAdminUsersSort(input),
     query: normalizeAdminUsersQuery(input.q),
+    cursor: normalizeAdminUsersCursor(input.cursor),
   };
-}
-
-function matchesAdminUsersQuery(
-  capability: AdminUsersCapabilityRecord,
-  query: string,
-): boolean {
-  const normalizedQuery = normalizeAdminUsersSearchText(query);
-  const searchableText = [
-    capability.title,
-    capability.description,
-    capability.dependency,
-    capability.securityNote,
-    capability.contract,
-    capability.track,
-    capability.status,
-  ].join(' ');
-
-  return normalizeAdminUsersSearchText(searchableText).includes(normalizedQuery);
-}
-
-function filterAdminUsersCapabilities(
-  items: AdminUsersCapabilityRecord[],
-  filters: AdminUsersBrowseFilters,
-): AdminUsersCapabilityRecord[] {
-  return items.filter((item) => {
-    if (filters.status !== 'all' && item.status !== filters.status) {
-      return false;
-    }
-
-    if (filters.track !== 'all' && item.track !== filters.track) {
-      return false;
-    }
-
-    if (filters.query !== null && !matchesAdminUsersQuery(item, filters.query)) {
-      return false;
-    }
-
-    return true;
-  });
-}
-
-function countAdminUsersCapabilitiesByStatus(
-  items: AdminUsersCapabilityRecord[],
-): Record<AdminUsersStatusFilter, number> {
-  const counts: Record<AdminUsersStatusFilter, number> = {
-    all: items.length,
-    available: 0,
-    guarded: 0,
-    planned: 0,
-  };
-
-  for (const item of items) {
-    counts[item.status] += 1;
-  }
-
-  return counts;
 }
 
 function buildAdminUsersSearchParams(input: {
+  role?: AdminUsersRoleFilter | null;
   status?: AdminUsersStatusFilter | null;
-  track?: AdminUsersTrackFilter | null;
+  sort?: AdminUsersSort | null;
   query?: string | null;
+  cursor?: string | null;
 }): URLSearchParams {
   const searchParams = new URLSearchParams();
   const resolvedFilters = resolveAdminUsersBrowseFilters({
+    role: input.role,
     status: input.status,
-    track: input.track,
+    sort: input.sort,
     q: input.query,
+    cursor: input.cursor,
   });
+
+  if (resolvedFilters.role !== 'all') {
+    searchParams.set('role', resolvedFilters.role);
+  }
 
   if (resolvedFilters.status !== 'all') {
     searchParams.set('status', resolvedFilters.status);
   }
 
-  if (resolvedFilters.track !== 'all') {
-    searchParams.set('track', resolvedFilters.track);
+  if (resolvedFilters.sort !== 'created-desc') {
+    searchParams.set('sort', resolvedFilters.sort);
   }
 
   if (resolvedFilters.query !== null) {
     searchParams.set('q', resolvedFilters.query);
+  }
+
+  if (resolvedFilters.cursor !== null) {
+    searchParams.set('cursor', resolvedFilters.cursor);
   }
 
   return searchParams;
@@ -168,19 +126,17 @@ function buildAdminUsersSearchParams(input: {
 
 export {
   buildAdminUsersSearchParams,
-  countAdminUsersCapabilitiesByStatus,
-  filterAdminUsersCapabilities,
+  normalizeAdminUsersCursor,
   normalizeAdminUsersQuery,
   resolveAdminUsersBrowseFilters,
+  resolveAdminUsersRoleFilter,
+  resolveAdminUsersSort,
   resolveAdminUsersStatusFilter,
-  resolveAdminUsersTrackFilter,
 };
 export type {
   AdminUsersBrowseFilters,
-  AdminUsersCapabilityRecord,
-  AdminUsersCapabilityStatus,
-  AdminUsersCapabilityTrack,
+  AdminUsersRoleFilter,
   AdminUsersSearchParamsInput,
+  AdminUsersSort,
   AdminUsersStatusFilter,
-  AdminUsersTrackFilter,
 };

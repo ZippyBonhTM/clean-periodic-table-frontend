@@ -2,12 +2,16 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ADMIN_ACCESS_PATHNAME,
+  ADMIN_AUDIT_PATHNAME,
   ADMIN_CONTENT_PATHNAME,
   ADMIN_PANEL_PATHNAME,
   ADMIN_USERS_PATHNAME,
   buildLocalizedAdminAccessPath,
+  buildLocalizedAdminAuditBrowsePath,
+  buildLocalizedAdminAuditPath,
   buildLocalizedAdminContentPath,
   buildLocalizedAdminPath,
+  buildLocalizedAdminUserDetailPath,
   buildLocalizedAdminUsersBrowsePath,
   buildLocalizedAdminUsersPath,
 } from '@/shared/admin/adminRouting';
@@ -23,13 +27,29 @@ describe('adminRouting', () => {
     expect(ADMIN_USERS_PATHNAME).toBe('/admin/users');
     expect(buildLocalizedAdminUsersPath('en-US')).toBe('/en/admin/users');
     expect(buildLocalizedAdminUsersPath('pt-BR')).toBe('/pt/admin/users');
+    expect(buildLocalizedAdminUserDetailPath('en-US', 'user-1')).toBe('/en/admin/users/user-1');
     expect(
       buildLocalizedAdminUsersBrowsePath('en-US', {
-        status: 'planned',
-        track: 'directory',
+        role: 'ADMIN',
+        status: 'restricted',
+        sort: 'last-seen-desc',
         query: 'users',
+        cursor: 'cursor-1',
       }),
-    ).toBe('/en/admin/users?status=planned&track=directory&q=users');
+    ).toBe('/en/admin/users?role=ADMIN&status=restricted&sort=last-seen-desc&q=users&cursor=cursor-1');
+  });
+
+  it('builds the localized admin audit path for privileged history pages', () => {
+    expect(ADMIN_AUDIT_PATHNAME).toBe('/admin/audit');
+    expect(buildLocalizedAdminAuditPath('en-US')).toBe('/en/admin/audit');
+    expect(buildLocalizedAdminAuditPath('pt-BR')).toBe('/pt/admin/audit');
+    expect(
+      buildLocalizedAdminAuditBrowsePath('en-US', {
+        action: 'moderation',
+        query: 'session',
+        cursor: 'cursor-2',
+      }),
+    ).toBe('/en/admin/audit?action=moderation&q=session&cursor=cursor-2');
   });
 
   it('builds the localized admin access path for guardrail pages', () => {

@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented on the frontend as a guarded internal control surface.
+Implemented on the frontend as a guarded internal control surface with protected admin API wiring.
 
 ## Objective
 
@@ -18,7 +18,9 @@ Provide a professional ADMIN workspace that:
 The frontend currently includes these admin areas:
 
 - Overview
-- Users with URL-synced operational filters
+- Users directory with URL-synced filters
+- User detail with guarded role/moderation/session actions
+- Audit trail with URL-synced filters
 - Access
 - Content
 
@@ -28,6 +30,7 @@ All admin routes are:
 - deny-by-default on auth uncertainty
 - noindex
 - validated against the auth upstream directly during SSR
+- backed by a whitelisted `/api/admin/*` proxy for privileged account operations
 
 ## Current Guarantees
 
@@ -38,16 +41,17 @@ All admin routes are:
 
 ## Current Limitation
 
-The panel does not mutate users yet.
-The users area now helps separate live guardrails from backend-dependent operations, but it still does not execute account mutations.
+The frontend now contains the user directory, protected audit trail, and guarded mutation forms.
+However, real authority still depends on backend enforcement for:
 
-Real user administration still depends on backend endpoints for:
-
-- list users
+- bounded directory and audit queries
 - role changes
 - moderation actions
-- audit trail
-- bounded pagination and filters
+- session revocation
+- last-admin protection
+- self-protection rules
+- append-only audit records
+- rate limiting on privileged actions
 
 ## Frontend Design Rule
 

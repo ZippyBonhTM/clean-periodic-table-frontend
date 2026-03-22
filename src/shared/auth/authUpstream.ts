@@ -41,11 +41,28 @@ function buildAuthUpstreamUrl(path: string): URL | null {
   return new URL(normalizedPath, `${baseUrl}/`);
 }
 
+function buildAuthUpstreamApiUrl(path: string): URL | null {
+  const baseUrl = resolveAuthUpstreamBaseUrl();
+
+  if (baseUrl === null) {
+    return null;
+  }
+
+  const normalizedPath = path.trim().replace(/^\/+/, '');
+
+  if (normalizedPath.length === 0) {
+    return null;
+  }
+
+  return new URL(normalizedPath, `${baseUrl}/`);
+}
+
 function stripForwardedAuthCookieHeader(cookieHeader: string | null): string | null {
   return stripServerAccessTokenCookie(cookieHeader);
 }
 
 export {
+  buildAuthUpstreamApiUrl,
   buildAuthUpstreamUrl,
   resolveAuthUpstreamBaseUrl,
   stripForwardedAuthCookieHeader,

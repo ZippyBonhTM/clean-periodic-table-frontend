@@ -4,6 +4,7 @@ import { getAdminWorkspaceText } from '@/components/templates/adminWorkspaceText
 import type { AdminPanelSectionKey } from '@/shared/admin/adminPanel';
 import {
   buildLocalizedAdminAccessPath,
+  buildLocalizedAdminAuditPath,
   buildLocalizedAdminContentPath,
   buildLocalizedAdminPath,
   buildLocalizedAdminUsersPath,
@@ -14,6 +15,7 @@ import { buildAbsoluteAppUrl } from '@/shared/seo/appSite';
 const ADMIN_PATH_BY_SECTION: Record<AdminPanelSectionKey, (locale: AppLocale) => string> = {
   overview: buildLocalizedAdminPath,
   users: buildLocalizedAdminUsersPath,
+  audit: buildLocalizedAdminAuditPath,
   access: buildLocalizedAdminAccessPath,
   content: buildLocalizedAdminContentPath,
 };
