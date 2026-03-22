@@ -2,6 +2,7 @@ import {
   clearClientServerAccessTokenCookie,
   persistClientServerAccessTokenCookie,
 } from '@/shared/auth/clientAccessTokenCookie';
+import { clearCachedAuthProfile } from '@/shared/storage/authProfileStorage';
 
 const ACCESS_TOKEN_KEY = 'clean_periodic_table_access_token';
 const SILENT_REFRESH_BLOCKED_KEY = 'clean_periodic_table_silent_refresh_blocked';
@@ -32,6 +33,7 @@ function clearAccessToken(): void {
 
   window.localStorage.removeItem(ACCESS_TOKEN_KEY);
   clearClientServerAccessTokenCookie();
+  clearCachedAuthProfile();
 }
 
 function readSilentRefreshBlocked(): boolean {
