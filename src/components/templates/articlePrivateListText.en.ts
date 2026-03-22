@@ -4,6 +4,12 @@ export const articlePrivateListTextEn = {
     'Review your drafts, private posts, and published writing without exposing this route publicly.',
   internalBadge: 'Internal Preview',
   createDraft: 'New draft',
+  search: {
+    label: 'Search loaded articles',
+    placeholder: 'Search title, excerpt, slug, author, or hashtag',
+    submit: 'Search',
+    clear: 'Clear search',
+  },
   stats: {
     loadedCountLabel: 'articles loaded',
     visibleCountLabel: 'visible',
@@ -26,7 +32,7 @@ export const articlePrivateListTextEn = {
     loadMore: 'Load more',
     retry: 'Try again',
     createFirstDraft: 'Start your first draft',
-    filteredEmpty: 'No loaded articles match this status yet.',
+    filteredEmpty: 'No loaded articles match the current search and filters yet.',
   },
   cards: {
     untitled: 'Untitled article',
