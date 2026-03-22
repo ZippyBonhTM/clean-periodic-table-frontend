@@ -30,6 +30,8 @@ export const articleEditorTextEn = {
   actions: {
     saveDraft: 'Save draft',
     savingDraft: 'Saving draft...',
+    restoreRecovery: 'Restore draft',
+    dismissRecovery: 'Dismiss recovery',
     uploadImage: 'Upload image',
     uploadingImage: 'Uploading image...',
     uploadCoverImage: 'Upload cover',
@@ -66,6 +68,10 @@ export const articleEditorTextEn = {
     autosaveFailed: 'We could not auto-save your draft right now.',
     autosaveFailedNetwork:
       'We could not auto-save your draft. Check your connection and try again.',
+    recoveryAvailable:
+      'We found a local draft recovery snapshot for this editor. Restore it if you want to continue from the last unsaved changes.',
+    recoveryRestored: 'Recovered local draft changes into the editor.',
+    recoveryDiscarded: 'Discarded the local recovery snapshot for this editor.',
     publishSucceeded: 'Article published successfully.',
     publishFailed: 'We could not publish this article right now.',
     publishFailedNetwork: 'We could not publish this article. Check your connection and try again.',
@@ -90,6 +96,7 @@ export const articleEditorTextEn = {
     currentSlug: 'Current slug',
     lastSaved: 'Last saved',
     publishedAt: 'Published at',
+    recoverySavedAt: 'Recovery saved at',
     autosaveStatus: 'Auto-save',
     autosaveIdle: 'Up to date',
     autosavePending: 'Pending changes',

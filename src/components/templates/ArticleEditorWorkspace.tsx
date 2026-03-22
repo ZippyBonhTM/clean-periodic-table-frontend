@@ -18,6 +18,13 @@ import { articleApi, ArticleApiConfigurationError } from '@/shared/api/articleAp
 import { logoutSession } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
 import {
+  buildArticleEditorRecoveryRecord,
+  buildArticleEditorRecoveryStorageKey,
+  parseArticleEditorRecoveryRecord,
+  shouldOfferArticleEditorRecovery,
+  type ArticleEditorRecoveryRecord,
+} from '@/shared/articles/articleEditorRecovery';
+import {
   ARTICLE_IMAGE_UPLOAD_ACCEPTED_MIME_TYPES,
   buildArticleSlugPreview,
   buildArticleImageMarkdown,
@@ -192,10 +199,17 @@ export default function ArticleEditorWorkspace({
   const [autosaveError, setAutosaveError] = useState<string | null>(null);
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [pendingRecoveryRecord, setPendingRecoveryRecord] =
+    useState<ArticleEditorRecoveryRecord | null>(null);
+  const [hasLoadedRecoveryState, setHasLoadedRecoveryState] = useState(false);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const coverImageInputRef = useRef<HTMLInputElement | null>(null);
   const resolvedSessionMessage = resolveSessionWorkspaceMessage(authSession.message, authText);
   const workspaceHref = buildLocalizedArticlePrivateListPath(locale);
+  const recoveryStorageKey = useMemo(
+    () => buildArticleEditorRecoveryStorageKey(articleId),
+    [articleId],
+  );
 
   const onLogout = useCallback(() => {
     void logoutSession().catch(() => undefined);
@@ -324,6 +338,12 @@ export default function ArticleEditorWorkspace({
     () => hasArticleEditorChanges(currentDraftSnapshot, savedDraftSnapshot),
     [currentDraftSnapshot, savedDraftSnapshot],
   );
+  const differsFromPendingRecovery = useMemo(
+    () =>
+      pendingRecoveryRecord !== null &&
+      hasArticleEditorChanges(currentDraftSnapshot, pendingRecoveryRecord.snapshot),
+    [currentDraftSnapshot, pendingRecoveryRecord],
+  );
   const publishValidationMessage = useMemo(
     () =>
       resolvePublishValidationMessage(text, {
@@ -375,10 +395,34 @@ export default function ArticleEditorWorkspace({
     savedArticle?.status === 'published'
       ? text.notices.deleteConfirmPublished
       : text.notices.deleteConfirmDraft;
+  const recoverySavedAtLabel = useMemo(() => {
+    if (pendingRecoveryRecord === null) {
+      return null;
+    }
+
+    const recoveryDate = new Date(pendingRecoveryRecord.updatedAt);
+
+    if (Number.isNaN(recoveryDate.getTime())) {
+      return null;
+    }
+
+    return new Intl.DateTimeFormat(locale, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(recoveryDate);
+  }, [locale, pendingRecoveryRecord]);
+  const isRecoveryReady =
+    isHydrated &&
+    hasValidSession &&
+    (articleId === undefined || (!isLoadingArticle && loadError === null));
 
   const onRetryLoad = useCallback(() => {
     setLoadAttempt((currentValue) => currentValue + 1);
   }, []);
+
+  const clearRecoveryRecord = useCallback(() => {
+    window.localStorage.removeItem(recoveryStorageKey);
+  }, [recoveryStorageKey]);
 
   const performSave = useCallback(async (origin: 'manual' | 'autosave') => {
     if (token === null) {
@@ -613,6 +657,131 @@ export default function ArticleEditorWorkspace({
   );
 
   useEffect(() => {
+    setPendingRecoveryRecord(null);
+    setHasLoadedRecoveryState(false);
+  }, [articleId, loadAttempt]);
+
+  useEffect(() => {
+    if (!isRecoveryReady) {
+      return;
+    }
+
+    const rawRecoveryRecord = window.localStorage.getItem(recoveryStorageKey);
+    const recoveryRecord = parseArticleEditorRecoveryRecord(rawRecoveryRecord);
+
+    if (
+      recoveryRecord === null ||
+      !shouldOfferArticleEditorRecovery({
+        recoveryRecord,
+        savedDraft: savedDraftSnapshot,
+      })
+    ) {
+      if (rawRecoveryRecord !== null) {
+        clearRecoveryRecord();
+      }
+
+      setPendingRecoveryRecord(null);
+      setHasLoadedRecoveryState(true);
+      return;
+    }
+
+    setPendingRecoveryRecord(recoveryRecord);
+    setHasLoadedRecoveryState(true);
+  }, [
+    clearRecoveryRecord,
+    isRecoveryReady,
+    recoveryStorageKey,
+    savedDraftSnapshot,
+  ]);
+
+  useEffect(() => {
+    if (!hasLoadedRecoveryState || !isRecoveryReady) {
+      return;
+    }
+
+    if (pendingRecoveryRecord !== null) {
+      return;
+    }
+
+    if (!hasUnsavedChanges) {
+      clearRecoveryRecord();
+      return;
+    }
+
+    const nextRecoveryRecord = buildArticleEditorRecoveryRecord({
+      articleId,
+      snapshot: currentDraftSnapshot,
+      savedArticleUpdatedAt: savedArticle?.updatedAt ?? null,
+    });
+
+    window.localStorage.setItem(recoveryStorageKey, JSON.stringify(nextRecoveryRecord));
+  }, [
+    articleId,
+    clearRecoveryRecord,
+    currentDraftSnapshot,
+    hasLoadedRecoveryState,
+    hasUnsavedChanges,
+    isRecoveryReady,
+    pendingRecoveryRecord,
+    recoveryStorageKey,
+    savedArticle?.updatedAt,
+  ]);
+
+  useEffect(() => {
+    if (
+      pendingRecoveryRecord === null ||
+      !hasUnsavedChanges ||
+      !differsFromPendingRecovery
+    ) {
+      return;
+    }
+
+    setPendingRecoveryRecord(null);
+  }, [differsFromPendingRecovery, hasUnsavedChanges, pendingRecoveryRecord]);
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) {
+      return;
+    }
+
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', onBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
+  const onRestoreRecovery = useCallback(() => {
+    if (pendingRecoveryRecord === null) {
+      return;
+    }
+
+    setTitle(pendingRecoveryRecord.snapshot.title);
+    setExcerpt(pendingRecoveryRecord.snapshot.excerpt);
+    setCoverImage(pendingRecoveryRecord.snapshot.coverImage);
+    setMarkdownSource(pendingRecoveryRecord.snapshot.markdownSource);
+    setVisibility(pendingRecoveryRecord.snapshot.visibility);
+    setHashtagsInput(
+      pendingRecoveryRecord.snapshot.hashtags.map((hashtag) => `#${hashtag}`).join(', '),
+    );
+    setFeedbackError(null);
+    setFeedbackSuccess(text.notices.recoveryRestored);
+    setPendingRecoveryRecord(null);
+  }, [pendingRecoveryRecord, text.notices.recoveryRestored]);
+
+  const onDismissRecovery = useCallback(() => {
+    clearRecoveryRecord();
+    setPendingRecoveryRecord(null);
+    setFeedbackError(null);
+    setFeedbackSuccess(text.notices.recoveryDiscarded);
+  }, [clearRecoveryRecord, text.notices.recoveryDiscarded]);
+
+  useEffect(() => {
     if (!hasValidSession || token === null || isLoadingArticle || loadError !== null) {
       return;
     }
@@ -845,6 +1014,37 @@ export default function ArticleEditorWorkspace({
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)]">
             <section className="space-y-6">
               <Panel className="space-y-5">
+                {pendingRecoveryRecord !== null ? (
+                  <div className="space-y-3 rounded-[1.4rem] border border-amber-300/30 bg-amber-400/10 p-4">
+                    <p className="text-sm leading-relaxed text-amber-50">
+                      {text.notices.recoveryAvailable}
+                    </p>
+                    {recoverySavedAtLabel !== null ? (
+                      <p className="text-xs uppercase tracking-[0.14em] text-amber-100/80">
+                        {text.meta.recoverySavedAt}: {recoverySavedAtLabel}
+                      </p>
+                    ) : null}
+                    <div className="flex flex-wrap gap-3">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={onRestoreRecovery}
+                        disabled={activeMutation !== null || isLoadingArticle}
+                      >
+                        {text.actions.restoreRecovery}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onDismissRecovery}
+                        disabled={activeMutation !== null || isLoadingArticle}
+                      >
+                        {text.actions.dismissRecovery}
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="space-y-1.5">
                   <label
                     htmlFor="article-editor-title"
