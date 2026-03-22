@@ -29,8 +29,18 @@ All admin routes are:
 - server-guarded
 - deny-by-default on auth uncertainty
 - noindex
-- validated against the auth upstream directly during SSR
+- resolved through an admin authorization bridge on the frontend
 - backed by a whitelisted `/api/admin/*` proxy for privileged account operations
+
+## Current Migration Mode
+
+The admin frontend now supports an incremental migration path:
+
+- `ADMIN_AUTHZ_SOURCE=legacy-auth`: keep current compatibility and resolve admin authority from the auth service
+- `ADMIN_AUTHZ_SOURCE=backend`: resolve admin authority from the product backend only
+- `ADMIN_AUTHZ_SOURCE=auto`: prefer the product backend and fall back to the legacy auth source when the backend admin contract is not ready yet
+
+The default remains `legacy-auth` to avoid downtime while the backend admin contract is being implemented.
 
 ## Current Guarantees
 

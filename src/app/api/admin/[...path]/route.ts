@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import {
+  buildAdminUpstreamApiUrl,
+  resolveAdminProxyTarget,
+  resolveAdminUpstreamBaseUrl,
+} from '@/shared/admin/adminUpstream';
+import {
   buildAuthUpstreamApiUrl,
   resolveAuthUpstreamBaseUrl,
   stripForwardedAuthCookieHeader,
@@ -53,25 +58,42 @@ async function proxyAdminRequest(request: NextRequest, context: RouteContext): P
   const params = await context.params;
   const pathSegments = params.path ?? [];
   const upstreamPath = resolveAllowedAdminUpstreamPath(pathSegments, request.method);
+  const proxyTarget = resolveAdminProxyTarget();
 
   if (upstreamPath === null) {
     return NextResponse.json({ message: 'Not found' }, { status: 404 });
   }
 
-  const baseUrl = resolveAuthUpstreamBaseUrl();
+  const baseUrl =
+    proxyTarget === 'backend'
+      ? resolveAdminUpstreamBaseUrl()
+      : resolveAuthUpstreamBaseUrl();
 
   if (baseUrl === null) {
     return NextResponse.json(
-      { message: 'Auth API URL is not configured on the frontend runtime.' },
+      {
+        message:
+          proxyTarget === 'backend'
+            ? 'Admin API URL is not configured on the frontend runtime.'
+            : 'Auth API URL is not configured on the frontend runtime.',
+      },
       { status: 500 },
     );
   }
 
-  const upstreamUrl = buildAuthUpstreamApiUrl(upstreamPath);
+  const upstreamUrl =
+    proxyTarget === 'backend'
+      ? buildAdminUpstreamApiUrl(upstreamPath)
+      : buildAuthUpstreamApiUrl(upstreamPath);
 
   if (upstreamUrl === null) {
     return NextResponse.json(
-      { message: 'Could not resolve admin upstream URL for this request.' },
+      {
+        message:
+          proxyTarget === 'backend'
+            ? 'Could not resolve backend admin URL for this request.'
+            : 'Could not resolve legacy admin URL for this request.',
+      },
       { status: 500 },
     );
   }
@@ -82,7 +104,10 @@ async function proxyAdminRequest(request: NextRequest, context: RouteContext): P
   const accept = request.headers.get('accept');
   const contentType = request.headers.get('content-type');
   const authorization = request.headers.get('authorization');
-  const cookie = stripForwardedAuthCookieHeader(request.headers.get('cookie'));
+  const cookie =
+    proxyTarget === 'legacy-auth'
+      ? stripForwardedAuthCookieHeader(request.headers.get('cookie'))
+      : null;
 
   if (accept !== null) {
     headers.set('accept', accept);
@@ -119,7 +144,9 @@ async function proxyAdminRequest(request: NextRequest, context: RouteContext): P
     const message =
       caughtError instanceof Error && caughtError.message.trim().length > 0
         ? caughtError.message
-        : 'Failed to reach admin service.';
+        : proxyTarget === 'backend'
+          ? 'Failed to reach backend admin service.'
+          : 'Failed to reach legacy admin service.';
 
     return NextResponse.json({ message }, { status: 502 });
   }
