@@ -33,6 +33,7 @@ function buildLocalizedArticlePrivateListBrowsePath(
   locale: AppLocale,
   input: {
     status?: 'all' | 'draft' | 'published' | 'archived' | null;
+    query?: string | null;
   } = {},
 ): string {
   const basePath = buildLocalizedArticlePrivateListPath(locale);

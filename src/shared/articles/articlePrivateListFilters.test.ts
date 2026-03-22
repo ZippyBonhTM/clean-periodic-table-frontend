@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest';
 import {
   buildArticlePrivateListSearchParams,
   countPrivateArticlesByStatus,
+  filterPrivateArticles,
   filterPrivateArticlesByStatus,
+  normalizeArticlePrivateListQuery,
+  resolveArticlePrivateListBrowseFilters,
   resolveArticlePrivateListStatusFilter,
 } from '@/shared/articles/articlePrivateListFilters';
 import type { ArticleSummary } from '@/shared/types/article';
@@ -32,7 +35,7 @@ const SAMPLE_ITEMS: ArticleSummary[] = [
     id: 'article-2',
     title: 'Published article',
     slug: 'published-article',
-    excerpt: 'Published excerpt',
+    excerpt: 'Published excerpt about química avançada',
     visibility: 'public',
     status: 'published',
     coverImage: null,
@@ -94,12 +97,57 @@ describe('articlePrivateListFilters', () => {
     expect(resolveArticlePrivateListStatusFilter({})).toBe('all');
   });
 
+  it('resolves the combined browse filters from status and query params', () => {
+    expect(
+      resolveArticlePrivateListBrowseFilters({
+        status: 'published',
+        q: '  orbitals and ions  ',
+      }),
+    ).toEqual({
+      status: 'published',
+      query: 'orbitals and ions',
+    });
+  });
+
+  it('normalizes the local query input safely', () => {
+    expect(normalizeArticlePrivateListQuery('  Atomic   Orbitals  ')).toBe('Atomic Orbitals');
+    expect(normalizeArticlePrivateListQuery('   ')).toBeNull();
+  });
+
+  it('filters loaded private articles by status and query together', () => {
+    expect(
+      filterPrivateArticles(SAMPLE_ITEMS, {
+        status: 'all',
+        query: 'ada',
+      }),
+    ).toEqual(SAMPLE_ITEMS);
+    expect(
+      filterPrivateArticles(SAMPLE_ITEMS, {
+        status: 'published',
+        query: 'published excerpt',
+      }),
+    ).toEqual([SAMPLE_ITEMS[1]]);
+    expect(
+      filterPrivateArticles(SAMPLE_ITEMS, {
+        status: 'published',
+        query: 'quimica',
+      }),
+    ).toEqual([SAMPLE_ITEMS[1]]);
+    expect(
+      filterPrivateArticles(SAMPLE_ITEMS, {
+        status: 'archived',
+        query: 'draft',
+      }),
+    ).toEqual([]);
+  });
+
   it('builds private list search params without encoding the default all filter', () => {
     expect(
       buildArticlePrivateListSearchParams({
         status: 'published',
+        query: 'atomic orbitals',
       }).toString(),
-    ).toBe('status=published');
+    ).toBe('status=published&q=atomic+orbitals');
     expect(
       buildArticlePrivateListSearchParams({
         status: 'all',
