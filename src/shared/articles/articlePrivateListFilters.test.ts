@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildArticlePrivateListSearchParams,
   countPrivateArticlesByStatus,
   filterPrivateArticlesByStatus,
+  resolveArticlePrivateListStatusFilter,
 } from '@/shared/articles/articlePrivateListFilters';
 import type { ArticleSummary } from '@/shared/types/article';
 
@@ -81,5 +83,27 @@ describe('articlePrivateListFilters', () => {
       published: 1,
       archived: 1,
     });
+  });
+
+  it('resolves a private list status filter from query params safely', () => {
+    expect(resolveArticlePrivateListStatusFilter({ status: 'draft' })).toBe('draft');
+    expect(resolveArticlePrivateListStatusFilter({ status: ['archived', 'draft'] })).toBe(
+      'archived',
+    );
+    expect(resolveArticlePrivateListStatusFilter({ status: 'invalid-status' })).toBe('all');
+    expect(resolveArticlePrivateListStatusFilter({})).toBe('all');
+  });
+
+  it('builds private list search params without encoding the default all filter', () => {
+    expect(
+      buildArticlePrivateListSearchParams({
+        status: 'published',
+      }).toString(),
+    ).toBe('status=published');
+    expect(
+      buildArticlePrivateListSearchParams({
+        status: 'all',
+      }).toString(),
+    ).toBe('');
   });
 });

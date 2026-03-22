@@ -9,6 +9,7 @@ import {
   buildLocalizedArticleEditorPath,
   buildLocalizedArticleFeedBrowsePath,
   buildLocalizedArticleFeedPath,
+  buildLocalizedArticlePrivateListBrowsePath,
   buildLocalizedArticlePrivateListPath,
 } from '@/shared/articles/articleRouting';
 
@@ -23,6 +24,12 @@ describe('articleRouting', () => {
     expect(ARTICLE_PRIVATE_LIST_PATHNAME).toBe('/me/articles');
     expect(buildLocalizedArticlePrivateListPath('en-US')).toBe('/en/me/articles');
     expect(buildLocalizedArticlePrivateListPath('pt-BR')).toBe('/pt/me/articles');
+    expect(
+      buildLocalizedArticlePrivateListBrowsePath('en-US', {
+        status: 'archived',
+      }),
+    ).toBe('/en/me/articles?status=archived');
+    expect(buildLocalizedArticlePrivateListBrowsePath('pt-BR')).toBe('/pt/me/articles');
   });
 
   it('builds the localized article editor create path outside global app routing', () => {
