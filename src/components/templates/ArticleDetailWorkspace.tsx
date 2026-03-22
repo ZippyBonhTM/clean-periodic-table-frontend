@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import Button from '@/components/atoms/Button';
@@ -10,7 +11,10 @@ import Panel from '@/components/atoms/Panel';
 import type { AuthModalMode } from '@/components/organisms/auth/AuthModal';
 import { articleApi, ArticleApiConfigurationError } from '@/shared/api/articleApi';
 import { ApiError } from '@/shared/api/httpClient';
-import { buildLocalizedArticleFeedPath } from '@/shared/articles/articleRouting';
+import {
+  buildLocalizedArticleFeedBrowsePath,
+  buildLocalizedArticleFeedPath,
+} from '@/shared/articles/articleRouting';
 import type { ArticleFeatureStage } from '@/shared/config/articleFeature';
 import type { ArticleDetail, ArticleStatus } from '@/shared/types/article';
 import { logoutSession } from '@/shared/api/authApi';
@@ -36,6 +40,13 @@ type ArticleSaveActionState = {
   status: 'idle' | 'saving' | 'saved';
   error: string | null;
   success: string | null;
+};
+
+type ArticleCopyLinkState = 'idle' | 'copying' | 'copied';
+type ArticleCopyLinkActionState = {
+  articleId: string | null;
+  status: ArticleCopyLinkState;
+  error: string | null;
 };
 
 function resolveSaveActionErrorMessage(
@@ -73,6 +84,29 @@ function resolveStatusLabel(status: ArticleStatus, text: ReturnType<typeof getAr
   return text.status.published;
 }
 
+async function copyArticleLinkToClipboard(value: string): Promise<void> {
+  if (navigator.clipboard !== undefined && window.isSecureContext) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.setAttribute('readonly', 'true');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  textarea.setSelectionRange(0, textarea.value.length);
+
+  const didCopy = document.execCommand('copy');
+  document.body.removeChild(textarea);
+
+  if (!didCopy) {
+    throw new Error('ARTICLE_COPY_LINK_FAILED');
+  }
+}
+
 export default function ArticleDetailWorkspace({
   locale,
   featureStage,
@@ -103,6 +137,11 @@ export default function ArticleDetailWorkspace({
     error: null,
     success: null,
   });
+  const [copyLinkActionState, setCopyLinkActionState] = useState<ArticleCopyLinkActionState>({
+    articleId: null,
+    status: 'idle',
+    error: null,
+  });
   const activeArticleId = article?.id ?? null;
   const saveState =
     saveActionState.articleId === activeArticleId ? saveActionState.status : 'idle';
@@ -110,6 +149,10 @@ export default function ArticleDetailWorkspace({
     saveActionState.articleId === activeArticleId ? saveActionState.error : null;
   const saveSuccess =
     saveActionState.articleId === activeArticleId ? saveActionState.success : null;
+  const copyState =
+    copyLinkActionState.articleId === activeArticleId ? copyLinkActionState.status : 'idle';
+  const copyError =
+    copyLinkActionState.articleId === activeArticleId ? copyLinkActionState.error : null;
 
   const onLogout = useCallback(() => {
     void logoutSession().catch(() => undefined);
@@ -147,6 +190,28 @@ export default function ArticleDetailWorkspace({
       })
       .catch(() => undefined);
   }, [article, isAvailable, token]);
+
+  useEffect(() => {
+    if (copyState !== 'copied' || activeArticleId === null) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setCopyLinkActionState((currentState) =>
+        currentState.articleId !== activeArticleId
+          ? currentState
+          : {
+              articleId: activeArticleId,
+              status: 'idle',
+              error: null,
+            },
+      );
+    }, 2_400);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [activeArticleId, copyState]);
 
   const performSaveArticle = useCallback(
     async (activeToken: string) => {
@@ -217,6 +282,33 @@ export default function ArticleDetailWorkspace({
 
     void performSaveArticle(token);
   }, [article, authSession.status, openAuthModal, performSaveArticle, saveState, token]);
+
+  const onCopyArticleLink = useCallback(async () => {
+    if (article === null || copyState === 'copying') {
+      return;
+    }
+
+    setCopyLinkActionState({
+      articleId: article.id,
+      status: 'copying',
+      error: null,
+    });
+
+    try {
+      await copyArticleLinkToClipboard(window.location.href);
+      setCopyLinkActionState({
+        articleId: article.id,
+        status: 'copied',
+        error: null,
+      });
+    } catch {
+      setCopyLinkActionState({
+        articleId: article.id,
+        status: 'idle',
+        error: text.notices.copyLinkFailed,
+      });
+    }
+  }, [article, copyState, text.notices.copyLinkFailed]);
 
   if (!isAvailable || article === null) {
     return (
@@ -301,6 +393,19 @@ export default function ArticleDetailWorkspace({
                     ? text.actions.savedArticle
                     : text.actions.saveArticle}
               </Button>
+              <Button
+                variant={copyState === 'copied' ? 'ghost' : 'secondary'}
+                size="sm"
+                onClick={() => void onCopyArticleLink()}
+                disabled={copyState === 'copying'}
+                className="rounded-full px-4"
+              >
+                {copyState === 'copying'
+                  ? text.actions.copyingLink
+                  : copyState === 'copied'
+                    ? text.actions.copiedLink
+                    : text.actions.copyLink}
+              </Button>
               <span className="inline-flex rounded-full border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-(--text-strong)">
                 {resolveStatusLabel(article.status, text)}
               </span>
@@ -341,6 +446,12 @@ export default function ArticleDetailWorkspace({
               </p>
             ) : null}
 
+            {copyError !== null ? (
+              <p className="rounded-lg border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
+                {copyError}
+              </p>
+            ) : null}
+
             {article.coverImage !== null ? (
               <div className="overflow-hidden rounded-[2rem] border border-(--border-subtle) bg-[var(--surface-2)] shadow-[0_30px_90px_-56px_rgba(15,23,42,1)]">
                 {/* Cover URLs come from runtime storage/CDN configuration, so we render them directly here. */}
@@ -378,12 +489,16 @@ export default function ArticleDetailWorkspace({
               <div className="flex flex-wrap gap-2">
                 {article.hashtags.length > 0 ? (
                   article.hashtags.map((hashtag) => (
-                    <span
+                    <Link
                       key={hashtag.id}
-                      className="inline-flex rounded-full border border-(--border-subtle) bg-[var(--surface-2)] px-3 py-1 text-xs font-semibold text-(--text-muted)"
+                      href={buildLocalizedArticleFeedBrowsePath(locale, {
+                        hashtag: hashtag.name,
+                      })}
+                      title={`${text.meta.browseHashtag}: #${hashtag.name}`}
+                      className="inline-flex rounded-full border border-(--border-subtle) bg-[var(--surface-2)] px-3 py-1 text-xs font-semibold text-(--text-muted) transition hover:border-(--accent) hover:text-(--text-strong)"
                     >
                       #{hashtag.name}
-                    </span>
+                    </Link>
                   ))
                 ) : (
                   <span className="text-sm text-(--text-muted)">{text.meta.noHashtags}</span>
