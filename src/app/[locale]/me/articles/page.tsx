@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 
 import ArticlePrivateListWorkspace from '@/components/templates/ArticlePrivateListWorkspace';
 import { getArticlePrivateListText } from '@/components/templates/articlePrivateListText';
-import { resolveArticlePrivateListStatusFilter } from '@/shared/articles/articlePrivateListFilters';
+import { resolveArticlePrivateListBrowseFilters } from '@/shared/articles/articlePrivateListFilters';
 import {
   getArticleFeatureStage,
   isArticleFeatureEnabled,
@@ -18,6 +18,7 @@ type LocalizedArticlePrivateListPageProps = {
   }>;
   searchParams: Promise<{
     status?: string | string[] | undefined;
+    q?: string | string[] | undefined;
   }>;
 };
 
@@ -53,7 +54,7 @@ export default async function LocalizedArticlePrivateListPage({
 }: LocalizedArticlePrivateListPageProps) {
   const { locale } = await params;
   const resolvedLocale = resolveAppLocaleFromSegment(locale);
-  const initialFilter = resolveArticlePrivateListStatusFilter(await searchParams);
+  const initialFilters = resolveArticlePrivateListBrowseFilters(await searchParams);
 
   if (resolvedLocale === null) {
     notFound();
@@ -69,7 +70,7 @@ export default async function LocalizedArticlePrivateListPage({
     <ArticlePrivateListWorkspace
       locale={resolvedLocale}
       featureStage={featureStage}
-      initialFilter={initialFilter}
+      initialFilters={initialFilters}
     />
   );
 }
