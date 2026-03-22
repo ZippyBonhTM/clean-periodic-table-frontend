@@ -1,40 +1,153 @@
 export const adminWorkspaceTextEn = {
-  title: 'Admin control panel.',
-  description:
-    'Review internal previews and centralize admin-only actions without exposing unfinished areas to regular users.',
-  badge: 'ADMIN only',
-  session: {
-    title: 'Current admin session',
-    description: 'This page only renders after a server-side admin check.',
+  shell: {
+    badge: 'ADMIN control',
+    title: 'Operations panel built for guarded work.',
+    description:
+      'Review protected areas, inspect content workflows, and prepare user management without exposing unfinished tooling to regular visitors.',
+    navigationLabel: 'Admin areas',
+    currentAdminLabel: 'Current admin',
+    featureStageLabel: 'Article stage',
+    featureStageStates: {
+      off: 'Off',
+      internal: 'Internal',
+      public: 'Public',
+    },
+    serverGuardLabel: 'Guard mode',
+    serverGuardValue: 'Server-side deny by default',
+  },
+  sections: {
+    overview: {
+      navLabel: 'Overview',
+      title: 'Admin overview',
+      description: 'High-level control room for guarded routes, feature visibility, and next operational actions.',
+    },
+    users: {
+      navLabel: 'Users',
+      title: 'User management',
+      description: 'Structure the most common account administration workflows with safe status reporting.',
+    },
+    access: {
+      navLabel: 'Access',
+      title: 'Access and guardrails',
+      description: 'Track which routes are protected, how they are enforced, and what is currently visible.',
+    },
+    content: {
+      navLabel: 'Content',
+      title: 'Content operations',
+      description: 'Operate article previews, moderation-oriented checks, and content safety policies from one place.',
+    },
+  },
+  common: {
     name: 'Name',
     email: 'Email',
     role: 'Role',
+    status: 'Status',
+    access: 'Access',
+    guard: 'Guard',
+    visibility: 'Visibility',
+    surface: 'Surface',
+    dependency: 'Dependency',
+    securityNote: 'Security note',
   },
-  preview: {
-    title: 'Internal previews',
-    description:
-      'When a feature is in the internal stage, admins can open it from here while non-admin visitors receive 404.',
-    featureStateLabel: 'Article feature stage',
-    states: {
-      off: 'Off',
-      internal: 'Internal preview',
-      public: 'Public',
+  overview: {
+    cards: {
+      adminAreas: 'Admin areas',
+      protectedRoutes: 'Protected routes',
+      articleMode: 'Article mode',
+      authSource: 'Auth source',
     },
-    unavailable: 'The Article System is currently off in this environment.',
-    openFeed: 'Open article feed',
-    openWorkspace: 'Open article workspace',
-    createDraft: 'Open article editor',
+    authSourceValue: 'Auth proxy + refresh cookie',
+    quickActionsTitle: 'Quick actions',
+    quickActionsDescription: 'Jump directly to the protected areas you are most likely to inspect during development and moderation work.',
+    openUsers: 'Open users area',
+    openAccess: 'Review guardrails',
+    openContent: 'Open content ops',
+    openArticleFeed: 'Open article feed',
+    openArticleWorkspace: 'Open article workspace',
+    openArticleEditor: 'Open article editor',
+    articleUnavailable: 'The Article System is off in this environment, so content preview actions stay disabled here.',
+    readinessTitle: 'Operational readiness',
+    readinessDescription: 'This panel is ready for secure internal use now. User mutations are intentionally waiting for dedicated backend admin endpoints.',
   },
-  management: {
-    title: 'User management',
-    description:
-      'This panel is ready for future admin operations such as role changes, moderation actions, and restricted maintenance flows.',
-    placeholder:
-      'The UI foundation is in place, but real user mutation actions still depend on dedicated backend admin endpoints.',
+  users: {
+    searchLabel: 'Search capabilities',
+    searchPlaceholder: 'Search capability, action, or dependency',
+    currentAdminTitle: 'Current admin record',
+    currentAdminDescription: 'This is the only live user profile available in the frontend today.',
+    capabilitiesTitle: 'Common admin user operations',
+    capabilitiesDescription: 'Availability reflects what the current frontend and backend contracts can safely support right now.',
+    empty: 'No admin capability matched this search.',
+    statuses: {
+      available: 'Ready now',
+      planned: 'Needs backend',
+      guarded: 'Guarded foundation',
+    },
+    capabilityItems: {
+      resolveSession: {
+        title: 'Resolve current admin session',
+        description: 'Server-side access already confirms that the acting user is ADMIN before rendering the panel.',
+        dependency: 'Existing auth proxy and refresh cookie session',
+        securityNote: 'This is live and deny-by-default when auth is uncertain.',
+      },
+      openProtectedAreas: {
+        title: 'Open admin-only areas safely',
+        description: 'Professional admin panels need clear separation between public and internal routes.',
+        dependency: 'Current admin route guards',
+        securityNote: 'Protected surfaces render 404 for non-admins.',
+      },
+      listUsers: {
+        title: 'List platform users',
+        description: 'A dedicated user directory should expose pagination, filters, and minimal identity fields only.',
+        dependency: 'Backend admin users endpoint',
+        securityNote: 'Must never trust client-side role changes or unbounded queries.',
+      },
+      changeRole: {
+        title: 'Change user role',
+        description: 'Promote or demote users through audited admin actions with explicit confirmation.',
+        dependency: 'Backend role mutation endpoint',
+        securityNote: 'Needs server-side authorization, audit trail, and self-protection rules.',
+      },
+      suspendAccount: {
+        title: 'Suspend or restrict accounts',
+        description: 'Common admin workflows usually include temporary account restrictions and recovery steps.',
+        dependency: 'Backend moderation endpoints',
+        securityNote: 'Needs clear appeal and recovery logic before release.',
+      },
+    },
   },
-  security: {
-    title: 'Access policy',
-    description:
-      'Routes marked as internal now require an ADMIN session on the server. Everyone else receives the shared 404 page.',
+  access: {
+    summaryTitle: 'Guardrail summary',
+    summaryDescription: 'Internal surfaces are protected on the server, kept out of indexation, and denied by default whenever auth is uncertain.',
+    matrixTitle: 'Route protection matrix',
+    matrixDescription: 'This matrix reflects the current access policy enforced by the frontend.',
+    states: {
+      serverAdmin: 'Server admin check',
+      featureStage: 'Feature stage gate',
+      noindex: 'Noindex',
+      publicWhenReleased: 'Public when released',
+      disabled: 'Disabled / 404',
+    },
+    accessRules: {
+      adminOnly: 'ADMIN only',
+      articleInternal: 'ADMIN only while internal',
+      articlePublic: 'Public feed and detail, authenticated owner workspace',
+      unavailable: 'Unavailable',
+    },
+  },
+  content: {
+    operationsTitle: 'Content operations',
+    operationsDescription: 'Use these shortcuts and policies to inspect the Article System without exposing unfinished content publicly.',
+    openFeed: 'Open feed preview',
+    openWorkspace: 'Open workspace',
+    openEditor: 'Open editor',
+    disabled: 'The Article System is off here, so content operation shortcuts stay unavailable.',
+    policyTitle: 'Content safety checklist',
+    policyDescription: 'These are the active guardrails that matter most for content administration today.',
+    policies: {
+      markdown: 'Raw HTML stays blocked in Markdown rendering.',
+      uploads: 'Uploads remain restricted to signed PNG, JPEG, and WebP flows.',
+      visibility: 'Private content must not leak into public routes or metadata.',
+      pagination: 'Feed browsing keeps cursor pagination instead of OFFSET queries.',
+    },
   },
 } as const;

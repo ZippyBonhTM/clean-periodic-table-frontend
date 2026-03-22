@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import AdminContentWorkspace from '@/components/templates/AdminContentWorkspace';
 import AdminDashboardShell from '@/components/templates/AdminDashboardShell';
-import AdminOverviewWorkspace from '@/components/templates/AdminOverviewWorkspace';
 import { buildAdminPageMetadata } from '@/shared/admin/adminPageMetadata';
 import { requireServerAdminAccess } from '@/shared/admin/serverAdminAccess';
 import { getArticleFeatureStage } from '@/shared/config/articleFeature';
 import { resolveAppLocaleFromSegment } from '@/shared/i18n/appLocaleRouting';
 
-type LocalizedAdminPageProps = {
+type LocalizedAdminContentPageProps = {
   params: Promise<{
     locale: string;
   }>;
@@ -16,7 +16,7 @@ type LocalizedAdminPageProps = {
 
 export async function generateMetadata({
   params,
-}: LocalizedAdminPageProps): Promise<Metadata> {
+}: LocalizedAdminContentPageProps): Promise<Metadata> {
   const { locale } = await params;
   const resolvedLocale = resolveAppLocaleFromSegment(locale);
 
@@ -24,12 +24,12 @@ export async function generateMetadata({
     return {};
   }
 
-  return buildAdminPageMetadata(resolvedLocale, 'overview');
+  return buildAdminPageMetadata(resolvedLocale, 'content');
 }
 
-export default async function LocalizedAdminPage({
+export default async function LocalizedAdminContentPage({
   params,
-}: LocalizedAdminPageProps) {
+}: LocalizedAdminContentPageProps) {
   const { locale } = await params;
   const resolvedLocale = resolveAppLocaleFromSegment(locale);
 
@@ -46,7 +46,7 @@ export default async function LocalizedAdminPage({
       adminProfile={adminProfile}
       articleFeatureStage={articleFeatureStage}
     >
-      <AdminOverviewWorkspace
+      <AdminContentWorkspace
         locale={resolvedLocale}
         articleFeatureStage={articleFeatureStage}
       />

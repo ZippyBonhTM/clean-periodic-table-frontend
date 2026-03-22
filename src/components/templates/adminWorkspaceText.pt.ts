@@ -1,40 +1,153 @@
 export const adminWorkspaceTextPt = {
-  title: 'Painel de controle ADMIN.',
-  description:
-    'Revise previews internos e concentre ações exclusivas de admin sem expor áreas inacabadas para usuários comuns.',
-  badge: 'Somente ADMIN',
-  session: {
-    title: 'Sessão administrativa atual',
-    description: 'Esta página só renderiza depois de uma checagem server-side de admin.',
+  shell: {
+    badge: 'Controle ADMIN',
+    title: 'Painel de operações para trabalho protegido.',
+    description:
+      'Revise áreas protegidas, inspecione fluxos de conteúdo e prepare o gerenciamento de usuários sem expor ferramentas inacabadas para visitantes comuns.',
+    navigationLabel: 'Áreas admin',
+    currentAdminLabel: 'Admin atual',
+    featureStageLabel: 'Estágio do Article',
+    featureStageStates: {
+      off: 'Desligado',
+      internal: 'Interno',
+      public: 'Público',
+    },
+    serverGuardLabel: 'Modo de guarda',
+    serverGuardValue: 'Negação padrão no servidor',
+  },
+  sections: {
+    overview: {
+      navLabel: 'Visão geral',
+      title: 'Visão geral admin',
+      description: 'Sala de controle para rotas protegidas, visibilidade de features e próximas ações operacionais.',
+    },
+    users: {
+      navLabel: 'Usuários',
+      title: 'Gerenciamento de usuários',
+      description: 'Estruture os fluxos mais comuns de administração de contas com reporte seguro de status.',
+    },
+    access: {
+      navLabel: 'Acesso',
+      title: 'Acesso e guardrails',
+      description: 'Acompanhe quais rotas estão protegidas, como isso é imposto e o que está visível neste momento.',
+    },
+    content: {
+      navLabel: 'Conteúdo',
+      title: 'Operações de conteúdo',
+      description: 'Opere previews de artigos, checagens de moderação e políticas de segurança de conteúdo em um só lugar.',
+    },
+  },
+  common: {
     name: 'Nome',
     email: 'E-mail',
     role: 'Função',
+    status: 'Status',
+    access: 'Acesso',
+    guard: 'Proteção',
+    visibility: 'Visibilidade',
+    surface: 'Superfície',
+    dependency: 'Dependência',
+    securityNote: 'Nota de segurança',
   },
-  preview: {
-    title: 'Previews internos',
-    description:
-      'Quando uma feature estiver em estágio interno, admins podem abri-la por aqui enquanto visitantes sem ADMIN recebem 404.',
-    featureStateLabel: 'Estágio da feature Article',
-    states: {
-      off: 'Desligada',
-      internal: 'Preview interno',
-      public: 'Pública',
+  overview: {
+    cards: {
+      adminAreas: 'Áreas admin',
+      protectedRoutes: 'Rotas protegidas',
+      articleMode: 'Modo do Article',
+      authSource: 'Fonte de auth',
     },
-    unavailable: 'O Article System está desligado neste ambiente.',
-    openFeed: 'Abrir feed de artigos',
-    openWorkspace: 'Abrir workspace de artigos',
-    createDraft: 'Abrir editor de artigos',
+    authSourceValue: 'Proxy de auth + cookie de refresh',
+    quickActionsTitle: 'Ações rápidas',
+    quickActionsDescription: 'Salte direto para as áreas protegidas mais úteis durante desenvolvimento e moderação.',
+    openUsers: 'Abrir área de usuários',
+    openAccess: 'Revisar guardrails',
+    openContent: 'Abrir operações de conteúdo',
+    openArticleFeed: 'Abrir feed de artigos',
+    openArticleWorkspace: 'Abrir workspace de artigos',
+    openArticleEditor: 'Abrir editor de artigos',
+    articleUnavailable: 'O Article System está desligado neste ambiente, então as ações de preview de conteúdo ficam desabilitadas aqui.',
+    readinessTitle: 'Prontidão operacional',
+    readinessDescription: 'Este painel já está pronto para uso interno seguro. As mutações de usuários ainda aguardam endpoints administrativos dedicados no backend.',
   },
-  management: {
-    title: 'Gerenciamento de usuários',
-    description:
-      'Este painel já está pronto para futuras operações administrativas, como mudança de papéis, moderação e fluxos restritos de manutenção.',
-    placeholder:
-      'A fundação da interface já existe, mas as ações reais de alteração de usuários ainda dependem de endpoints administrativos no backend.',
+  users: {
+    searchLabel: 'Buscar capacidades',
+    searchPlaceholder: 'Busque por capacidade, ação ou dependência',
+    currentAdminTitle: 'Registro do admin atual',
+    currentAdminDescription: 'Este é o único perfil de usuário vivo disponível no frontend hoje.',
+    capabilitiesTitle: 'Operações comuns de administração de usuários',
+    capabilitiesDescription: 'A disponibilidade reflete o que os contratos atuais de frontend e backend suportam com segurança agora.',
+    empty: 'Nenhuma capacidade admin combinou com esta busca.',
+    statuses: {
+      available: 'Pronto agora',
+      planned: 'Depende do backend',
+      guarded: 'Fundação protegida',
+    },
+    capabilityItems: {
+      resolveSession: {
+        title: 'Resolver a sessão admin atual',
+        description: 'O acesso server-side já confirma que o usuário atuante é ADMIN antes de renderizar o painel.',
+        dependency: 'Proxy de auth existente e sessão por cookie de refresh',
+        securityNote: 'Isto já está ativo e nega por padrão quando a auth é incerta.',
+      },
+      openProtectedAreas: {
+        title: 'Abrir áreas exclusivas de admin com segurança',
+        description: 'Painéis profissionais de admin precisam separar com clareza rotas públicas e internas.',
+        dependency: 'Guards atuais das rotas admin',
+        securityNote: 'Superfícies protegidas entregam 404 para não-admins.',
+      },
+      listUsers: {
+        title: 'Listar usuários da plataforma',
+        description: 'Um diretório dedicado de usuários deve expor paginação, filtros e apenas campos mínimos de identidade.',
+        dependency: 'Endpoint administrativo de usuários no backend',
+        securityNote: 'Nunca pode confiar em mudanças de papel no client nem em queries sem limite.',
+      },
+      changeRole: {
+        title: 'Alterar função do usuário',
+        description: 'Promover ou rebaixar usuários por ações administrativas auditadas e com confirmação explícita.',
+        dependency: 'Endpoint de mutação de papel no backend',
+        securityNote: 'Precisa de autorização server-side, trilha de auditoria e regras para autoproteção.',
+      },
+      suspendAccount: {
+        title: 'Suspender ou restringir contas',
+        description: 'Fluxos comuns de admin normalmente incluem restrições temporárias de conta e passos de recuperação.',
+        dependency: 'Endpoints de moderação no backend',
+        securityNote: 'Precisa de lógica clara de recurso e recuperação antes de liberar.',
+      },
+    },
   },
-  security: {
-    title: 'Política de acesso',
-    description:
-      'Rotas marcadas como internas agora exigem sessão ADMIN no servidor. Todo o resto recebe a página 404 compartilhada.',
+  access: {
+    summaryTitle: 'Resumo dos guardrails',
+    summaryDescription: 'Superfícies internas são protegidas no servidor, ficam fora de indexação e são negadas por padrão sempre que a auth estiver incerta.',
+    matrixTitle: 'Matriz de proteção de rotas',
+    matrixDescription: 'Esta matriz reflete a política de acesso atualmente imposta pelo frontend.',
+    states: {
+      serverAdmin: 'Checagem admin no servidor',
+      featureStage: 'Gate por estágio da feature',
+      noindex: 'Noindex',
+      publicWhenReleased: 'Público quando liberado',
+      disabled: 'Desligado / 404',
+    },
+    accessRules: {
+      adminOnly: 'Somente ADMIN',
+      articleInternal: 'Somente ADMIN enquanto estiver interno',
+      articlePublic: 'Feed e detalhe públicos, workspace do dono autenticado',
+      unavailable: 'Indisponível',
+    },
+  },
+  content: {
+    operationsTitle: 'Operações de conteúdo',
+    operationsDescription: 'Use estes atalhos e políticas para inspecionar o Article System sem expor conteúdo inacabado publicamente.',
+    openFeed: 'Abrir preview do feed',
+    openWorkspace: 'Abrir workspace',
+    openEditor: 'Abrir editor',
+    disabled: 'O Article System está desligado aqui, então os atalhos de operação de conteúdo ficam indisponíveis.',
+    policyTitle: 'Checklist de segurança de conteúdo',
+    policyDescription: 'Estes são os guardrails ativos que mais importam para a administração de conteúdo hoje.',
+    policies: {
+      markdown: 'HTML bruto continua bloqueado na renderização de Markdown.',
+      uploads: 'Uploads seguem restritos a fluxos assinados de PNG, JPEG e WebP.',
+      visibility: 'Conteúdo privado não pode vazar para rotas públicas nem metadata.',
+      pagination: 'A navegação do feed mantém paginação por cursor em vez de OFFSET.',
+    },
   },
 } as const;
