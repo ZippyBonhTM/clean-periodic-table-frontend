@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { fetchProfile } from '@/shared/api/authApi';
+import {
+  persistCachedAuthProfile,
+  readCachedAuthProfile,
+} from '@/shared/storage/authProfileStorage';
 import { readJwtDisplayName } from '@/shared/utils/jwt';
 import type { AuthUserProfile } from '@/shared/types/auth';
 
@@ -34,6 +38,7 @@ export default function useAppHeaderUserMenu({
   const [userMenuDragOffset, setUserMenuDragOffset] = useState(0);
   const [userProfileStatus, setUserProfileStatus] = useState<UserProfileRequestStatus>('idle');
   const [userProfile, setUserProfile] = useState<AuthUserProfile | null>(null);
+  const [userProfileToken, setUserProfileToken] = useState<string | null>(null);
   const [userProfileError, setUserProfileError] = useState<string | null>(null);
   const userMenuDragPointerIdRef = useRef<number | null>(null);
   const userMenuDragStartXRef = useRef<number | null>(null);
@@ -41,16 +46,22 @@ export default function useAppHeaderUserMenu({
   const fetchedProfileTokenRef = useRef<string | null>(null);
 
   const userDisplayName = useMemo(() => {
+    const cachedUserProfile = token === null ? null : readCachedAuthProfile(token);
+    const resolvedUserProfile =
+      token !== null && userProfileToken === token && userProfile !== null
+        ? userProfile
+        : cachedUserProfile;
+
     if (!hasToken || token === null) {
       return guestDisplayName;
     }
 
-    if (userProfile?.name.trim().length) {
-      return userProfile.name;
+    if (resolvedUserProfile?.name.trim().length) {
+      return resolvedUserProfile.name;
     }
 
     return readJwtDisplayName(token) ?? userDisplayNameFallback;
-  }, [guestDisplayName, hasToken, token, userDisplayNameFallback, userProfile?.name]);
+  }, [guestDisplayName, hasToken, token, userDisplayNameFallback, userProfile, userProfileToken]);
 
   const resetUserMenuDrag = useCallback(() => {
     userMenuDragOffsetRef.current = 0;
@@ -66,12 +77,35 @@ export default function useAppHeaderUserMenu({
   }, [resetUserMenuDrag]);
 
   const openUserMenu = useCallback(() => {
-    setUserProfileStatus('loading');
-    setUserProfileError(null);
+    const cachedUserProfile = token === null ? null : readCachedAuthProfile(token);
+
+    if (!hasToken || token === null) {
+      fetchedProfileTokenRef.current = null;
+      setUserProfileStatus('idle');
+      setUserProfile(null);
+      setUserProfileToken(null);
+      setUserProfileError(null);
+    } else if (cachedUserProfile !== null) {
+      fetchedProfileTokenRef.current = token;
+      setUserProfileStatus('success');
+      setUserProfile(cachedUserProfile);
+      setUserProfileToken(token);
+      setUserProfileError(null);
+    } else if (fetchedProfileTokenRef.current === token && userProfile !== null) {
+      setUserProfileStatus('success');
+      setUserProfileToken(token);
+      setUserProfileError(null);
+    } else {
+      fetchedProfileTokenRef.current = null;
+      setUserProfileStatus('loading');
+      setUserProfileToken(null);
+      setUserProfileError(null);
+    }
+
     setIsLogoutConfirmOpen(false);
     resetUserMenuDrag();
     setIsUserMenuOpen(true);
-  }, [resetUserMenuDrag]);
+  }, [hasToken, resetUserMenuDrag, token, userProfile]);
 
   useEffect(() => {
     if (!isUserMenuOpen) {
@@ -79,6 +113,13 @@ export default function useAppHeaderUserMenu({
     }
 
     if (!hasToken || token === null) {
+      return;
+    }
+
+    const cachedUserProfile = readCachedAuthProfile(token);
+
+    if (cachedUserProfile !== null) {
+      fetchedProfileTokenRef.current = token;
       return;
     }
 
@@ -106,6 +147,13 @@ export default function useAppHeaderUserMenu({
         }
 
         setUserProfile(profileResponse.userProfile);
+        setUserProfileToken(token);
+        persistCachedAuthProfile(token, profileResponse.userProfile);
+
+        if (nextAccessToken.length > 0) {
+          persistCachedAuthProfile(nextAccessToken, profileResponse.userProfile);
+        }
+
         setUserProfileStatus('success');
       })
       .catch((caughtError: unknown) => {
@@ -115,6 +163,7 @@ export default function useAppHeaderUserMenu({
 
         fetchedProfileTokenRef.current = null;
         setUserProfile(null);
+        setUserProfileToken(null);
         setUserProfileStatus('error');
 
         if (caughtError instanceof Error && caughtError.message.trim().length > 0) {
