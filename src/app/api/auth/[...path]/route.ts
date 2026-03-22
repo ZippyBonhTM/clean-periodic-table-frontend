@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import {
+  readServerAccessTokenFromResponseBody,
+  resolveTokenMaxAgeSeconds,
+  SERVER_ACCESS_TOKEN_COOKIE_KEY,
+  stripServerAccessTokenCookie,
+} from '@/shared/auth/serverAccessTokenCookie';
+
 type RouteContext = {
   params: Promise<{ path?: string[] }> | { path?: string[] };
 };
@@ -11,6 +18,20 @@ const ALLOWED_AUTH_PATHS = new Set([
   'logout',
   'validate-token',
   'profile',
+]);
+
+const ACCESS_TOKEN_RESPONSE_PATHS = new Set([
+  'login',
+  'register',
+  'refresh',
+  'profile',
+]);
+
+const CLEAR_ACCESS_TOKEN_PATHS = new Set([
+  'logout',
+  'refresh',
+  'profile',
+  'validate-token',
 ]);
 
 function resolveAuthUpstreamBaseUrl(): string | null {
@@ -53,6 +74,46 @@ function copySetCookieHeaders(upstreamResponse: Response, response: NextResponse
   }
 }
 
+function syncMirroredAccessTokenCookie(
+  response: NextResponse,
+  path: string,
+  upstreamResponse: Response,
+  responseBody: string,
+): void {
+  if (upstreamResponse.ok && ACCESS_TOKEN_RESPONSE_PATHS.has(path)) {
+    const accessToken = readServerAccessTokenFromResponseBody(responseBody);
+
+    if (accessToken !== null) {
+      response.cookies.set({
+        name: SERVER_ACCESS_TOKEN_COOKIE_KEY,
+        value: accessToken,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: resolveTokenMaxAgeSeconds(accessToken),
+      });
+    }
+
+    return;
+  }
+
+  if (
+    CLEAR_ACCESS_TOKEN_PATHS.has(path) &&
+    (path === 'logout' || upstreamResponse.status === 401 || upstreamResponse.status === 403)
+  ) {
+    response.cookies.set({
+      name: SERVER_ACCESS_TOKEN_COOKIE_KEY,
+      value: '',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+    });
+  }
+}
+
 async function proxyAuthRequest(request: NextRequest, context: RouteContext): Promise<NextResponse> {
   const params = await context.params;
   const pathSegments = params.path ?? [];
@@ -76,7 +137,7 @@ async function proxyAuthRequest(request: NextRequest, context: RouteContext): Pr
   const accept = request.headers.get('accept');
   const contentType = request.headers.get('content-type');
   const authorization = request.headers.get('authorization');
-  const cookie = request.headers.get('cookie');
+  const cookie = stripServerAccessTokenCookie(request.headers.get('cookie'));
 
   if (accept !== null) {
     headers.set('accept', accept);
@@ -138,6 +199,7 @@ async function proxyAuthRequest(request: NextRequest, context: RouteContext): Pr
   }
 
   copySetCookieHeaders(upstreamResponse, response);
+  syncMirroredAccessTokenCookie(response, pathSegments[0], upstreamResponse, responseBody);
 
   return response;
 }
