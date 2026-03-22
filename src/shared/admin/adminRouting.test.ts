@@ -8,6 +8,7 @@ import {
   buildLocalizedAdminAccessPath,
   buildLocalizedAdminContentPath,
   buildLocalizedAdminPath,
+  buildLocalizedAdminUsersBrowsePath,
   buildLocalizedAdminUsersPath,
 } from '@/shared/admin/adminRouting';
 
@@ -22,6 +23,13 @@ describe('adminRouting', () => {
     expect(ADMIN_USERS_PATHNAME).toBe('/admin/users');
     expect(buildLocalizedAdminUsersPath('en-US')).toBe('/en/admin/users');
     expect(buildLocalizedAdminUsersPath('pt-BR')).toBe('/pt/admin/users');
+    expect(
+      buildLocalizedAdminUsersBrowsePath('en-US', {
+        status: 'planned',
+        track: 'directory',
+        query: 'users',
+      }),
+    ).toBe('/en/admin/users?status=planned&track=directory&q=users');
   });
 
   it('builds the localized admin access path for guardrail pages', () => {

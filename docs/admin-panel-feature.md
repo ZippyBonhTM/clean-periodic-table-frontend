@@ -18,7 +18,7 @@ Provide a professional ADMIN workspace that:
 The frontend currently includes these admin areas:
 
 - Overview
-- Users
+- Users with URL-synced operational filters
 - Access
 - Content
 
@@ -39,6 +39,7 @@ All admin routes are:
 ## Current Limitation
 
 The panel does not mutate users yet.
+The users area now helps separate live guardrails from backend-dependent operations, but it still does not execute account mutations.
 
 Real user administration still depends on backend endpoints for:
 
