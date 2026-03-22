@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  DEFAULT_ARTICLE_PRIVATE_LIST_SORT,
   buildArticlePrivateListSearchParams,
   countPrivateArticlesByStatus,
+  filterAndSortPrivateArticles,
   filterPrivateArticles,
   filterPrivateArticlesByStatus,
   normalizeArticlePrivateListQuery,
   resolveArticlePrivateListBrowseFilters,
+  resolveArticlePrivateListSort,
   resolveArticlePrivateListStatusFilter,
+  sortPrivateArticles,
 } from '@/shared/articles/articlePrivateListFilters';
 import type { ArticleSummary } from '@/shared/types/article';
 
@@ -97,15 +101,27 @@ describe('articlePrivateListFilters', () => {
     expect(resolveArticlePrivateListStatusFilter({})).toBe('all');
   });
 
+  it('resolves the private list sort mode safely from query params', () => {
+    expect(resolveArticlePrivateListSort({ sort: 'created-asc' })).toBe('created-asc');
+    expect(resolveArticlePrivateListSort({ sort: ['updated-asc', 'created-desc'] })).toBe(
+      'updated-asc',
+    );
+    expect(resolveArticlePrivateListSort({ sort: 'invalid-sort' })).toBe(
+      DEFAULT_ARTICLE_PRIVATE_LIST_SORT,
+    );
+  });
+
   it('resolves the combined browse filters from status and query params', () => {
     expect(
       resolveArticlePrivateListBrowseFilters({
         status: 'published',
         q: '  orbitals and ions  ',
+        sort: 'created-asc',
       }),
     ).toEqual({
       status: 'published',
       query: 'orbitals and ions',
+      sort: 'created-asc',
     });
   });
 
@@ -141,16 +157,41 @@ describe('articlePrivateListFilters', () => {
     ).toEqual([]);
   });
 
+  it('sorts loaded private articles deterministically', () => {
+    expect(sortPrivateArticles(SAMPLE_ITEMS, 'updated-desc').map((item) => item.id)).toEqual([
+      'article-3',
+      'article-2',
+      'article-1',
+    ]);
+    expect(sortPrivateArticles(SAMPLE_ITEMS, 'created-asc').map((item) => item.id)).toEqual([
+      'article-1',
+      'article-2',
+      'article-3',
+    ]);
+  });
+
+  it('applies filtering and sorting together for the private workspace', () => {
+    expect(
+      filterAndSortPrivateArticles(SAMPLE_ITEMS, {
+        status: 'all',
+        query: 'article',
+        sort: 'updated-asc',
+      }).map((item) => item.id),
+    ).toEqual(['article-1', 'article-2', 'article-3']);
+  });
+
   it('builds private list search params without encoding the default all filter', () => {
     expect(
       buildArticlePrivateListSearchParams({
         status: 'published',
         query: 'atomic orbitals',
+        sort: 'created-asc',
       }).toString(),
-    ).toBe('status=published&q=atomic+orbitals');
+    ).toBe('status=published&q=atomic+orbitals&sort=created-asc');
     expect(
       buildArticlePrivateListSearchParams({
         status: 'all',
+        sort: DEFAULT_ARTICLE_PRIVATE_LIST_SORT,
       }).toString(),
     ).toBe('');
   });

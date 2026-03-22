@@ -28,8 +28,9 @@ describe('articleRouting', () => {
       buildLocalizedArticlePrivateListBrowsePath('en-US', {
         status: 'archived',
         query: 'ionic bonds',
+        sort: 'created-asc',
       }),
-    ).toBe('/en/me/articles?status=archived&q=ionic+bonds');
+    ).toBe('/en/me/articles?status=archived&q=ionic+bonds&sort=created-asc');
     expect(buildLocalizedArticlePrivateListBrowsePath('pt-BR')).toBe('/pt/me/articles');
   });
 

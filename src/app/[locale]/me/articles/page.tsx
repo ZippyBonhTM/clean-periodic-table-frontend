@@ -19,6 +19,7 @@ type LocalizedArticlePrivateListPageProps = {
   searchParams: Promise<{
     status?: string | string[] | undefined;
     q?: string | string[] | undefined;
+    sort?: string | string[] | undefined;
   }>;
 };
 
