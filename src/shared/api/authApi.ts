@@ -1,5 +1,7 @@
 import publicEnv from '@/shared/config/publicEnv';
+import { readJwtExpiryMs } from '@/shared/utils/jwt';
 import { requestJson } from './httpClient';
+import { ApiError } from './httpClient';
 import type {
   LoginInput,
   LoginResponse,
@@ -12,6 +14,7 @@ import type {
 
 let pendingRefreshRequest: Promise<RefreshResponse> | null = null;
 const pendingValidationRequests = new Map<string, Promise<ValidateTokenResponse>>();
+const ACCESS_TOKEN_REFRESH_WINDOW_MS = 30_000;
 
 function resolveAuthRequestBaseUrl(): string {
   if (typeof window !== 'undefined') {
@@ -42,6 +45,20 @@ async function requestRefreshAccessToken(): Promise<RefreshResponse> {
     method: 'POST',
     credentials: 'include',
   });
+}
+
+function shouldRefreshBeforeProfileRequest(accessToken: string): boolean {
+  const expiryMs = readJwtExpiryMs(accessToken);
+
+  if (expiryMs === null) {
+    return false;
+  }
+
+  return expiryMs - Date.now() <= ACCESS_TOKEN_REFRESH_WINDOW_MS;
+}
+
+function isUnauthorizedError(error: unknown): error is ApiError {
+  return error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403);
 }
 
 async function refreshAccessToken(): Promise<RefreshResponse> {
@@ -88,11 +105,40 @@ async function validateAccessToken(accessToken: string): Promise<ValidateTokenRe
 }
 
 async function fetchProfile(accessToken: string): Promise<ProfileResponse> {
-  return await requestJson<ProfileResponse>(resolveAuthRequestBaseUrl(), '/api/auth/profile', {
-    method: 'GET',
-    token: accessToken,
-    credentials: 'include',
-  });
+  let activeToken = accessToken;
+
+  if (shouldRefreshBeforeProfileRequest(activeToken)) {
+    const refreshResponse = await refreshAccessToken();
+    activeToken = refreshResponse.accessToken;
+  }
+
+  try {
+    return await requestJson<ProfileResponse>(resolveAuthRequestBaseUrl(), '/api/auth/profile', {
+      method: 'GET',
+      token: activeToken,
+      credentials: 'include',
+    });
+  } catch (caughtError: unknown) {
+    if (!isUnauthorizedError(caughtError)) {
+      throw caughtError;
+    }
+
+    const refreshResponse = await refreshAccessToken();
+    activeToken = refreshResponse.accessToken;
+
+    return await requestJson<ProfileResponse>(resolveAuthRequestBaseUrl(), '/api/auth/profile', {
+      method: 'GET',
+      token: activeToken,
+      credentials: 'include',
+    });
+  }
 }
 
-export { fetchProfile, login, logoutSession, refreshAccessToken, register, validateAccessToken };
+export {
+  fetchProfile,
+  login,
+  logoutSession,
+  refreshAccessToken,
+  register,
+  validateAccessToken,
+};
