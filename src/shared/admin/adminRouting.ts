@@ -50,7 +50,7 @@ export function buildLocalizedAdminAuditPath(locale: AppLocale): string {
 export function buildLocalizedAdminAuditBrowsePath(
   locale: AppLocale,
   input: {
-    action?: 'all' | 'role_change' | 'moderation' | 'session_revoke' | 'access_check' | null;
+    action?: 'all' | 'role_change' | 'moderation' | 'session_revoke' | 'directory_sync' | 'access_check' | null;
     query?: string | null;
     cursor?: string | null;
   } = {},

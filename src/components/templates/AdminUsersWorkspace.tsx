@@ -28,7 +28,7 @@ import {
   resolveAdminUserVersionClass,
 } from '@/shared/admin/adminPresentation';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
-import type { AdminCursorPage, AdminUserSummary } from '@/shared/types/admin';
+import type { AdminCursorPage, AdminDirectorySyncResult, AdminUserSummary } from '@/shared/types/admin';
 import type { AuthUserProfile } from '@/shared/types/auth';
 
 type AdminUsersWorkspaceProps = {
@@ -38,8 +38,10 @@ type AdminUsersWorkspaceProps = {
 };
 
 type DirectoryRequestStatus = 'idle' | 'loading' | 'success' | 'error';
+type DirectorySyncStatus = 'idle' | 'loading' | 'success' | 'error';
 
 const DIRECTORY_PAGE_SIZE = 12;
+const DIRECTORY_SYNC_PAGE_SIZE = 25;
 const FORM_CONTROL_CLASS = 'w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)]';
 
 function buildEmptyDirectory(): AdminCursorPage<AdminUserSummary> {
@@ -69,6 +71,11 @@ export default function AdminUsersWorkspace({
   const [requestStatus, setRequestStatus] = useState<DirectoryRequestStatus>('idle');
   const [directoryPage, setDirectoryPage] = useState<AdminCursorPage<AdminUserSummary>>(buildEmptyDirectory);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [syncCursor, setSyncCursor] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<DirectorySyncStatus>('idle');
+  const [syncFeedback, setSyncFeedback] = useState<AdminDirectorySyncResult | null>(null);
+  const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null);
 
   const syncBrowseState = useCallback(
     (nextState: {
@@ -166,7 +173,7 @@ export default function AdminUsersWorkspace({
     return () => {
       abortController.abort();
     };
-  }, [activeCursor, activeQuery, activeRole, activeSort, activeStatus, activeVersion, adminApi, authStatus, isHydrated, text.users.unavailable, token]);
+  }, [activeCursor, activeQuery, activeRole, activeSort, activeStatus, activeVersion, adminApi, authStatus, isHydrated, reloadKey, text.users.unavailable, token]);
 
   const onSearchSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
@@ -201,6 +208,48 @@ export default function AdminUsersWorkspace({
     },
     [syncBrowseState],
   );
+
+  const onSyncDirectory = useCallback(async () => {
+    if (token === null) {
+      return;
+    }
+
+    setSyncStatus('loading');
+    setSyncErrorMessage(null);
+
+    try {
+      const result = await adminApi.syncUserDirectory({
+        token,
+        cursor: syncCursor,
+        limit: DIRECTORY_SYNC_PAGE_SIZE,
+      });
+
+      setSyncFeedback(result);
+      setSyncCursor(result.nextCursor);
+      setSyncStatus('success');
+      setReloadKey((currentValue) => currentValue + 1);
+    } catch (caughtError: unknown) {
+      setSyncStatus('error');
+
+      if (
+        caughtError instanceof ApiError &&
+        (caughtError.statusCode === 404 ||
+          caughtError.statusCode === 500 ||
+          caughtError.statusCode === 502 ||
+          caughtError.statusCode === 503)
+      ) {
+        setSyncErrorMessage(text.users.syncUnavailable);
+        return;
+      }
+
+      if (caughtError instanceof Error && caughtError.message.trim().length > 0) {
+        setSyncErrorMessage(caughtError.message);
+        return;
+      }
+
+      setSyncErrorMessage(text.users.syncUnavailable);
+    }
+  }, [adminApi, syncCursor, text.users.syncUnavailable, token]);
 
   const visibleAdminCount = useMemo(
     () => directoryPage.items.filter((user) => user.role === 'ADMIN').length,
@@ -453,6 +502,65 @@ export default function AdminUsersWorkspace({
         </Panel>
 
         <div className="grid gap-4 xl:gap-5">
+          <Panel className="rounded-[2rem]">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h3 className="text-xl font-black tracking-[-0.03em] text-(--text-strong)">{text.users.syncTitle}</h3>
+                <p className="text-sm leading-7 text-(--text-muted)">{text.users.syncDescription}</p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-[1.2rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-3">
+                  <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.syncSummary.synced}</dt>
+                  <dd className="mt-1 text-sm font-semibold text-(--text-strong)">{String(syncFeedback?.itemsSynced ?? 0)}</dd>
+                </div>
+                <div className="rounded-[1.2rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-3">
+                  <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.syncSummary.created}</dt>
+                  <dd className="mt-1 text-sm font-semibold text-(--text-strong)">{String(syncFeedback?.createdCount ?? 0)}</dd>
+                </div>
+                <div className="rounded-[1.2rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-3">
+                  <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.syncSummary.updated}</dt>
+                  <dd className="mt-1 text-sm font-semibold text-(--text-strong)">{String(syncFeedback?.updatedCount ?? 0)}</dd>
+                </div>
+              </div>
+
+              <div className="rounded-[1.35rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.syncCursorLabel}</p>
+                <p className="mt-2 break-all text-sm leading-7 text-(--text-strong)">
+                  {syncCursor ?? text.users.syncStartCursor}
+                </p>
+                <p className="mt-2 text-sm leading-7 text-(--text-muted)">
+                  {syncCursor === null ? text.users.syncReady : text.users.syncProgress}
+                </p>
+              </div>
+
+              {syncStatus === 'error' ? (
+                <div className="rounded-[1.35rem] border border-rose-500/40 bg-rose-500/10 px-4 py-4 text-sm leading-7 text-rose-100">
+                  {syncErrorMessage ?? text.users.syncUnavailable}
+                </div>
+              ) : null}
+
+              {syncStatus === 'success' ? (
+                <div className="rounded-[1.35rem] border border-emerald-500/35 bg-emerald-500/10 px-4 py-4 text-sm leading-7 text-emerald-50">
+                  {text.users.syncSuccess}
+                </div>
+              ) : null}
+
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                className="rounded-xl px-4"
+                disabled={!isHydrated || authStatus === 'checking' || token === null || syncStatus === 'loading'}
+                onClick={() => {
+                  void onSyncDirectory();
+                }}
+              >
+                {syncStatus === 'loading' ? text.common.loading : text.users.syncAction}
+              </Button>
+            </div>
+          </Panel>
+
           <Panel className="rounded-[2rem]">
             <div className="space-y-4">
               <div className="space-y-2">

@@ -25,6 +25,10 @@ function resolveAllowedAdminUpstreamPath(
     return '/api/v1/admin/users';
   }
 
+  if (method === 'POST' && pathSegments.length === 2 && firstSegment === 'users' && secondSegment === 'sync-directory') {
+    return '/api/v1/admin/users/sync-directory';
+  }
+
   if (method === 'GET' && pathSegments.length === 2 && firstSegment === 'users') {
     return `/api/v1/admin/users/${encodeURIComponent(secondSegment)}`;
   }

@@ -220,6 +220,7 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
                 <option value="role_change">{text.audit.actionFilters.role_change}</option>
                 <option value="moderation">{text.audit.actionFilters.moderation}</option>
                 <option value="session_revoke">{text.audit.actionFilters.session_revoke}</option>
+                <option value="directory_sync">{text.audit.actionFilters.directory_sync}</option>
                 <option value="access_check">{text.audit.actionFilters.access_check}</option>
               </select>
             </div>

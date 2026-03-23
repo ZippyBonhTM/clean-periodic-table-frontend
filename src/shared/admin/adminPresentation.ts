@@ -43,6 +43,10 @@ function resolveAdminAuditActionClass(action: string): string {
     return 'border-rose-400/35 bg-rose-400/10 text-rose-50';
   }
 
+  if (action === 'directory_sync') {
+    return 'border-violet-400/35 bg-violet-400/10 text-violet-50';
+  }
+
   return 'border-slate-400/25 bg-slate-400/10 text-slate-100';
 }
 

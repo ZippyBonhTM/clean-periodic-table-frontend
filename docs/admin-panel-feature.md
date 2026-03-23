@@ -57,10 +57,11 @@ The auth profile shown in the header is informational only and must not be treat
 The admin user directory is product-backed.
 
 - it lists accounts already synchronized into `product_users`
+- it can trigger a bounded legacy sync that imports auth identities into `product_users`
 - it can show an account version marker (`legacy` vs `product-v1`)
 - `legacy` currently means the product account was created through the auth bridge during migration
 - auth-only identities that have never touched the protected product backend do not appear in the directory yet
-- those auth-only identities can be surfaced later through a dedicated backfill or a federated admin contract
+- the guarded sync action now covers the first migration path for those auth-only identities, while a future federated contract remains optional
 
 ## Current Limitation
 
