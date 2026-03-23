@@ -25,6 +25,7 @@ export function buildLocalizedAdminUsersBrowsePath(
   locale: AppLocale,
   input: {
     role?: 'all' | 'USER' | 'ADMIN' | null;
+    version?: 'all' | 'legacy' | 'product-v1' | null;
     status?: 'all' | 'active' | 'restricted' | 'suspended' | null;
     sort?: 'created-desc' | 'created-asc' | 'last-seen-desc' | 'last-seen-asc' | null;
     query?: string | null;

@@ -1,4 +1,4 @@
-import type { AdminUserAccountStatus } from '@/shared/types/admin';
+import type { AdminUserAccountStatus, AdminUserAccountVersion } from '@/shared/types/admin';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
 function formatAdminDateTime(locale: AppLocale, value: string | null): string {
@@ -46,8 +46,17 @@ function resolveAdminAuditActionClass(action: string): string {
   return 'border-slate-400/25 bg-slate-400/10 text-slate-100';
 }
 
+function resolveAdminUserVersionClass(version: AdminUserAccountVersion): string {
+  if (version === 'product-v1') {
+    return 'border-sky-400/35 bg-sky-400/10 text-sky-50';
+  }
+
+  return 'border-fuchsia-400/35 bg-fuchsia-400/10 text-fuchsia-50';
+}
+
 export {
   formatAdminDateTime,
   resolveAdminAuditActionClass,
   resolveAdminUserStatusClass,
+  resolveAdminUserVersionClass,
 };

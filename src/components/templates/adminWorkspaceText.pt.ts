@@ -53,6 +53,7 @@ export const adminWorkspaceTextPt = {
     actions: 'Ações',
     query: 'Busca',
     sort: 'Ordenação',
+    version: 'Versão',
     contract: 'Contrato',
     access: 'Acesso',
     guard: 'Proteção',
@@ -89,6 +90,7 @@ export const adminWorkspaceTextPt = {
     searchLabel: 'Buscar usuários',
     searchPlaceholder: 'Busque por nome, e-mail ou id do usuário',
     roleFilterLabel: 'Filtro de função',
+    versionFilterLabel: 'Filtro de versão',
     statusFilterLabel: 'Filtro de status',
     sortLabel: 'Ordenação',
     applyFilters: 'Aplicar filtros',
@@ -104,6 +106,11 @@ export const adminWorkspaceTextPt = {
       restricted: 'Restrito',
       suspended: 'Suspenso',
     },
+    versionFilters: {
+      all: 'Todas as versões',
+      legacy: 'Legado por bridge',
+      'product-v1': 'Produto v1',
+    },
     sortOptions: {
       'created-desc': 'Mais novos primeiro',
       'created-asc': 'Mais antigos primeiro',
@@ -113,13 +120,15 @@ export const adminWorkspaceTextPt = {
     summaryCards: {
       visible: 'Usuários visíveis',
       admins: 'Admins na página',
+      legacy: 'Legado na página',
       active: 'Ativos na página',
       restricted: 'Restritos na página',
     },
     tableTitle: 'Diretório protegido de usuários',
-    tableDescription: 'Este diretório é carregado pelo proxy protegido da API admin. Contratos ausentes no backend aparecem como indisponibilidade, não como controle falso.',
+    tableDescription: 'Este diretório é carregado pelo proxy protegido da API admin e reflete contas do produto que já foram sincronizadas para o novo modelo de autorização.',
     tableColumns: {
       user: 'Usuário',
+      version: 'Versão',
       status: 'Status',
       role: 'Função',
       lastSeen: 'Último acesso',
@@ -131,6 +140,7 @@ export const adminWorkspaceTextPt = {
     unavailable: 'O diretório protegido de usuários admin está indisponível neste ambiente.',
     currentAdminTitle: 'Registro do admin atual',
     currentAdminDescription: 'O perfil ADMIN atuante continua sendo a âncora de autoridade para cada rota protegida e ação posterior neste painel.',
+    productDirectoryScope: 'Este diretório lista apenas contas já respaldadas pelo produto. Identidades legadas que existem só no auth ainda não aparecem aqui até serem sincronizadas por uma requisição protegida do produto ou por um backfill futuro.',
     liveGuardrailsTitle: 'Guardrails de usuários já ativos',
     liveGuardrails: [
       'Rotas admin continuam protegidas no servidor e negam por padrão quando a resolução da sessão fica incerta.',
@@ -199,6 +209,7 @@ export const adminWorkspaceTextPt = {
       'except-current': 'Todas exceto a atual',
     },
     summaryFields: {
+      version: 'Versão',
       activeSessions: 'Sessões ativas',
       lastAudit: 'Última auditoria',
       restriction: 'Restrição',
@@ -209,6 +220,8 @@ export const adminWorkspaceTextPt = {
       'A UI não pode contornar proteção do último admin nem autoproteção mesmo que um botão esteja visível.',
       'Toda ação de alto risco deve gerar uma entrada de auditoria no upstream.',
     ],
+    legacyVersionNote: 'Este registro foi sincronizado pela bridge legada do auth. Ele já participa do modelo de autorização do produto, mas não nasceu como uma conta nativa do produto.',
+    productVersionNote: 'Este registro está marcado como conta product-v1 e não depende mais da bridge legada para o ciclo de vida de identidade.',
     selfRoleWarning: 'O auto-rebaixamento está bloqueado no client como proteção extra. O backend ainda deve impor isso.',
   },
   audit: {

@@ -20,10 +20,12 @@ import {
   type AdminUsersRoleFilter,
   type AdminUsersSort,
   type AdminUsersStatusFilter,
+  type AdminUsersVersionFilter,
 } from '@/shared/admin/adminUsersFilters';
 import {
   formatAdminDateTime,
   resolveAdminUserStatusClass,
+  resolveAdminUserVersionClass,
 } from '@/shared/admin/adminPresentation';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
 import type { AdminCursorPage, AdminUserSummary } from '@/shared/types/admin';
@@ -58,6 +60,7 @@ export default function AdminUsersWorkspace({
   const adminApi = useMemo(() => createAdminApi(), []);
   const { token, authStatus, isHydrated } = useAdminClientSession();
   const [activeRole, setActiveRole] = useState<AdminUsersRoleFilter>(initialFilters.role);
+  const [activeVersion, setActiveVersion] = useState<AdminUsersVersionFilter>(initialFilters.version);
   const [activeStatus, setActiveStatus] = useState<AdminUsersStatusFilter>(initialFilters.status);
   const [activeSort, setActiveSort] = useState<AdminUsersSort>(initialFilters.sort);
   const [activeQuery, setActiveQuery] = useState(initialFilters.query);
@@ -70,6 +73,7 @@ export default function AdminUsersWorkspace({
   const syncBrowseState = useCallback(
     (nextState: {
       role?: AdminUsersRoleFilter;
+      version?: AdminUsersVersionFilter;
       status?: AdminUsersStatusFilter;
       sort?: AdminUsersSort;
       query?: string | null;
@@ -77,12 +81,14 @@ export default function AdminUsersWorkspace({
       searchInputValue?: string;
     }) => {
       const nextRole = nextState.role ?? activeRole;
+      const nextVersion = nextState.version ?? activeVersion;
       const nextStatus = nextState.status ?? activeStatus;
       const nextSort = nextState.sort ?? activeSort;
       const nextQuery = nextState.query ?? activeQuery;
       const nextCursor = nextState.cursor ?? activeCursor;
 
       setActiveRole(nextRole);
+      setActiveVersion(nextVersion);
       setActiveStatus(nextStatus);
       setActiveSort(nextSort);
       setActiveQuery(nextQuery);
@@ -97,6 +103,7 @@ export default function AdminUsersWorkspace({
       router.replace(
         buildLocalizedAdminUsersBrowsePath(locale, {
           role: nextRole,
+          version: nextVersion,
           status: nextStatus,
           sort: nextSort,
           query: nextQuery,
@@ -104,7 +111,7 @@ export default function AdminUsersWorkspace({
         }),
       );
     },
-    [activeCursor, activeQuery, activeRole, activeSort, activeStatus, locale, router],
+    [activeCursor, activeQuery, activeRole, activeSort, activeStatus, activeVersion, locale, router],
   );
 
   useEffect(() => {
@@ -122,6 +129,7 @@ export default function AdminUsersWorkspace({
         cursor: activeCursor,
         query: activeQuery,
         role: activeRole,
+        version: activeVersion,
         status: activeStatus,
         sort: activeSort,
       })
@@ -158,7 +166,7 @@ export default function AdminUsersWorkspace({
     return () => {
       abortController.abort();
     };
-  }, [activeCursor, activeQuery, activeRole, activeSort, activeStatus, adminApi, authStatus, isHydrated, text.users.unavailable, token]);
+  }, [activeCursor, activeQuery, activeRole, activeSort, activeStatus, activeVersion, adminApi, authStatus, isHydrated, text.users.unavailable, token]);
 
   const onSearchSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
@@ -176,6 +184,7 @@ export default function AdminUsersWorkspace({
   const onClearFilters = useCallback(() => {
     syncBrowseState({
       role: 'all',
+      version: 'all',
       status: 'all',
       sort: 'created-desc',
       query: null,
@@ -197,6 +206,10 @@ export default function AdminUsersWorkspace({
     () => directoryPage.items.filter((user) => user.role === 'ADMIN').length,
     [directoryPage.items],
   );
+  const visibleLegacyCount = useMemo(
+    () => directoryPage.items.filter((user) => user.accountVersion === 'legacy').length,
+    [directoryPage.items],
+  );
   const visibleActiveCount = useMemo(
     () => directoryPage.items.filter((user) => user.accountStatus === 'active').length,
     [directoryPage.items],
@@ -207,6 +220,7 @@ export default function AdminUsersWorkspace({
   );
   const hasActiveFilters =
     activeRole !== 'all' ||
+    activeVersion !== 'all' ||
     activeStatus !== 'all' ||
     activeSort !== 'created-desc' ||
     activeQuery !== null;
@@ -220,7 +234,7 @@ export default function AdminUsersWorkspace({
             <p className="text-sm leading-7 text-(--text-muted)">{text.sections.users.description}</p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-5">
             <div className="rounded-[1.45rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.summaryCards.visible}</p>
               <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{directoryPage.items.length}</p>
@@ -228,6 +242,10 @@ export default function AdminUsersWorkspace({
             <div className="rounded-[1.45rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.summaryCards.admins}</p>
               <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{visibleAdminCount}</p>
+            </div>
+            <div className="rounded-[1.45rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.summaryCards.legacy}</p>
+              <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{visibleLegacyCount}</p>
             </div>
             <div className="rounded-[1.45rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.summaryCards.active}</p>
@@ -250,7 +268,7 @@ export default function AdminUsersWorkspace({
             </div>
 
             <form onSubmit={onSearchSubmit} className="grid gap-4 rounded-[1.45rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
-              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(180px,0.55fr)_minmax(180px,0.55fr)]">
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(180px,0.52fr)_minmax(180px,0.52fr)_minmax(180px,0.52fr)]">
                 <div>
                   <label htmlFor="admin-user-search" className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">
                     {text.users.searchLabel}
@@ -278,6 +296,21 @@ export default function AdminUsersWorkspace({
                     <option value="all">{text.users.roleFilters.all}</option>
                     <option value="USER">{text.users.roleFilters.USER}</option>
                     <option value="ADMIN">{text.users.roleFilters.ADMIN}</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="admin-user-version" className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">
+                    {text.users.versionFilterLabel}
+                  </label>
+                  <select
+                    id="admin-user-version"
+                    value={activeVersion}
+                    onChange={(event) => setActiveVersion(event.target.value as AdminUsersVersionFilter)}
+                    className={`${FORM_CONTROL_CLASS} mt-3`}
+                  >
+                    <option value="all">{text.users.versionFilters.all}</option>
+                    <option value="legacy">{text.users.versionFilters.legacy}</option>
+                    <option value="product-v1">{text.users.versionFilters['product-v1']}</option>
                   </select>
                 </div>
                 <div>
@@ -345,6 +378,9 @@ export default function AdminUsersWorkspace({
                           <span className="inline-flex rounded-full border border-(--border-subtle) bg-white/6 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-(--text-muted)">
                             {text.users.roleFilters[user.role]}
                           </span>
+                          <span className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] ${resolveAdminUserVersionClass(user.accountVersion)}`}>
+                            {text.users.versionFilters[user.accountVersion]}
+                          </span>
                         </div>
                         <h4 className="text-base font-black tracking-[-0.02em] text-(--text-strong)">{user.name}</h4>
                         <p className="break-all text-sm leading-7 text-(--text-muted)">{user.email}</p>
@@ -359,6 +395,10 @@ export default function AdminUsersWorkspace({
                     </div>
 
                     <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                      <div>
+                        <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.tableColumns.version}</dt>
+                        <dd className="mt-1 text-sm text-(--text-strong)">{text.users.versionFilters[user.accountVersion]}</dd>
+                      </div>
                       <div>
                         <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.tableColumns.role}</dt>
                         <dd className="mt-1 text-sm text-(--text-strong)">{text.users.roleFilters[user.role]}</dd>
@@ -433,6 +473,10 @@ export default function AdminUsersWorkspace({
                   <dd className="mt-1 text-sm font-semibold text-(--text-strong)">{text.users.roleFilters[adminProfile.role]}</dd>
                 </div>
               </dl>
+
+              <div className="rounded-[1.35rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
+                <p className="text-sm leading-7 text-(--text-muted)">{text.users.productDirectoryScope}</p>
+              </div>
 
               <div className="rounded-[1.35rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
                 <h4 className="text-sm font-black uppercase tracking-[0.14em] text-(--text-strong)">{text.users.liveGuardrailsTitle}</h4>

@@ -10,6 +10,7 @@ describe('adminUsersFilters', () => {
     expect(
       resolveAdminUsersBrowseFilters({
         role: 'ADMIN',
+        version: 'legacy',
         status: 'restricted',
         sort: 'last-seen-desc',
         q: '  ada  lovelace ',
@@ -17,6 +18,7 @@ describe('adminUsersFilters', () => {
       }),
     ).toEqual({
       role: 'ADMIN',
+      version: 'legacy',
       status: 'restricted',
       sort: 'last-seen-desc',
       query: 'ada lovelace',
@@ -27,6 +29,7 @@ describe('adminUsersFilters', () => {
       resolveAdminUsersBrowseFilters({ role: 'oops', status: '???', sort: '??', q: '   ' }),
     ).toEqual({
       role: 'all',
+      version: 'all',
       status: 'all',
       sort: 'created-desc',
       query: null,
@@ -38,12 +41,13 @@ describe('adminUsersFilters', () => {
     expect(
       buildAdminUsersSearchParams({
         role: 'ADMIN',
+        version: 'legacy',
         status: 'restricted',
         sort: 'last-seen-desc',
         query: 'ada',
         cursor: 'cursor-1',
       }).toString(),
-    ).toBe('role=ADMIN&status=restricted&sort=last-seen-desc&q=ada&cursor=cursor-1');
+    ).toBe('role=ADMIN&version=legacy&status=restricted&sort=last-seen-desc&q=ada&cursor=cursor-1');
 
     expect(buildAdminUsersSearchParams({}).toString()).toBe('');
   });

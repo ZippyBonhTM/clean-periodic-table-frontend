@@ -1,11 +1,17 @@
-import type { AdminUserAccountStatus, AdminUserRole } from '@/shared/types/admin';
+import type {
+  AdminUserAccountStatus,
+  AdminUserAccountVersion,
+  AdminUserRole,
+} from '@/shared/types/admin';
 
 type AdminUsersRoleFilter = 'all' | AdminUserRole;
+type AdminUsersVersionFilter = 'all' | AdminUserAccountVersion;
 type AdminUsersStatusFilter = 'all' | AdminUserAccountStatus;
 type AdminUsersSort = 'created-desc' | 'created-asc' | 'last-seen-desc' | 'last-seen-asc';
 
 type AdminUsersBrowseFilters = {
   role: AdminUsersRoleFilter;
+  version: AdminUsersVersionFilter;
   status: AdminUsersStatusFilter;
   sort: AdminUsersSort;
   query: string | null;
@@ -14,6 +20,7 @@ type AdminUsersBrowseFilters = {
 
 type AdminUsersSearchParamsInput = {
   role?: string | string[] | null | undefined;
+  version?: string | string[] | null | undefined;
   status?: string | string[] | null | undefined;
   sort?: string | string[] | null | undefined;
   q?: string | string[] | null | undefined;
@@ -39,6 +46,17 @@ function resolveAdminUsersRoleFilter(input: AdminUsersSearchParamsInput): AdminU
   const normalizedValue = rawValue?.trim().toUpperCase() ?? '';
 
   if (normalizedValue === 'USER' || normalizedValue === 'ADMIN') {
+    return normalizedValue;
+  }
+
+  return 'all';
+}
+
+function resolveAdminUsersVersionFilter(input: AdminUsersSearchParamsInput): AdminUsersVersionFilter {
+  const rawValue = Array.isArray(input.version) ? input.version[0] : input.version;
+  const normalizedValue = rawValue?.trim().toLowerCase() ?? '';
+
+  if (normalizedValue === 'legacy' || normalizedValue === 'product-v1') {
     return normalizedValue;
   }
 
@@ -78,6 +96,7 @@ function resolveAdminUsersSort(input: AdminUsersSearchParamsInput): AdminUsersSo
 function resolveAdminUsersBrowseFilters(input: AdminUsersSearchParamsInput): AdminUsersBrowseFilters {
   return {
     role: resolveAdminUsersRoleFilter(input),
+    version: resolveAdminUsersVersionFilter(input),
     status: resolveAdminUsersStatusFilter(input),
     sort: resolveAdminUsersSort(input),
     query: normalizeAdminUsersQuery(input.q),
@@ -87,6 +106,7 @@ function resolveAdminUsersBrowseFilters(input: AdminUsersSearchParamsInput): Adm
 
 function buildAdminUsersSearchParams(input: {
   role?: AdminUsersRoleFilter | null;
+  version?: AdminUsersVersionFilter | null;
   status?: AdminUsersStatusFilter | null;
   sort?: AdminUsersSort | null;
   query?: string | null;
@@ -95,6 +115,7 @@ function buildAdminUsersSearchParams(input: {
   const searchParams = new URLSearchParams();
   const resolvedFilters = resolveAdminUsersBrowseFilters({
     role: input.role,
+    version: input.version,
     status: input.status,
     sort: input.sort,
     q: input.query,
@@ -103,6 +124,10 @@ function buildAdminUsersSearchParams(input: {
 
   if (resolvedFilters.role !== 'all') {
     searchParams.set('role', resolvedFilters.role);
+  }
+
+  if (resolvedFilters.version !== 'all') {
+    searchParams.set('version', resolvedFilters.version);
   }
 
   if (resolvedFilters.status !== 'all') {
@@ -132,6 +157,7 @@ export {
   resolveAdminUsersRoleFilter,
   resolveAdminUsersSort,
   resolveAdminUsersStatusFilter,
+  resolveAdminUsersVersionFilter,
 };
 export type {
   AdminUsersBrowseFilters,
@@ -139,4 +165,5 @@ export type {
   AdminUsersSearchParamsInput,
   AdminUsersSort,
   AdminUsersStatusFilter,
+  AdminUsersVersionFilter,
 };

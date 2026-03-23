@@ -15,6 +15,7 @@ import {
 import {
   formatAdminDateTime,
   resolveAdminUserStatusClass,
+  resolveAdminUserVersionClass,
 } from '@/shared/admin/adminPresentation';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
 import type { AdminUserAccountStatus, AdminUserDetail } from '@/shared/types/admin';
@@ -320,6 +321,9 @@ export default function AdminUserDetailWorkspace({
                       <span className="inline-flex rounded-full border border-(--border-subtle) bg-white/6 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-(--text-muted)">
                         {text.users.roleFilters[userDetail.role]}
                       </span>
+                      <span className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] ${resolveAdminUserVersionClass(userDetail.accountVersion)}`}>
+                        {text.users.versionFilters[userDetail.accountVersion]}
+                      </span>
                     </div>
                     <h3 className="text-xl font-black tracking-[-0.03em] text-(--text-strong)">{userDetail.name}</h3>
                     <p className="break-all text-sm leading-7 text-(--text-muted)">{userDetail.email}</p>
@@ -338,6 +342,10 @@ export default function AdminUserDetailWorkspace({
                   <div className="rounded-[1.2rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-3">
                     <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.common.lastSeenAt}</dt>
                     <dd className="mt-1 text-sm text-(--text-strong)">{formatAdminDateTime(locale, userDetail.lastSeenAt)}</dd>
+                  </div>
+                  <div className="rounded-[1.2rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-3">
+                    <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.userDetail.summaryFields.version}</dt>
+                    <dd className="mt-1 text-sm text-(--text-strong)">{text.users.versionFilters[userDetail.accountVersion]}</dd>
                   </div>
                   <div className="rounded-[1.2rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-3">
                     <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.userDetail.summaryFields.activeSessions}</dt>
@@ -371,6 +379,11 @@ export default function AdminUserDetailWorkspace({
                     </li>
                   ))}
                 </ul>
+                <div className="rounded-[1.25rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4 text-sm leading-7 text-(--text-muted)">
+                  {userDetail.accountVersion === 'legacy'
+                    ? text.userDetail.legacyVersionNote
+                    : text.userDetail.productVersionNote}
+                </div>
                 {feedback !== null ? (
                   <div className={`rounded-[1.25rem] border px-4 py-4 text-sm leading-7 ${feedback.type === 'success' ? 'border-emerald-400/35 bg-emerald-400/10 text-emerald-50' : 'border-rose-400/35 bg-rose-400/10 text-rose-100'}`}>
                     {feedback.message}

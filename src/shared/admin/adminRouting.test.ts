@@ -31,12 +31,13 @@ describe('adminRouting', () => {
     expect(
       buildLocalizedAdminUsersBrowsePath('en-US', {
         role: 'ADMIN',
+        version: 'legacy',
         status: 'restricted',
         sort: 'last-seen-desc',
         query: 'users',
         cursor: 'cursor-1',
       }),
-    ).toBe('/en/admin/users?role=ADMIN&status=restricted&sort=last-seen-desc&q=users&cursor=cursor-1');
+    ).toBe('/en/admin/users?role=ADMIN&version=legacy&status=restricted&sort=last-seen-desc&q=users&cursor=cursor-1');
   });
 
   it('builds the localized admin audit path for privileged history pages', () => {

@@ -53,6 +53,7 @@ export const adminWorkspaceTextEn = {
     actions: 'Actions',
     query: 'Search',
     sort: 'Sort',
+    version: 'Version',
     contract: 'Contract',
     access: 'Access',
     guard: 'Guard',
@@ -89,6 +90,7 @@ export const adminWorkspaceTextEn = {
     searchLabel: 'Search users',
     searchPlaceholder: 'Search by name, email, or user id',
     roleFilterLabel: 'Role filter',
+    versionFilterLabel: 'Version filter',
     statusFilterLabel: 'Status filter',
     sortLabel: 'Sort order',
     applyFilters: 'Apply filters',
@@ -104,6 +106,11 @@ export const adminWorkspaceTextEn = {
       restricted: 'Restricted',
       suspended: 'Suspended',
     },
+    versionFilters: {
+      all: 'All versions',
+      legacy: 'Legacy bridge',
+      'product-v1': 'Product v1',
+    },
     sortOptions: {
       'created-desc': 'Newest first',
       'created-asc': 'Oldest first',
@@ -113,13 +120,15 @@ export const adminWorkspaceTextEn = {
     summaryCards: {
       visible: 'Visible users',
       admins: 'Admins in page',
+      legacy: 'Legacy in page',
       active: 'Active in page',
       restricted: 'Restricted in page',
     },
     tableTitle: 'Protected user directory',
-    tableDescription: 'This directory is loaded through the guarded admin API proxy. Missing backend contracts surface as unavailable states instead of fake controls.',
+    tableDescription: 'This directory is loaded through the guarded admin API proxy and reflects product accounts that have already been synchronized into the new authorization model.',
     tableColumns: {
       user: 'User',
+      version: 'Version',
       status: 'Status',
       role: 'Role',
       lastSeen: 'Last seen',
@@ -131,6 +140,7 @@ export const adminWorkspaceTextEn = {
     unavailable: 'The protected admin user directory is unavailable in this environment.',
     currentAdminTitle: 'Current admin record',
     currentAdminDescription: 'The acting ADMIN profile remains the authority anchor for every protected route and follow-up action in this panel.',
+    productDirectoryScope: 'This directory lists product-backed accounts only. Auth-only legacy identities do not appear here until they are synchronized by a protected product request or a future backfill job.',
     liveGuardrailsTitle: 'Live user guardrails',
     liveGuardrails: [
       'Admin routes stay server-guarded and deny by default when session resolution is uncertain.',
@@ -199,6 +209,7 @@ export const adminWorkspaceTextEn = {
       'except-current': 'All except current',
     },
     summaryFields: {
+      version: 'Version',
       activeSessions: 'Active sessions',
       lastAudit: 'Last audit',
       restriction: 'Restriction',
@@ -209,6 +220,8 @@ export const adminWorkspaceTextEn = {
       'The UI must not bypass last-admin protection or self-protection even if a button is visible.',
       'Every high-risk action should create an audit entry upstream.',
     ],
+    legacyVersionNote: 'This record was synchronized through the legacy auth bridge. It already participates in the product authorization model, but it did not originate as a product-native account.',
+    productVersionNote: 'This record is marked as a product-v1 account and no longer depends on the legacy bridge for its identity lifecycle.',
     selfRoleWarning: 'Self-demotion is intentionally blocked in the client as an extra guardrail. The backend must still enforce this.',
   },
   audit: {

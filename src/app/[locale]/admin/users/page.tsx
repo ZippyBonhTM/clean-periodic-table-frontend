@@ -15,6 +15,7 @@ type LocalizedAdminUsersPageProps = {
   }>;
   searchParams?: Promise<{
     role?: string | string[];
+    version?: string | string[];
     status?: string | string[];
     sort?: string | string[];
     q?: string | string[];
@@ -58,7 +59,7 @@ export default async function LocalizedAdminUsersPage({
       articleFeatureStage={articleFeatureStage}
     >
       <AdminUsersWorkspace
-        key={`${initialFilters.role}:${initialFilters.status}:${initialFilters.sort}:${initialFilters.query ?? ''}:${initialFilters.cursor ?? ''}`}
+        key={`${initialFilters.role}:${initialFilters.version}:${initialFilters.status}:${initialFilters.sort}:${initialFilters.query ?? ''}:${initialFilters.cursor ?? ''}`}
         locale={resolvedLocale}
         adminProfile={adminProfile}
         initialFilters={initialFilters}

@@ -2,6 +2,7 @@ import type { AuthUserProfile } from '@/shared/types/auth';
 
 type AdminUserRole = AuthUserProfile['role'];
 type AdminSessionUser = Pick<AuthUserProfile, 'id' | 'name' | 'email' | 'role'>;
+type AdminUserAccountVersion = 'legacy' | 'product-v1';
 
 type AdminSession = {
   user: AdminSessionUser;
@@ -20,6 +21,7 @@ type AdminUserSummary = {
   name: string;
   email: string;
   role: AdminUserRole;
+  accountVersion: AdminUserAccountVersion;
   accountStatus: AdminUserAccountStatus;
   createdAt: string;
   updatedAt: string;
@@ -93,6 +95,7 @@ export type {
   AdminCursorPage,
   AdminSession,
   AdminSessionUser,
+  AdminUserAccountVersion,
   AdminUserAccountStatus,
   AdminUserCapabilities,
   AdminUserDetail,

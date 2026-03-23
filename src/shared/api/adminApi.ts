@@ -53,6 +53,10 @@ function buildAdminUsersPath(input: AdminListUsersInput): string {
     url.searchParams.set('role', input.role);
   }
 
+  if (input.version !== undefined && input.version !== null && input.version !== 'all') {
+    url.searchParams.set('version', input.version);
+  }
+
   if (input.status !== undefined && input.status !== null && input.status !== 'all') {
     url.searchParams.set('status', input.status);
   }

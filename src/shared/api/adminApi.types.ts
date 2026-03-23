@@ -2,6 +2,7 @@ import type {
   AdminAuditEntry,
   AdminCursorPage,
   AdminSession,
+  AdminUserAccountVersion,
   AdminUserAccountStatus,
   AdminUserDetail,
   AdminUserRole,
@@ -26,6 +27,7 @@ type AdminListUsersInput = AdminCursorInput & {
   token: string;
   query?: string | null;
   role?: AdminUserRole | 'all' | null;
+  version?: AdminUserAccountVersion | 'all' | null;
   status?: AdminUserAccountStatus | 'all' | null;
   sort?: 'created-desc' | 'created-asc' | 'last-seen-desc' | 'last-seen-asc' | null;
 };
