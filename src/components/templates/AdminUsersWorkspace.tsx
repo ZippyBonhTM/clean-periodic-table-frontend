@@ -74,6 +74,10 @@ export default function AdminUsersWorkspace({
   const [activeVersion, setActiveVersion] = useState<AdminUsersVersionFilter>(initialFilters.version);
   const [activeStatus, setActiveStatus] = useState<AdminUsersStatusFilter>(initialFilters.status);
   const [activeSort, setActiveSort] = useState<AdminUsersSort>(initialFilters.sort);
+  const [draftRole, setDraftRole] = useState<AdminUsersRoleFilter>(initialFilters.role);
+  const [draftVersion, setDraftVersion] = useState<AdminUsersVersionFilter>(initialFilters.version);
+  const [draftStatus, setDraftStatus] = useState<AdminUsersStatusFilter>(initialFilters.status);
+  const [draftSort, setDraftSort] = useState<AdminUsersSort>(initialFilters.sort);
   const [activeQuery, setActiveQuery] = useState(initialFilters.query);
   const [activeCursor, setActiveCursor] = useState(initialFilters.cursor);
   const [searchInput, setSearchInput] = useState(initialFilters.query ?? '');
@@ -203,16 +207,24 @@ export default function AdminUsersWorkspace({
       event.preventDefault();
       const normalizedQuery = searchInput.trim().replace(/\s+/g, ' ');
       syncBrowseState({
+        role: draftRole,
+        version: draftVersion,
+        status: draftStatus,
+        sort: draftSort,
         query: normalizedQuery.length > 0 ? normalizedQuery : null,
         cursor: null,
         searchInputValue: searchInput,
         paginationMode: 'reset',
       });
     },
-    [searchInput, syncBrowseState],
+    [draftRole, draftSort, draftStatus, draftVersion, searchInput, syncBrowseState],
   );
 
   const onClearFilters = useCallback(() => {
+    setDraftRole('all');
+    setDraftVersion('all');
+    setDraftStatus('all');
+    setDraftSort('created-desc');
     syncBrowseState({
       role: 'all',
       version: 'all',
@@ -363,6 +375,13 @@ export default function AdminUsersWorkspace({
     activeStatus !== 'all' ||
     activeSort !== 'created-desc' ||
     activeQuery !== null;
+  const normalizedSearchInput = searchInput.trim().replace(/\s+/g, ' ');
+  const hasPendingDraftChanges =
+    draftRole !== activeRole ||
+    draftVersion !== activeVersion ||
+    draftStatus !== activeStatus ||
+    draftSort !== activeSort ||
+    (normalizedSearchInput.length > 0 ? normalizedSearchInput : null) !== activeQuery;
 
   return (
     <div className="grid gap-4 xl:gap-5">
@@ -428,8 +447,8 @@ export default function AdminUsersWorkspace({
                   </label>
                   <select
                     id="admin-user-role"
-                    value={activeRole}
-                    onChange={(event) => setActiveRole(event.target.value as AdminUsersRoleFilter)}
+                    value={draftRole}
+                    onChange={(event) => setDraftRole(event.target.value as AdminUsersRoleFilter)}
                     className={`${FORM_CONTROL_CLASS} mt-3`}
                   >
                     <option value="all">{text.users.roleFilters.all}</option>
@@ -443,8 +462,8 @@ export default function AdminUsersWorkspace({
                   </label>
                   <select
                     id="admin-user-version"
-                    value={activeVersion}
-                    onChange={(event) => setActiveVersion(event.target.value as AdminUsersVersionFilter)}
+                    value={draftVersion}
+                    onChange={(event) => setDraftVersion(event.target.value as AdminUsersVersionFilter)}
                     className={`${FORM_CONTROL_CLASS} mt-3`}
                   >
                     <option value="all">{text.users.versionFilters.all}</option>
@@ -458,8 +477,8 @@ export default function AdminUsersWorkspace({
                   </label>
                   <select
                     id="admin-user-status"
-                    value={activeStatus}
-                    onChange={(event) => setActiveStatus(event.target.value as AdminUsersStatusFilter)}
+                    value={draftStatus}
+                    onChange={(event) => setDraftStatus(event.target.value as AdminUsersStatusFilter)}
                     className={`${FORM_CONTROL_CLASS} mt-3`}
                   >
                     <option value="all">{text.users.statusFilters.all}</option>
@@ -477,8 +496,8 @@ export default function AdminUsersWorkspace({
                   </label>
                   <select
                     id="admin-user-sort"
-                    value={activeSort}
-                    onChange={(event) => setActiveSort(event.target.value as AdminUsersSort)}
+                    value={draftSort}
+                    onChange={(event) => setDraftSort(event.target.value as AdminUsersSort)}
                     className={`${FORM_CONTROL_CLASS} mt-3`}
                   >
                     <option value="created-desc">{text.users.sortOptions['created-desc']}</option>
@@ -571,7 +590,7 @@ export default function AdminUsersWorkspace({
                   variant="ghost"
                   size="sm"
                   className="rounded-full px-4"
-                  disabled={previousCursor === null}
+                  disabled={previousCursor === null || hasPendingDraftChanges}
                   onClick={onPreviousPage}
                 >
                   {text.users.pagination.previous}
@@ -581,7 +600,7 @@ export default function AdminUsersWorkspace({
                   variant="secondary"
                   size="sm"
                   className="rounded-full px-4"
-                  disabled={currentDirectoryPage.nextCursor === null}
+                  disabled={currentDirectoryPage.nextCursor === null || hasPendingDraftChanges}
                   onClick={() => {
                     if (currentDirectoryPage.nextCursor !== null) {
                       onNextPage(currentDirectoryPage.nextCursor);
