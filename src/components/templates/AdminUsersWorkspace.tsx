@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
 import Button from '@/components/atoms/Button';
@@ -14,6 +14,15 @@ import {
   buildLocalizedAdminUserDetailPath,
   buildLocalizedAdminUsersBrowsePath,
 } from '@/shared/admin/adminRouting';
+import {
+  appendAdminUsersPageStack,
+  flattenAdminUsersPageStack,
+  replaceAdminUsersPageStack,
+  resolveAdminUsersPreviousCursor,
+  resolveNextAdminUsersBrowseState,
+  type AdminUsersDirectoryPageEntry,
+  type AdminUsersBrowseStateUpdate,
+} from '@/shared/admin/adminUsersBrowseState';
 import {
   type AdminUsersBrowseFilters,
   type AdminUsersRoleFilter,
@@ -38,6 +47,7 @@ type AdminUsersWorkspaceProps = {
 
 type DirectoryRequestStatus = 'idle' | 'loading' | 'success' | 'error';
 type DirectorySyncStatus = 'idle' | 'loading' | 'success' | 'error';
+type DirectoryPaginationMode = 'reset' | 'append';
 
 const DIRECTORY_PAGE_SIZE = 12;
 const DIRECTORY_SYNC_PAGE_SIZE = 25;
@@ -68,39 +78,43 @@ export default function AdminUsersWorkspace({
   const [activeCursor, setActiveCursor] = useState(initialFilters.cursor);
   const [searchInput, setSearchInput] = useState(initialFilters.query ?? '');
   const [requestStatus, setRequestStatus] = useState<DirectoryRequestStatus>('idle');
-  const [directoryPage, setDirectoryPage] = useState<AdminCursorPage<AdminUserSummary>>(buildEmptyDirectory);
+  const [directoryPages, setDirectoryPages] = useState<AdminUsersDirectoryPageEntry[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [syncCursor, setSyncCursor] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<DirectorySyncStatus>('idle');
   const [syncFeedback, setSyncFeedback] = useState<AdminDirectorySyncResult | null>(null);
   const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null);
+  const paginationModeRef = useRef<DirectoryPaginationMode>('reset');
+  const skipNextFetchRef = useRef(false);
 
   const syncBrowseState = useCallback(
-    (nextState: {
-      role?: AdminUsersRoleFilter;
-      version?: AdminUsersVersionFilter;
-      status?: AdminUsersStatusFilter;
-      sort?: AdminUsersSort;
-      query?: string | null;
-      cursor?: string | null;
-      searchInputValue?: string;
-    }) => {
-      const nextRole = nextState.role ?? activeRole;
-      const nextVersion = nextState.version ?? activeVersion;
-      const nextStatus = nextState.status ?? activeStatus;
-      const nextSort = nextState.sort ?? activeSort;
-      const nextQuery = nextState.query ?? activeQuery;
-      const nextCursor = nextState.cursor ?? activeCursor;
+    (nextState: AdminUsersBrowseStateUpdate & { searchInputValue?: string; paginationMode?: DirectoryPaginationMode }) => {
+      const nextBrowseState = resolveNextAdminUsersBrowseState(
+        {
+          role: activeRole,
+          version: activeVersion,
+          status: activeStatus,
+          sort: activeSort,
+          query: activeQuery,
+          cursor: activeCursor,
+        },
+        nextState,
+      );
 
-      setActiveRole(nextRole);
-      setActiveVersion(nextVersion);
-      setActiveStatus(nextStatus);
-      setActiveSort(nextSort);
-      setActiveQuery(nextQuery);
-      setActiveCursor(nextCursor);
+      setActiveRole(nextBrowseState.role);
+      setActiveVersion(nextBrowseState.version);
+      setActiveStatus(nextBrowseState.status);
+      setActiveSort(nextBrowseState.sort);
+      setActiveQuery(nextBrowseState.query);
+      setActiveCursor(nextBrowseState.cursor);
       setRequestStatus('loading');
       setErrorMessage(null);
+      paginationModeRef.current = nextState.paginationMode ?? 'reset';
+
+      if ((nextState.paginationMode ?? 'reset') === 'reset') {
+        setDirectoryPages([]);
+      }
 
       if (nextState.searchInputValue !== undefined) {
         setSearchInput(nextState.searchInputValue);
@@ -108,12 +122,12 @@ export default function AdminUsersWorkspace({
 
       router.replace(
         buildLocalizedAdminUsersBrowsePath(locale, {
-          role: nextRole,
-          version: nextVersion,
-          status: nextStatus,
-          sort: nextSort,
-          query: nextQuery,
-          cursor: nextCursor,
+          role: nextBrowseState.role,
+          version: nextBrowseState.version,
+          status: nextBrowseState.status,
+          sort: nextBrowseState.sort,
+          query: nextBrowseState.query,
+          cursor: nextBrowseState.cursor,
         }),
       );
     },
@@ -122,6 +136,11 @@ export default function AdminUsersWorkspace({
 
   useEffect(() => {
     if (!isHydrated || authStatus === 'checking' || token === null) {
+      return;
+    }
+
+    if (skipNextFetchRef.current) {
+      skipNextFetchRef.current = false;
       return;
     }
 
@@ -140,15 +159,20 @@ export default function AdminUsersWorkspace({
         sort: activeSort,
       })
       .then((nextPage) => {
-        setDirectoryPage(nextPage);
+        setDirectoryPages((currentPages) =>
+          paginationModeRef.current === 'append'
+            ? appendAdminUsersPageStack(currentPages, activeCursor, nextPage)
+            : replaceAdminUsersPageStack(activeCursor, nextPage),
+        );
         setRequestStatus('success');
+        paginationModeRef.current = 'reset';
       })
       .catch((caughtError: unknown) => {
         if (abortController.signal.aborted) {
           return;
         }
 
-        setDirectoryPage(buildEmptyDirectory());
+        setDirectoryPages([]);
         setRequestStatus('error');
 
         if (
@@ -182,6 +206,7 @@ export default function AdminUsersWorkspace({
         query: normalizedQuery.length > 0 ? normalizedQuery : null,
         cursor: null,
         searchInputValue: searchInput,
+        paginationMode: 'reset',
       });
     },
     [searchInput, syncBrowseState],
@@ -196,16 +221,57 @@ export default function AdminUsersWorkspace({
       query: null,
       cursor: null,
       searchInputValue: '',
+      paginationMode: 'reset',
     });
   }, [syncBrowseState]);
 
-  const onPageChange = useCallback(
-    (nextCursor: string | null) => {
+  const onNextPage = useCallback(
+    (nextCursor: string) => {
       syncBrowseState({
         cursor: nextCursor,
+        paginationMode: 'append',
       });
     },
     [syncBrowseState],
+  );
+
+  const onPreviousPage = useCallback(() => {
+    setDirectoryPages((currentPages) => {
+      if (currentPages.length < 2) {
+        return currentPages;
+      }
+
+      const nextPages = currentPages.slice(0, -1);
+      const previousCursor = nextPages[nextPages.length - 1]?.requestCursor ?? null;
+
+      skipNextFetchRef.current = true;
+      paginationModeRef.current = 'reset';
+      setActiveCursor(previousCursor);
+      setRequestStatus('success');
+      setErrorMessage(null);
+      router.replace(
+        buildLocalizedAdminUsersBrowsePath(locale, {
+          role: activeRole,
+          version: activeVersion,
+          status: activeStatus,
+          sort: activeSort,
+          query: activeQuery,
+          cursor: previousCursor,
+        }),
+      );
+
+      return nextPages;
+    });
+  }, [activeQuery, activeRole, activeSort, activeStatus, activeVersion, locale, router]);
+
+  const visibleUsers = useMemo(
+    () => flattenAdminUsersPageStack(directoryPages),
+    [directoryPages],
+  );
+  const currentDirectoryPage = directoryPages[directoryPages.length - 1]?.page ?? buildEmptyDirectory();
+  const previousCursor = useMemo(
+    () => resolveAdminUsersPreviousCursor(directoryPages),
+    [directoryPages],
   );
 
   const onSyncDirectory = useCallback(async () => {
@@ -226,6 +292,19 @@ export default function AdminUsersWorkspace({
       setSyncFeedback(result);
       setSyncCursor(result.nextCursor);
       setSyncStatus('success');
+      paginationModeRef.current = 'reset';
+      setDirectoryPages([]);
+      setActiveCursor(null);
+      router.replace(
+        buildLocalizedAdminUsersBrowsePath(locale, {
+          role: activeRole,
+          version: activeVersion,
+          status: activeStatus,
+          sort: activeSort,
+          query: activeQuery,
+          cursor: null,
+        }),
+      );
       setReloadKey((currentValue) => currentValue + 1);
     } catch (caughtError: unknown) {
       setSyncStatus('error');
@@ -248,23 +327,35 @@ export default function AdminUsersWorkspace({
 
       setSyncErrorMessage(text.users.syncUnavailable);
     }
-  }, [adminApi, syncCursor, text.users.syncUnavailable, token]);
+  }, [
+    activeQuery,
+    activeRole,
+    activeSort,
+    activeStatus,
+    activeVersion,
+    adminApi,
+    locale,
+    router,
+    syncCursor,
+    text.users.syncUnavailable,
+    token,
+  ]);
 
   const visibleAdminCount = useMemo(
-    () => directoryPage.items.filter((user) => user.role === 'ADMIN').length,
-    [directoryPage.items],
+    () => visibleUsers.filter((user) => user.role === 'ADMIN').length,
+    [visibleUsers],
   );
   const visibleLegacyCount = useMemo(
-    () => directoryPage.items.filter((user) => user.accountVersion === 'legacy').length,
-    [directoryPage.items],
+    () => visibleUsers.filter((user) => user.accountVersion === 'legacy').length,
+    [visibleUsers],
   );
   const visibleActiveCount = useMemo(
-    () => directoryPage.items.filter((user) => user.accountStatus === 'active').length,
-    [directoryPage.items],
+    () => visibleUsers.filter((user) => user.accountStatus === 'active').length,
+    [visibleUsers],
   );
   const visibleRestrictedCount = useMemo(
-    () => directoryPage.items.filter((user) => user.accountStatus === 'restricted').length,
-    [directoryPage.items],
+    () => visibleUsers.filter((user) => user.accountStatus === 'restricted').length,
+    [visibleUsers],
   );
   const hasActiveFilters =
     activeRole !== 'all' ||
@@ -285,7 +376,7 @@ export default function AdminUsersWorkspace({
           <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-5">
             <div className="rounded-[1.45rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.summaryCards.visible}</p>
-              <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{directoryPage.items.length}</p>
+              <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{visibleUsers.length}</p>
             </div>
             <div className="rounded-[1.45rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.summaryCards.admins}</p>
@@ -413,9 +504,9 @@ export default function AdminUsersWorkspace({
               <div className="rounded-[1.35rem] border border-rose-500/40 bg-rose-500/10 px-4 py-4 text-sm leading-7 text-rose-100">
                 {errorMessage ?? text.users.unavailable}
               </div>
-            ) : directoryPage.items.length > 0 ? (
+            ) : visibleUsers.length > 0 ? (
               <div className="space-y-3">
-                {directoryPage.items.map((user) => (
+                {visibleUsers.map((user) => (
                   <article key={user.id} className="rounded-[1.35rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0 flex-1 space-y-2">
@@ -473,15 +564,15 @@ export default function AdminUsersWorkspace({
               </div>
             )}
 
-            {requestStatus === 'success' && (directoryPage.prevCursor !== null || directoryPage.nextCursor !== null) ? (
+            {requestStatus === 'success' && (previousCursor !== null || currentDirectoryPage.nextCursor !== null) ? (
               <div className="flex flex-wrap gap-3 border-t border-(--border-subtle) pt-2">
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   className="rounded-full px-4"
-                  disabled={directoryPage.prevCursor === null}
-                  onClick={() => onPageChange(directoryPage.prevCursor)}
+                  disabled={previousCursor === null}
+                  onClick={onPreviousPage}
                 >
                   {text.users.pagination.previous}
                 </Button>
@@ -490,8 +581,12 @@ export default function AdminUsersWorkspace({
                   variant="secondary"
                   size="sm"
                   className="rounded-full px-4"
-                  disabled={directoryPage.nextCursor === null}
-                  onClick={() => onPageChange(directoryPage.nextCursor)}
+                  disabled={currentDirectoryPage.nextCursor === null}
+                  onClick={() => {
+                    if (currentDirectoryPage.nextCursor !== null) {
+                      onNextPage(currentDirectoryPage.nextCursor);
+                    }
+                  }}
                 >
                   {text.users.pagination.next}
                 </Button>
