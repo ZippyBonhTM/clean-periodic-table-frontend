@@ -162,21 +162,21 @@ async function resolveAuthTokensForServerRequests(): Promise<string[]> {
   const candidateTokens: string[] = [];
 
   for (const candidateToken of [mirroredAccessToken, clientMirroredAccessToken]) {
-    if (candidateToken.length > 0) {
+    if (candidateToken.length > 0 && !candidateTokens.includes(candidateToken)) {
       candidateTokens.push(candidateToken);
     }
   }
 
+  return candidateTokens;
+}
+
+async function refreshServerAccessToken(): Promise<string | null> {
   const refreshResponse = await requestServerAuthJson<RefreshResponse>('/api/auth/refresh', {
     method: 'POST',
   });
   const accessToken = refreshResponse?.accessToken?.trim() ?? '';
 
-  if (accessToken.length > 0) {
-    candidateTokens.push(accessToken);
-  }
-
-  return candidateTokens;
+  return accessToken.length > 0 ? accessToken : null;
 }
 
 async function resolveServerUserProfileFromLegacyAuth(): Promise<AuthUserProfile | null> {
@@ -193,6 +193,21 @@ async function resolveServerUserProfileFromLegacyAuth(): Promise<AuthUserProfile
     }
   }
 
+  const refreshedAccessToken = await refreshServerAccessToken();
+
+  if (refreshedAccessToken === null || candidateTokens.includes(refreshedAccessToken)) {
+    return null;
+  }
+
+  const profileFromRefreshedToken = await requestServerAuthJson<ProfileResponse>('/api/auth/profile', {
+    method: 'GET',
+    token: refreshedAccessToken,
+  });
+
+  if (profileFromRefreshedToken?.userProfile !== undefined) {
+    return profileFromRefreshedToken.userProfile;
+  }
+
   return null;
 }
 
@@ -201,6 +216,16 @@ async function resolveServerUserProfileFromBackend(): Promise<BackendAdminSessio
 
   for (const candidateToken of candidateTokens) {
     const adminProfile = await requestServerAdminSession(candidateToken);
+
+    if (adminProfile.resolution === 'granted' || adminProfile.resolution === 'forbidden') {
+      return adminProfile;
+    }
+  }
+
+  const refreshedAccessToken = await refreshServerAccessToken();
+
+  if (refreshedAccessToken !== null && !candidateTokens.includes(refreshedAccessToken)) {
+    const adminProfile = await requestServerAdminSession(refreshedAccessToken);
 
     if (adminProfile.resolution === 'granted' || adminProfile.resolution === 'forbidden') {
       return adminProfile;
