@@ -13,6 +13,7 @@ type AppShellProps = {
   hasToken: boolean;
   authStatus: TokenStatusType;
   headerShowAccountChrome?: boolean;
+  headerDocumentNavigation?: boolean;
   onLogout?: () => void;
   authEntryMode?: AuthEntryMode;
   onRequestLogin?: () => void;
@@ -26,6 +27,7 @@ function AppShell({
   hasToken,
   authStatus,
   headerShowAccountChrome = true,
+  headerDocumentNavigation = false,
   onLogout,
   authEntryMode = 'route',
   onRequestLogin,
@@ -113,6 +115,7 @@ function AppShell({
           hasToken={hasToken}
           authStatus={authStatus}
           showAccountChrome={headerShowAccountChrome}
+          documentNavigation={headerDocumentNavigation}
           theme={theme}
           onToggleTheme={toggleTheme}
           onLogout={onLogout}

@@ -11,6 +11,7 @@ type AppHeaderRouteMenuProps = {
   isOpen: boolean;
   locale: AppLocale;
   pathname: string | null;
+  documentNavigation?: boolean;
   text: AppHeaderTextCatalog['navigation'];
   onClose: () => void;
 };
@@ -19,6 +20,7 @@ export default function AppHeaderRouteMenu({
   isOpen,
   locale,
   pathname,
+  documentNavigation = false,
   text,
   onClose,
 }: AppHeaderRouteMenuProps) {
@@ -72,6 +74,7 @@ export default function AppHeaderRouteMenu({
                 variant={isActive ? 'secondary' : 'ghost'}
                 size="sm"
                 align="left"
+                documentNavigation={documentNavigation}
                 className="px-3 text-[11px]"
               >
                 <AppHeaderNavLinkLabel label={text.links[item.labelKey]} />

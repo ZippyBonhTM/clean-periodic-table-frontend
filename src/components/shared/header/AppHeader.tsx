@@ -28,6 +28,7 @@ type AppHeaderProps = {
   hasToken: boolean;
   authStatus: TokenStatusType;
   showAccountChrome?: boolean;
+  documentNavigation?: boolean;
   theme: AppTheme;
   onToggleTheme: () => void;
   onLogout?: () => void;
@@ -98,6 +99,7 @@ function AppHeader({
   hasToken,
   authStatus,
   showAccountChrome = true,
+  documentNavigation = false,
   theme,
   onToggleTheme,
   onLogout,
@@ -173,14 +175,28 @@ function AppHeader({
       <header className="hidden rounded-3xl border border-(--border-subtle) p-4 shadow-sm md:block md:p-5 surface-panel">
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[auto_auto] md:items-stretch">
           <div className="min-w-0 md:col-start-1 md:row-start-1">
-            <Link href={buildLocalizedAppPath(locale, '/')} className="inline-block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)">
-              <p className="whitespace-nowrap text-[9px] uppercase tracking-[0.22em] text-(--text-muted) sm:text-[10px]">
-                {text.brand.eyebrow}
-              </p>
-              <h1 className="mt-1 whitespace-nowrap text-lg font-extrabold leading-none text-foreground sm:text-xl">
-                {text.brand.title}
-              </h1>
-            </Link>
+            {documentNavigation ? (
+              <a
+                href={buildLocalizedAppPath(locale, '/')}
+                className="inline-block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
+              >
+                <p className="whitespace-nowrap text-[9px] uppercase tracking-[0.22em] text-(--text-muted) sm:text-[10px]">
+                  {text.brand.eyebrow}
+                </p>
+                <h1 className="mt-1 whitespace-nowrap text-lg font-extrabold leading-none text-foreground sm:text-xl">
+                  {text.brand.title}
+                </h1>
+              </a>
+            ) : (
+              <Link href={buildLocalizedAppPath(locale, '/')} className="inline-block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)">
+                <p className="whitespace-nowrap text-[9px] uppercase tracking-[0.22em] text-(--text-muted) sm:text-[10px]">
+                  {text.brand.eyebrow}
+                </p>
+                <h1 className="mt-1 whitespace-nowrap text-lg font-extrabold leading-none text-foreground sm:text-xl">
+                  {text.brand.title}
+                </h1>
+              </Link>
+            )}
           </div>
 
           <div className="flex flex-col gap-2 md:col-start-2 md:row-span-2 md:h-full md:items-end md:justify-between">
@@ -223,6 +239,7 @@ function AppHeader({
               <AppHeaderAuthActions
                 hasToken={hasToken}
                 authEntryMode={authEntryMode}
+                documentNavigation={documentNavigation}
                 loginHref={loginHref}
                 registerHref={registerHref}
                 text={text.auth}
@@ -235,20 +252,32 @@ function AppHeader({
           <AppHeaderDesktopNav
             locale={locale}
             pathname={pathname}
+            documentNavigation={documentNavigation}
             text={text.navigation}
           />
         </div>
       </header>
 
       <div className="md:hidden">
-        <Link
-          href={buildLocalizedAppPath(locale, '/')}
-          className="mb-2 block rounded-lg text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
-        >
-          <p className="text-[9px] uppercase tracking-[0.24em] text-(--text-muted)">
-            {text.brand.eyebrow}
-          </p>
-        </Link>
+        {documentNavigation ? (
+          <a
+            href={buildLocalizedAppPath(locale, '/')}
+            className="mb-2 block rounded-lg text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
+          >
+            <p className="text-[9px] uppercase tracking-[0.24em] text-(--text-muted)">
+              {text.brand.eyebrow}
+            </p>
+          </a>
+        ) : (
+          <Link
+            href={buildLocalizedAppPath(locale, '/')}
+            className="mb-2 block rounded-lg text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)"
+          >
+            <p className="text-[9px] uppercase tracking-[0.24em] text-(--text-muted)">
+              {text.brand.eyebrow}
+            </p>
+          </Link>
+        )}
         <header className="surface-panel rounded-3xl border border-(--border-subtle) p-3 shadow-sm">
           <div className="flex items-center justify-between gap-2">
             <Button
@@ -299,6 +328,7 @@ function AppHeader({
               <AppHeaderAuthActions
                 hasToken={hasToken}
                 authEntryMode={authEntryMode}
+                documentNavigation={documentNavigation}
                 loginHref={loginHref}
                 registerHref={registerHref}
                 text={text.auth}
@@ -318,6 +348,7 @@ function AppHeader({
         isOpen={isRouteMenuOpen}
         locale={locale}
         pathname={pathname}
+        documentNavigation={documentNavigation}
         text={text.navigation}
         onClose={closeRouteMenu}
       />

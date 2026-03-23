@@ -9,12 +9,14 @@ import { NAV_LINKS } from './appHeader.types';
 type AppHeaderDesktopNavProps = {
   locale: AppLocale;
   pathname: string | null;
+  documentNavigation?: boolean;
   text: AppHeaderTextCatalog['navigation'];
 };
 
 export default function AppHeaderDesktopNav({
   locale,
   pathname,
+  documentNavigation = false,
   text,
 }: AppHeaderDesktopNavProps) {
   return (
@@ -29,6 +31,7 @@ export default function AppHeaderDesktopNav({
             href={href}
             variant={isActive ? 'secondary' : 'ghost'}
             size="sm"
+            documentNavigation={documentNavigation}
             className="rounded-lg px-2.5 text-[11px]"
           >
             <AppHeaderNavLinkLabel label={text.links[item.labelKey]} />
