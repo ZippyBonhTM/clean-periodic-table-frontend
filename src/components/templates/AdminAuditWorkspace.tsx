@@ -58,6 +58,7 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
   const adminApi = useMemo(() => createAdminApi(), []);
   const { token, authStatus, isHydrated } = useAdminClientSession();
   const [activeAction, setActiveAction] = useState<AdminAuditActionFilter>(initialFilters.action);
+  const [draftAction, setDraftAction] = useState<AdminAuditActionFilter>(initialFilters.action);
   const [activeQuery, setActiveQuery] = useState(initialFilters.query);
   const [activeCursor, setActiveCursor] = useState(initialFilters.cursor);
   const [searchInput, setSearchInput] = useState(initialFilters.query ?? '');
@@ -170,16 +171,18 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
       event.preventDefault();
       const normalizedQuery = searchInput.trim().replace(/\s+/g, ' ');
       syncBrowseState({
+        action: draftAction,
         query: normalizedQuery.length > 0 ? normalizedQuery : null,
         cursor: null,
         searchInputValue: searchInput,
         paginationMode: 'reset',
       });
     },
-    [searchInput, syncBrowseState],
+    [draftAction, searchInput, syncBrowseState],
   );
 
   const onClearFilters = useCallback(() => {
+    setDraftAction('all');
     syncBrowseState({
       action: 'all',
       query: null,
@@ -226,6 +229,10 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
   }, [activeAction, activeQuery, locale, router]);
 
   const hasActiveFilters = activeAction !== 'all' || activeQuery !== null;
+  const normalizedSearchInput = searchInput.trim().replace(/\s+/g, ' ');
+  const hasPendingDraftChanges =
+    draftAction !== activeAction ||
+    (normalizedSearchInput.length > 0 ? normalizedSearchInput : null) !== activeQuery;
   const visibleAuditEntries = useMemo(
     () => flattenAdminAuditPageStack(auditPages),
     [auditPages],
@@ -286,8 +293,8 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
               </label>
               <select
                 id="admin-audit-action"
-                value={activeAction}
-                onChange={(event) => setActiveAction(event.target.value as AdminAuditActionFilter)}
+                value={draftAction}
+                onChange={(event) => setDraftAction(event.target.value as AdminAuditActionFilter)}
                 className={`${FORM_CONTROL_CLASS} mt-3`}
               >
                 <option value="all">{text.audit.actionFilters.all}</option>
@@ -364,7 +371,7 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
                 variant="ghost"
                 size="sm"
                 className="rounded-full px-4"
-                disabled={previousCursor === null}
+                disabled={previousCursor === null || hasPendingDraftChanges}
                 onClick={onPreviousPage}
               >
                 {text.audit.pagination.previous}
@@ -374,7 +381,7 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
                 variant="secondary"
                 size="sm"
                 className="rounded-full px-4"
-                disabled={currentAuditPage.nextCursor === null}
+                disabled={currentAuditPage.nextCursor === null || hasPendingDraftChanges}
                 onClick={() => {
                   if (currentAuditPage.nextCursor !== null) {
                     onNextPage(currentAuditPage.nextCursor);
