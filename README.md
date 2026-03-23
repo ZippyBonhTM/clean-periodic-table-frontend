@@ -19,7 +19,17 @@ Create `.env.local` (or `.env`) based on `.env.example`:
 NEXT_PUBLIC_AUTH_API_URL=http://localhost:3002
 NEXT_PUBLIC_BACKEND_API_URL=http://localhost:3001
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+AUTH_API_URL=http://localhost:3002
+BACKEND_API_URL=http://localhost:3001
+ADMIN_AUTHZ_SOURCE=legacy-auth
 ```
+
+Notes:
+
+- `NEXT_PUBLIC_*` values are used by the browser bundle.
+- `AUTH_API_URL`, `BACKEND_API_URL`, and optional `ADMIN_API_URL` are used by Next server routes and SSR guards.
+- `ADMIN_AUTHZ_SOURCE` supports `legacy-auth`, `auto`, and `backend`.
+- Keep `legacy-auth` as the production-safe default until the product backend admin authority is validated.
 
 ## Run
 

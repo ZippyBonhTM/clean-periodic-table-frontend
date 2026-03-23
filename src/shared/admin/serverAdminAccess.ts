@@ -8,6 +8,14 @@ import {
   shouldRequireAdminForArticleStage,
 } from '@/shared/admin/adminAccess';
 import {
+  shouldFallbackToLegacyAdminAuthorizationAfterBackendResolution,
+  type BackendAdminSessionResolution,
+} from '@/shared/admin/adminAuthorizationResolution';
+import {
+  buildAdminUpstreamApiUrl,
+  resolveAdminAuthorizationSource,
+} from '@/shared/admin/adminUpstream';
+import {
   buildAuthUpstreamUrl,
   stripForwardedAuthCookieHeader,
 } from '@/shared/auth/authUpstream';
@@ -22,6 +30,21 @@ type ServerAuthRequestInput = {
   method?: 'GET' | 'POST';
   token?: string;
 };
+
+type AdminSessionResponse = {
+  user?: AuthUserProfile;
+  userProfile?: AuthUserProfile;
+};
+
+type BackendAdminSessionResult =
+  | {
+      resolution: 'granted';
+      userProfile: AuthUserProfile;
+    }
+  | {
+      resolution: Exclude<BackendAdminSessionResolution, 'granted'>;
+      userProfile: null;
+    };
 
 async function requestServerAuthJson<ResponseType>(
   path: string,
@@ -71,24 +94,76 @@ async function requestServerAuthJson<ResponseType>(
   return (await response.json().catch(() => null)) as ResponseType | null;
 }
 
-async function resolveServerUserProfile(): Promise<AuthUserProfile | null> {
+async function requestServerAdminSession(token: string): Promise<BackendAdminSessionResult> {
+  const normalizedToken = token.trim();
+  const upstreamUrl = buildAdminUpstreamApiUrl('/api/v1/admin/session');
+
+  if (upstreamUrl === null || normalizedToken.length === 0) {
+    return {
+      resolution: 'unavailable',
+      userProfile: null,
+    };
+  }
+
+  let response: Response;
+
+  try {
+    response = await fetch(upstreamUrl, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${normalizedToken}`,
+      },
+      cache: 'no-store',
+      redirect: 'manual',
+    });
+  } catch {
+    return {
+      resolution: 'unavailable',
+      userProfile: null,
+    };
+  }
+
+  if (response.status === 403) {
+    return {
+      resolution: 'forbidden',
+      userProfile: null,
+    };
+  }
+
+  if (!response.ok) {
+    return {
+      resolution: 'unavailable',
+      userProfile: null,
+    };
+  }
+
+  const payload = (await response.json().catch(() => null)) as AdminSessionResponse | null;
+  const userProfile = payload?.user ?? payload?.userProfile ?? null;
+
+  if (userProfile !== null) {
+    return {
+      resolution: 'granted',
+      userProfile,
+    };
+  }
+
+  return {
+    resolution: 'unavailable',
+    userProfile: null,
+  };
+}
+
+async function resolveAuthTokensForServerRequests(): Promise<string[]> {
   const requestCookies = await cookies();
   const mirroredAccessToken = requestCookies.get(SERVER_ACCESS_TOKEN_COOKIE_KEY)?.value?.trim() ?? '';
   const clientMirroredAccessToken =
     requestCookies.get(CLIENT_SERVER_ACCESS_TOKEN_COOKIE_KEY)?.value?.trim() ?? '';
+  const candidateTokens: string[] = [];
 
   for (const candidateToken of [mirroredAccessToken, clientMirroredAccessToken]) {
-    if (candidateToken.length === 0) {
-      continue;
-    }
-
-    const profileFromMirroredToken = await requestServerAuthJson<ProfileResponse>('/api/auth/profile', {
-      method: 'GET',
-      token: candidateToken,
-    });
-
-    if (profileFromMirroredToken?.userProfile !== undefined) {
-      return profileFromMirroredToken.userProfile;
+    if (candidateToken.length > 0) {
+      candidateTokens.push(candidateToken);
     }
   }
 
@@ -97,16 +172,75 @@ async function resolveServerUserProfile(): Promise<AuthUserProfile | null> {
   });
   const accessToken = refreshResponse?.accessToken?.trim() ?? '';
 
-  if (accessToken.length === 0) {
-    return null;
+  if (accessToken.length > 0) {
+    candidateTokens.push(accessToken);
   }
 
-  const profileResponse = await requestServerAuthJson<ProfileResponse>('/api/auth/profile', {
-    method: 'GET',
-    token: accessToken,
-  });
+  return candidateTokens;
+}
 
-  return profileResponse?.userProfile ?? null;
+async function resolveServerUserProfileFromLegacyAuth(): Promise<AuthUserProfile | null> {
+  const candidateTokens = await resolveAuthTokensForServerRequests();
+
+  for (const candidateToken of candidateTokens) {
+    const profileFromToken = await requestServerAuthJson<ProfileResponse>('/api/auth/profile', {
+      method: 'GET',
+      token: candidateToken,
+    });
+
+    if (profileFromToken?.userProfile !== undefined) {
+      return profileFromToken.userProfile;
+    }
+  }
+
+  return null;
+}
+
+async function resolveServerUserProfileFromBackend(): Promise<BackendAdminSessionResult> {
+  const candidateTokens = await resolveAuthTokensForServerRequests();
+
+  for (const candidateToken of candidateTokens) {
+    const adminProfile = await requestServerAdminSession(candidateToken);
+
+    if (adminProfile.resolution === 'granted' || adminProfile.resolution === 'forbidden') {
+      return adminProfile;
+    }
+  }
+
+  return {
+    resolution: 'unavailable',
+    userProfile: null,
+  };
+}
+
+async function resolveServerUserProfile(): Promise<AuthUserProfile | null> {
+  const authorizationSource = resolveAdminAuthorizationSource();
+
+  if (authorizationSource === 'legacy-auth') {
+    return await resolveServerUserProfileFromLegacyAuth();
+  }
+
+  if (authorizationSource === 'backend') {
+    const backendProfile = await resolveServerUserProfileFromBackend();
+    return backendProfile.resolution === 'granted' ? backendProfile.userProfile : null;
+  }
+
+  const backendProfile = await resolveServerUserProfileFromBackend();
+
+  if (backendProfile.resolution === 'granted') {
+    return backendProfile.userProfile;
+  }
+
+  if (
+    shouldFallbackToLegacyAdminAuthorizationAfterBackendResolution(
+      authorizationSource,
+      backendProfile.resolution,
+    )
+  ) {
+    return await resolveServerUserProfileFromLegacyAuth();
+  }
+
+  return null;
 }
 
 export async function requireServerAdminAccess(): Promise<AuthUserProfile> {

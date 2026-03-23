@@ -1,23 +1,20 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import AdminAuditWorkspace from '@/components/templates/AdminAuditWorkspace';
 import AdminDashboardShell from '@/components/templates/AdminDashboardShell';
-import AdminUsersWorkspace from '@/components/templates/AdminUsersWorkspace';
 import { buildAdminPageMetadata } from '@/shared/admin/adminPageMetadata';
-import { resolveAdminUsersBrowseFilters } from '@/shared/admin/adminUsersFilters';
+import { resolveAdminAuditBrowseFilters } from '@/shared/admin/adminAuditFilters';
 import { requireServerAdminAccess } from '@/shared/admin/serverAdminAccess';
 import { getArticleFeatureStage } from '@/shared/config/articleFeature';
 import { resolveAppLocaleFromSegment } from '@/shared/i18n/appLocaleRouting';
 
-type LocalizedAdminUsersPageProps = {
+type LocalizedAdminAuditPageProps = {
   params: Promise<{
     locale: string;
   }>;
   searchParams?: Promise<{
-    role?: string | string[];
-    version?: string | string[];
-    status?: string | string[];
-    sort?: string | string[];
+    action?: string | string[];
     q?: string | string[];
     cursor?: string | string[];
   }>;
@@ -25,7 +22,7 @@ type LocalizedAdminUsersPageProps = {
 
 export async function generateMetadata({
   params,
-}: LocalizedAdminUsersPageProps): Promise<Metadata> {
+}: LocalizedAdminAuditPageProps): Promise<Metadata> {
   const { locale } = await params;
   const resolvedLocale = resolveAppLocaleFromSegment(locale);
 
@@ -33,16 +30,16 @@ export async function generateMetadata({
     return {};
   }
 
-  return buildAdminPageMetadata(resolvedLocale, 'users');
+  return buildAdminPageMetadata(resolvedLocale, 'audit');
 }
 
-export default async function LocalizedAdminUsersPage({
+export default async function LocalizedAdminAuditPage({
   params,
   searchParams,
-}: LocalizedAdminUsersPageProps) {
+}: LocalizedAdminAuditPageProps) {
   const { locale } = await params;
   const resolvedSearchParams = searchParams === undefined ? {} : await searchParams;
-  const initialFilters = resolveAdminUsersBrowseFilters(resolvedSearchParams);
+  const initialFilters = resolveAdminAuditBrowseFilters(resolvedSearchParams);
   const resolvedLocale = resolveAppLocaleFromSegment(locale);
 
   if (resolvedLocale === null) {
@@ -58,12 +55,7 @@ export default async function LocalizedAdminUsersPage({
       adminProfile={adminProfile}
       articleFeatureStage={articleFeatureStage}
     >
-      <AdminUsersWorkspace
-        key={`${initialFilters.role}:${initialFilters.version}:${initialFilters.status}:${initialFilters.sort}:${initialFilters.query ?? ''}:${initialFilters.cursor ?? ''}`}
-        locale={resolvedLocale}
-        adminProfile={adminProfile}
-        initialFilters={initialFilters}
-      />
+      <AdminAuditWorkspace locale={resolvedLocale} initialFilters={initialFilters} />
     </AdminDashboardShell>
   );
 }

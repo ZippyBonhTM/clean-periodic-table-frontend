@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+  buildAuthUpstreamApiUrl,
   buildAuthUpstreamUrl,
   resolveAuthUpstreamBaseUrl,
   stripForwardedAuthCookieHeader,
@@ -27,6 +28,9 @@ describe('authUpstream', () => {
     );
     expect(buildAuthUpstreamUrl('refresh')?.toString()).toBe(
       'https://auth.example.com/internal/refresh',
+    );
+    expect(buildAuthUpstreamApiUrl('/api/v1/admin/users?cursor=next')?.toString()).toBe(
+      'https://auth.example.com/internal/api/v1/admin/users?cursor=next',
     );
   });
 

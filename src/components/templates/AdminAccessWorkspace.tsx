@@ -48,6 +48,18 @@ function buildRouteMatrix(
       visibility: text.access.states.noindex,
     },
     {
+      surface: '/[locale]/admin/users/[userId]',
+      access: text.access.accessRules.adminOnly,
+      guard: text.access.states.serverAdmin,
+      visibility: text.access.states.noindex,
+    },
+    {
+      surface: '/[locale]/admin/audit',
+      access: text.access.accessRules.adminOnly,
+      guard: text.access.states.serverAdmin,
+      visibility: text.access.states.noindex,
+    },
+    {
       surface: '/[locale]/admin/access',
       access: text.access.accessRules.adminOnly,
       guard: text.access.states.serverAdmin,

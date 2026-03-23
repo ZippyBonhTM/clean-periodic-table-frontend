@@ -2,30 +2,22 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import AdminDashboardShell from '@/components/templates/AdminDashboardShell';
-import AdminUsersWorkspace from '@/components/templates/AdminUsersWorkspace';
+import AdminUserDetailWorkspace from '@/components/templates/AdminUserDetailWorkspace';
 import { buildAdminPageMetadata } from '@/shared/admin/adminPageMetadata';
-import { resolveAdminUsersBrowseFilters } from '@/shared/admin/adminUsersFilters';
 import { requireServerAdminAccess } from '@/shared/admin/serverAdminAccess';
 import { getArticleFeatureStage } from '@/shared/config/articleFeature';
 import { resolveAppLocaleFromSegment } from '@/shared/i18n/appLocaleRouting';
 
-type LocalizedAdminUsersPageProps = {
+type LocalizedAdminUserDetailPageProps = {
   params: Promise<{
     locale: string;
-  }>;
-  searchParams?: Promise<{
-    role?: string | string[];
-    version?: string | string[];
-    status?: string | string[];
-    sort?: string | string[];
-    q?: string | string[];
-    cursor?: string | string[];
+    userId: string;
   }>;
 };
 
 export async function generateMetadata({
   params,
-}: LocalizedAdminUsersPageProps): Promise<Metadata> {
+}: LocalizedAdminUserDetailPageProps): Promise<Metadata> {
   const { locale } = await params;
   const resolvedLocale = resolveAppLocaleFromSegment(locale);
 
@@ -36,13 +28,10 @@ export async function generateMetadata({
   return buildAdminPageMetadata(resolvedLocale, 'users');
 }
 
-export default async function LocalizedAdminUsersPage({
+export default async function LocalizedAdminUserDetailPage({
   params,
-  searchParams,
-}: LocalizedAdminUsersPageProps) {
-  const { locale } = await params;
-  const resolvedSearchParams = searchParams === undefined ? {} : await searchParams;
-  const initialFilters = resolveAdminUsersBrowseFilters(resolvedSearchParams);
+}: LocalizedAdminUserDetailPageProps) {
+  const { locale, userId } = await params;
   const resolvedLocale = resolveAppLocaleFromSegment(locale);
 
   if (resolvedLocale === null) {
@@ -58,11 +47,10 @@ export default async function LocalizedAdminUsersPage({
       adminProfile={adminProfile}
       articleFeatureStage={articleFeatureStage}
     >
-      <AdminUsersWorkspace
-        key={`${initialFilters.role}:${initialFilters.version}:${initialFilters.status}:${initialFilters.sort}:${initialFilters.query ?? ''}:${initialFilters.cursor ?? ''}`}
+      <AdminUserDetailWorkspace
         locale={resolvedLocale}
         adminProfile={adminProfile}
-        initialFilters={initialFilters}
+        userId={userId}
       />
     </AdminDashboardShell>
   );

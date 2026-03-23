@@ -1,12 +1,13 @@
 import {
   buildLocalizedAdminAccessPath,
+  buildLocalizedAdminAuditPath,
   buildLocalizedAdminContentPath,
   buildLocalizedAdminPath,
   buildLocalizedAdminUsersPath,
 } from '@/shared/admin/adminRouting';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
-export const ADMIN_PANEL_SECTION_KEYS = ['overview', 'users', 'access', 'content'] as const;
+export const ADMIN_PANEL_SECTION_KEYS = ['overview', 'users', 'audit', 'access', 'content'] as const;
 
 export type AdminPanelSectionKey = (typeof ADMIN_PANEL_SECTION_KEYS)[number];
 
@@ -24,6 +25,10 @@ export function buildAdminPanelNavigation(locale: AppLocale): AdminPanelNavigati
     {
       key: 'users',
       href: buildLocalizedAdminUsersPath(locale),
+    },
+    {
+      key: 'audit',
+      href: buildLocalizedAdminAuditPath(locale),
     },
     {
       key: 'access',

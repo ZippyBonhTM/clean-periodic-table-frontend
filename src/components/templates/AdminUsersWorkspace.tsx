@@ -1,24 +1,34 @@
 'use client';
 
-import { useCallback, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import Button from '@/components/atoms/Button';
 import Input from '@/components/atoms/Input';
 import Panel from '@/components/atoms/Panel';
 import { getAdminWorkspaceText } from '@/components/templates/adminWorkspaceText';
+import { createAdminApi } from '@/shared/api/adminApi';
+import { ApiError } from '@/shared/api/httpClient';
+import { useAdminClientSession } from '@/shared/admin/adminClientSession';
 import {
-  countAdminUsersCapabilitiesByStatus,
-  filterAdminUsersCapabilities,
-  normalizeAdminUsersQuery,
+  buildLocalizedAdminUserDetailPath,
+  buildLocalizedAdminUsersBrowsePath,
+} from '@/shared/admin/adminRouting';
+import {
   type AdminUsersBrowseFilters,
-  type AdminUsersCapabilityRecord,
-  type AdminUsersCapabilityStatus,
+  type AdminUsersRoleFilter,
+  type AdminUsersSort,
   type AdminUsersStatusFilter,
-  type AdminUsersTrackFilter,
+  type AdminUsersVersionFilter,
 } from '@/shared/admin/adminUsersFilters';
-import { buildLocalizedAdminUsersBrowsePath } from '@/shared/admin/adminRouting';
+import {
+  formatAdminDateTime,
+  resolveAdminUserStatusClass,
+  resolveAdminUserVersionClass,
+} from '@/shared/admin/adminPresentation';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
+import type { AdminCursorPage, AdminUserSummary } from '@/shared/types/admin';
 import type { AuthUserProfile } from '@/shared/types/auth';
 
 type AdminUsersWorkspaceProps = {
@@ -27,22 +37,17 @@ type AdminUsersWorkspaceProps = {
   initialFilters: AdminUsersBrowseFilters;
 };
 
-function resolveStatusClass(status: AdminUsersCapabilityStatus): string {
-  if (status === 'available') {
-    return 'border-emerald-400/35 bg-emerald-400/10 text-emerald-50';
-  }
+type DirectoryRequestStatus = 'idle' | 'loading' | 'success' | 'error';
 
-  if (status === 'guarded') {
-    return 'border-sky-400/35 bg-sky-400/10 text-sky-50';
-  }
+const DIRECTORY_PAGE_SIZE = 12;
+const FORM_CONTROL_CLASS = 'w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)]';
 
-  return 'border-amber-400/35 bg-amber-400/10 text-amber-50';
-}
-
-function resolveFilterClass(isActive: boolean): string {
-  return isActive
-    ? 'border-orange-400/40 bg-orange-400/12 text-(--text-strong)'
-    : 'border-(--border-subtle) bg-[var(--surface-2)] text-(--text-muted) hover:border-orange-400/30 hover:text-(--text-strong)';
+function buildEmptyDirectory(): AdminCursorPage<AdminUserSummary> {
+  return {
+    items: [],
+    nextCursor: null,
+    prevCursor: null,
+  };
 }
 
 export default function AdminUsersWorkspace({
@@ -52,76 +57,44 @@ export default function AdminUsersWorkspace({
 }: AdminUsersWorkspaceProps) {
   const router = useRouter();
   const text = getAdminWorkspaceText(locale);
+  const adminApi = useMemo(() => createAdminApi(), []);
+  const { token, authStatus, isHydrated } = useAdminClientSession();
+  const [activeRole, setActiveRole] = useState<AdminUsersRoleFilter>(initialFilters.role);
+  const [activeVersion, setActiveVersion] = useState<AdminUsersVersionFilter>(initialFilters.version);
   const [activeStatus, setActiveStatus] = useState<AdminUsersStatusFilter>(initialFilters.status);
-  const [activeTrack, setActiveTrack] = useState<AdminUsersTrackFilter>(initialFilters.track);
+  const [activeSort, setActiveSort] = useState<AdminUsersSort>(initialFilters.sort);
   const [activeQuery, setActiveQuery] = useState(initialFilters.query);
+  const [activeCursor, setActiveCursor] = useState(initialFilters.cursor);
   const [searchInput, setSearchInput] = useState(initialFilters.query ?? '');
-
-  const capabilities = useMemo<AdminUsersCapabilityRecord[]>(
-    () => [
-      {
-        ...text.users.capabilityItems.resolveSession,
-        status: 'available',
-        track: 'session',
-      },
-      {
-        ...text.users.capabilityItems.openProtectedAreas,
-        status: 'guarded',
-        track: 'access',
-      },
-      {
-        ...text.users.capabilityItems.listUsers,
-        status: 'planned',
-        track: 'directory',
-      },
-      {
-        ...text.users.capabilityItems.changeRole,
-        status: 'planned',
-        track: 'roles',
-      },
-      {
-        ...text.users.capabilityItems.suspendAccount,
-        status: 'planned',
-        track: 'moderation',
-      },
-      {
-        ...text.users.capabilityItems.auditTrail,
-        status: 'planned',
-        track: 'audit',
-      },
-    ],
-    [text],
-  );
-
-  const statusCounts = useMemo(
-    () => countAdminUsersCapabilitiesByStatus(capabilities),
-    [capabilities],
-  );
-  const filteredCapabilities = useMemo(
-    () =>
-      filterAdminUsersCapabilities(capabilities, {
-        status: activeStatus,
-        track: activeTrack,
-        query: activeQuery,
-      }),
-    [activeQuery, activeStatus, activeTrack, capabilities],
-  );
-  const hasActiveFilters = activeStatus !== 'all' || activeTrack !== 'all' || activeQuery !== null;
+  const [requestStatus, setRequestStatus] = useState<DirectoryRequestStatus>('idle');
+  const [directoryPage, setDirectoryPage] = useState<AdminCursorPage<AdminUserSummary>>(buildEmptyDirectory);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const syncBrowseState = useCallback(
     (nextState: {
+      role?: AdminUsersRoleFilter;
+      version?: AdminUsersVersionFilter;
       status?: AdminUsersStatusFilter;
-      track?: AdminUsersTrackFilter;
+      sort?: AdminUsersSort;
       query?: string | null;
+      cursor?: string | null;
       searchInputValue?: string;
     }) => {
+      const nextRole = nextState.role ?? activeRole;
+      const nextVersion = nextState.version ?? activeVersion;
       const nextStatus = nextState.status ?? activeStatus;
-      const nextTrack = nextState.track ?? activeTrack;
+      const nextSort = nextState.sort ?? activeSort;
       const nextQuery = nextState.query ?? activeQuery;
+      const nextCursor = nextState.cursor ?? activeCursor;
 
+      setActiveRole(nextRole);
+      setActiveVersion(nextVersion);
       setActiveStatus(nextStatus);
-      setActiveTrack(nextTrack);
+      setActiveSort(nextSort);
       setActiveQuery(nextQuery);
+      setActiveCursor(nextCursor);
+      setRequestStatus('loading');
+      setErrorMessage(null);
 
       if (nextState.searchInputValue !== undefined) {
         setSearchInput(nextState.searchInputValue);
@@ -129,20 +102,79 @@ export default function AdminUsersWorkspace({
 
       router.replace(
         buildLocalizedAdminUsersBrowsePath(locale, {
+          role: nextRole,
+          version: nextVersion,
           status: nextStatus,
-          track: nextTrack,
+          sort: nextSort,
           query: nextQuery,
+          cursor: nextCursor,
         }),
       );
     },
-    [activeQuery, activeStatus, activeTrack, locale, router],
+    [activeCursor, activeQuery, activeRole, activeSort, activeStatus, activeVersion, locale, router],
   );
+
+  useEffect(() => {
+    if (!isHydrated || authStatus === 'checking' || token === null) {
+      return;
+    }
+
+    const abortController = new AbortController();
+
+    void adminApi
+      .listUsers({
+        token,
+        signal: abortController.signal,
+        limit: DIRECTORY_PAGE_SIZE,
+        cursor: activeCursor,
+        query: activeQuery,
+        role: activeRole,
+        version: activeVersion,
+        status: activeStatus,
+        sort: activeSort,
+      })
+      .then((nextPage) => {
+        setDirectoryPage(nextPage);
+        setRequestStatus('success');
+      })
+      .catch((caughtError: unknown) => {
+        if (abortController.signal.aborted) {
+          return;
+        }
+
+        setDirectoryPage(buildEmptyDirectory());
+        setRequestStatus('error');
+
+        if (
+          caughtError instanceof ApiError &&
+          (caughtError.statusCode === 404 ||
+            caughtError.statusCode === 500 ||
+            caughtError.statusCode === 502)
+        ) {
+          setErrorMessage(text.users.unavailable);
+          return;
+        }
+
+        if (caughtError instanceof Error && caughtError.message.trim().length > 0) {
+          setErrorMessage(caughtError.message);
+          return;
+        }
+
+        setErrorMessage(text.users.unavailable);
+      });
+
+    return () => {
+      abortController.abort();
+    };
+  }, [activeCursor, activeQuery, activeRole, activeSort, activeStatus, activeVersion, adminApi, authStatus, isHydrated, text.users.unavailable, token]);
 
   const onSearchSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+      const normalizedQuery = searchInput.trim().replace(/\s+/g, ' ');
       syncBrowseState({
-        query: normalizeAdminUsersQuery(searchInput),
+        query: normalizedQuery.length > 0 ? normalizedQuery : null,
+        cursor: null,
         searchInputValue: searchInput,
       });
     },
@@ -151,15 +183,47 @@ export default function AdminUsersWorkspace({
 
   const onClearFilters = useCallback(() => {
     syncBrowseState({
+      role: 'all',
+      version: 'all',
       status: 'all',
-      track: 'all',
+      sort: 'created-desc',
       query: null,
+      cursor: null,
       searchInputValue: '',
     });
   }, [syncBrowseState]);
 
-  const trackOptions: AdminUsersTrackFilter[] = ['all', 'session', 'access', 'directory', 'roles', 'moderation', 'audit'];
-  const statusOptions: AdminUsersStatusFilter[] = ['all', 'available', 'guarded', 'planned'];
+  const onPageChange = useCallback(
+    (nextCursor: string | null) => {
+      syncBrowseState({
+        cursor: nextCursor,
+      });
+    },
+    [syncBrowseState],
+  );
+
+  const visibleAdminCount = useMemo(
+    () => directoryPage.items.filter((user) => user.role === 'ADMIN').length,
+    [directoryPage.items],
+  );
+  const visibleLegacyCount = useMemo(
+    () => directoryPage.items.filter((user) => user.accountVersion === 'legacy').length,
+    [directoryPage.items],
+  );
+  const visibleActiveCount = useMemo(
+    () => directoryPage.items.filter((user) => user.accountStatus === 'active').length,
+    [directoryPage.items],
+  );
+  const visibleRestrictedCount = useMemo(
+    () => directoryPage.items.filter((user) => user.accountStatus === 'restricted').length,
+    [directoryPage.items],
+  );
+  const hasActiveFilters =
+    activeRole !== 'all' ||
+    activeVersion !== 'all' ||
+    activeStatus !== 'all' ||
+    activeSort !== 'created-desc' ||
+    activeQuery !== null;
 
   return (
     <div className="grid gap-4 xl:gap-5">
@@ -170,50 +234,119 @@ export default function AdminUsersWorkspace({
             <p className="text-sm leading-7 text-(--text-muted)">{text.sections.users.description}</p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-5">
             <div className="rounded-[1.45rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.summaryCards.visible}</p>
-              <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{filteredCapabilities.length}</p>
+              <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{directoryPage.items.length}</p>
             </div>
             <div className="rounded-[1.45rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.summaryCards.available}</p>
-              <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{statusCounts.available}</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.summaryCards.admins}</p>
+              <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{visibleAdminCount}</p>
             </div>
             <div className="rounded-[1.45rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.summaryCards.guarded}</p>
-              <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{statusCounts.guarded}</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.summaryCards.legacy}</p>
+              <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{visibleLegacyCount}</p>
             </div>
             <div className="rounded-[1.45rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.summaryCards.planned}</p>
-              <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{statusCounts.planned}</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.summaryCards.active}</p>
+              <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{visibleActiveCount}</p>
+            </div>
+            <div className="rounded-[1.45rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.summaryCards.restricted}</p>
+              <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{visibleRestrictedCount}</p>
             </div>
           </div>
         </div>
       </Panel>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.18fr)_minmax(320px,0.82fr)] xl:gap-5">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] xl:gap-5">
         <Panel className="rounded-[2rem]">
           <div className="space-y-5">
             <div className="space-y-2">
-              <h3 className="text-xl font-black tracking-[-0.03em] text-(--text-strong)">{text.users.capabilitiesTitle}</h3>
-              <p className="text-sm leading-7 text-(--text-muted)">{text.users.capabilitiesDescription}</p>
+              <h3 className="text-xl font-black tracking-[-0.03em] text-(--text-strong)">{text.users.tableTitle}</h3>
+              <p className="text-sm leading-7 text-(--text-muted)">{text.users.tableDescription}</p>
             </div>
 
             <form onSubmit={onSearchSubmit} className="grid gap-4 rounded-[1.45rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
-              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end">
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(180px,0.52fr)_minmax(180px,0.52fr)_minmax(180px,0.52fr)]">
                 <div>
-                  <label htmlFor="admin-capability-search" className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">
+                  <label htmlFor="admin-user-search" className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">
                     {text.users.searchLabel}
                   </label>
                   <div className="mt-3">
                     <Input
-                      id="admin-capability-search"
-                      name="adminCapabilitySearch"
+                      id="admin-user-search"
+                      name="adminUserSearch"
                       value={searchInput}
                       onChange={setSearchInput}
                       placeholder={text.users.searchPlaceholder}
                     />
                   </div>
+                </div>
+                <div>
+                  <label htmlFor="admin-user-role" className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">
+                    {text.users.roleFilterLabel}
+                  </label>
+                  <select
+                    id="admin-user-role"
+                    value={activeRole}
+                    onChange={(event) => setActiveRole(event.target.value as AdminUsersRoleFilter)}
+                    className={`${FORM_CONTROL_CLASS} mt-3`}
+                  >
+                    <option value="all">{text.users.roleFilters.all}</option>
+                    <option value="USER">{text.users.roleFilters.USER}</option>
+                    <option value="ADMIN">{text.users.roleFilters.ADMIN}</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="admin-user-version" className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">
+                    {text.users.versionFilterLabel}
+                  </label>
+                  <select
+                    id="admin-user-version"
+                    value={activeVersion}
+                    onChange={(event) => setActiveVersion(event.target.value as AdminUsersVersionFilter)}
+                    className={`${FORM_CONTROL_CLASS} mt-3`}
+                  >
+                    <option value="all">{text.users.versionFilters.all}</option>
+                    <option value="legacy">{text.users.versionFilters.legacy}</option>
+                    <option value="product-v1">{text.users.versionFilters['product-v1']}</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="admin-user-status" className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">
+                    {text.users.statusFilterLabel}
+                  </label>
+                  <select
+                    id="admin-user-status"
+                    value={activeStatus}
+                    onChange={(event) => setActiveStatus(event.target.value as AdminUsersStatusFilter)}
+                    className={`${FORM_CONTROL_CLASS} mt-3`}
+                  >
+                    <option value="all">{text.users.statusFilters.all}</option>
+                    <option value="active">{text.users.statusFilters.active}</option>
+                    <option value="restricted">{text.users.statusFilters.restricted}</option>
+                    <option value="suspended">{text.users.statusFilters.suspended}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid gap-3 lg:grid-cols-[minmax(180px,0.45fr)_auto_auto] lg:items-end">
+                <div>
+                  <label htmlFor="admin-user-sort" className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">
+                    {text.users.sortLabel}
+                  </label>
+                  <select
+                    id="admin-user-sort"
+                    value={activeSort}
+                    onChange={(event) => setActiveSort(event.target.value as AdminUsersSort)}
+                    className={`${FORM_CONTROL_CLASS} mt-3`}
+                  >
+                    <option value="created-desc">{text.users.sortOptions['created-desc']}</option>
+                    <option value="created-asc">{text.users.sortOptions['created-asc']}</option>
+                    <option value="last-seen-desc">{text.users.sortOptions['last-seen-desc']}</option>
+                    <option value="last-seen-asc">{text.users.sortOptions['last-seen-asc']}</option>
+                  </select>
                 </div>
                 <Button type="submit" variant="secondary" size="lg" className="rounded-xl px-4">
                   {text.users.applyFilters}
@@ -222,72 +355,65 @@ export default function AdminUsersWorkspace({
                   {text.users.clearFilters}
                 </Button>
               </div>
-
-              <div className="grid gap-4">
-                <div className="space-y-2">
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.filterStatusLabel}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {statusOptions.map((status) => (
-                      <button
-                        key={status}
-                        type="button"
-                        className={`rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] transition ${resolveFilterClass(activeStatus === status)}`}
-                        onClick={() => syncBrowseState({ status })}
-                      >
-                        {text.users.statusFilters[status]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.filterTrackLabel}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {trackOptions.map((track) => (
-                      <button
-                        key={track}
-                        type="button"
-                        className={`rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] transition ${resolveFilterClass(activeTrack === track)}`}
-                        onClick={() => syncBrowseState({ track })}
-                      >
-                        {text.users.trackFilters[track]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
             </form>
 
-            {filteredCapabilities.length > 0 ? (
-              <div className="grid gap-3">
-                {filteredCapabilities.map((capability) => (
-                  <article key={capability.title} className="rounded-[1.35rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
+            {!isHydrated || authStatus === 'checking' || token === null || requestStatus === 'loading' ? (
+              <div className="rounded-[1.35rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4 text-sm leading-7 text-(--text-muted)">
+                {text.common.loading}
+              </div>
+            ) : requestStatus === 'error' ? (
+              <div className="rounded-[1.35rem] border border-rose-500/40 bg-rose-500/10 px-4 py-4 text-sm leading-7 text-rose-100">
+                {errorMessage ?? text.users.unavailable}
+              </div>
+            ) : directoryPage.items.length > 0 ? (
+              <div className="space-y-3">
+                {directoryPage.items.map((user) => (
+                  <article key={user.id} className="rounded-[1.35rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0 flex-1 space-y-2">
                         <div className="flex flex-wrap gap-2">
-                          <span className="inline-flex rounded-full border border-(--border-subtle) bg-white/6 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-(--text-muted)">
-                            {text.users.trackFilters[capability.track]}
+                          <span className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] ${resolveAdminUserStatusClass(user.accountStatus)}`}>
+                            {text.users.statusFilters[user.accountStatus]}
                           </span>
-                          <span className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] ${resolveStatusClass(capability.status)}`}>
-                            {text.users.statuses[capability.status]}
+                          <span className="inline-flex rounded-full border border-(--border-subtle) bg-white/6 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-(--text-muted)">
+                            {text.users.roleFilters[user.role]}
+                          </span>
+                          <span className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] ${resolveAdminUserVersionClass(user.accountVersion)}`}>
+                            {text.users.versionFilters[user.accountVersion]}
                           </span>
                         </div>
-                        <h4 className="text-base font-black tracking-[-0.02em] text-(--text-strong)">{capability.title}</h4>
-                        <p className="text-sm leading-7 text-(--text-muted)">{capability.description}</p>
+                        <h4 className="text-base font-black tracking-[-0.02em] text-(--text-strong)">{user.name}</h4>
+                        <p className="break-all text-sm leading-7 text-(--text-muted)">{user.email}</p>
                       </div>
+
+                      <Link
+                        href={buildLocalizedAdminUserDetailPath(locale, user.id)}
+                        className="inline-flex items-center justify-center rounded-full border border-orange-400/35 bg-orange-400/12 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-(--text-strong) transition hover:border-orange-400/50 hover:bg-orange-400/18"
+                      >
+                        {text.users.openUser}
+                      </Link>
                     </div>
-                    <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+
+                    <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                       <div>
-                        <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.common.dependency}</dt>
-                        <dd className="mt-1 text-sm text-(--text-strong)">{capability.dependency}</dd>
+                        <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.tableColumns.version}</dt>
+                        <dd className="mt-1 text-sm text-(--text-strong)">{text.users.versionFilters[user.accountVersion]}</dd>
                       </div>
                       <div>
-                        <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.common.contract}</dt>
-                        <dd className="mt-1 break-all font-mono text-xs text-(--text-strong)">{capability.contract}</dd>
+                        <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.tableColumns.role}</dt>
+                        <dd className="mt-1 text-sm text-(--text-strong)">{text.users.roleFilters[user.role]}</dd>
                       </div>
                       <div>
-                        <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.common.securityNote}</dt>
-                        <dd className="mt-1 text-sm text-(--text-strong)">{capability.securityNote}</dd>
+                        <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.tableColumns.status}</dt>
+                        <dd className="mt-1 text-sm text-(--text-strong)">{text.users.statusFilters[user.accountStatus]}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.tableColumns.lastSeen}</dt>
+                        <dd className="mt-1 text-sm text-(--text-strong)">{formatAdminDateTime(locale, user.lastSeenAt)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.users.tableColumns.createdAt}</dt>
+                        <dd className="mt-1 text-sm text-(--text-strong)">{formatAdminDateTime(locale, user.createdAt)}</dd>
                       </div>
                     </dl>
                   </article>
@@ -298,6 +424,31 @@ export default function AdminUsersWorkspace({
                 {hasActiveFilters ? text.users.emptyFiltered : text.users.empty}
               </div>
             )}
+
+            {requestStatus === 'success' && (directoryPage.prevCursor !== null || directoryPage.nextCursor !== null) ? (
+              <div className="flex flex-wrap gap-3 border-t border-(--border-subtle) pt-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-full px-4"
+                  disabled={directoryPage.prevCursor === null}
+                  onClick={() => onPageChange(directoryPage.prevCursor)}
+                >
+                  {text.users.pagination.previous}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="rounded-full px-4"
+                  disabled={directoryPage.nextCursor === null}
+                  onClick={() => onPageChange(directoryPage.nextCursor)}
+                >
+                  {text.users.pagination.next}
+                </Button>
+              </div>
+            ) : null}
           </div>
         </Panel>
 
@@ -319,9 +470,13 @@ export default function AdminUsersWorkspace({
                 </div>
                 <div className="rounded-[1.2rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-3">
                   <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.common.role}</dt>
-                  <dd className="mt-1 text-sm font-semibold text-(--text-strong)">{adminProfile.role}</dd>
+                  <dd className="mt-1 text-sm font-semibold text-(--text-strong)">{text.users.roleFilters[adminProfile.role]}</dd>
                 </div>
               </dl>
+
+              <div className="rounded-[1.35rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
+                <p className="text-sm leading-7 text-(--text-muted)">{text.users.productDirectoryScope}</p>
+              </div>
 
               <div className="rounded-[1.35rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
                 <h4 className="text-sm font-black uppercase tracking-[0.14em] text-(--text-strong)">{text.users.liveGuardrailsTitle}</h4>

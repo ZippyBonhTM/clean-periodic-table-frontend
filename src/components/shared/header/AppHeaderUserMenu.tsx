@@ -15,6 +15,7 @@ type AppHeaderUserMenuProps = {
   userProfileStatus: UserProfileRequestStatus;
   userProfile: AuthUserProfile | null;
   userProfileError: string | null;
+  hasAdminAccess: boolean;
   isLogoutConfirmOpen: boolean;
   userMenuPanelStyle: React.CSSProperties;
   adminHref: string;
@@ -38,6 +39,7 @@ export default function AppHeaderUserMenu({
   userProfileStatus,
   userProfile,
   userProfileError,
+  hasAdminAccess,
   isLogoutConfirmOpen,
   userMenuPanelStyle,
   adminHref,
@@ -113,7 +115,7 @@ export default function AppHeaderUserMenu({
           text={profileText}
         />
 
-        {userProfile?.role === 'ADMIN' ? (
+        {hasAdminAccess ? (
           <div className="mt-4 rounded-lg border border-sky-400/30 bg-sky-400/10 p-2">
             <Link
               href={adminHref}
