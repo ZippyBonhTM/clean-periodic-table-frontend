@@ -86,29 +86,29 @@ export default function AdminOverviewWorkspace({
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <LinkButton href={buildLocalizedAdminUsersPath(locale)} variant="secondary" size="sm" className="rounded-full px-4">
+              <LinkButton href={buildLocalizedAdminUsersPath(locale)} variant="secondary" size="sm" className="rounded-full px-4" documentNavigation>
                 {text.overview.openUsers}
               </LinkButton>
-              <LinkButton href={buildLocalizedAdminAuditPath(locale)} variant="secondary" size="sm" className="rounded-full px-4">
+              <LinkButton href={buildLocalizedAdminAuditPath(locale)} variant="secondary" size="sm" className="rounded-full px-4" documentNavigation>
                 {text.overview.openAudit}
               </LinkButton>
-              <LinkButton href={buildLocalizedAdminAccessPath(locale)} variant="secondary" size="sm" className="rounded-full px-4">
+              <LinkButton href={buildLocalizedAdminAccessPath(locale)} variant="secondary" size="sm" className="rounded-full px-4" documentNavigation>
                 {text.overview.openAccess}
               </LinkButton>
-              <LinkButton href={buildLocalizedAdminContentPath(locale)} variant="ghost" size="sm" className="rounded-full px-4">
+              <LinkButton href={buildLocalizedAdminContentPath(locale)} variant="ghost" size="sm" className="rounded-full px-4" documentNavigation>
                 {text.overview.openContent}
               </LinkButton>
             </div>
 
             {articleLinksAvailable ? (
               <div className="flex flex-wrap gap-3 border-t border-(--border-subtle) pt-4">
-                <LinkButton href={buildLocalizedArticleFeedPath(locale)} variant="secondary" size="sm" className="rounded-full px-4">
+                <LinkButton href={buildLocalizedArticleFeedPath(locale)} variant="secondary" size="sm" className="rounded-full px-4" documentNavigation>
                   {text.overview.openArticleFeed}
                 </LinkButton>
-                <LinkButton href={buildLocalizedArticlePrivateListPath(locale)} variant="secondary" size="sm" className="rounded-full px-4">
+                <LinkButton href={buildLocalizedArticlePrivateListPath(locale)} variant="secondary" size="sm" className="rounded-full px-4" documentNavigation>
                   {text.overview.openArticleWorkspace}
                 </LinkButton>
-                <LinkButton href={buildLocalizedArticleEditorCreatePath(locale)} variant="ghost" size="sm" className="rounded-full px-4">
+                <LinkButton href={buildLocalizedArticleEditorCreatePath(locale)} variant="ghost" size="sm" className="rounded-full px-4" documentNavigation>
                   {text.overview.openArticleEditor}
                 </LinkButton>
               </div>

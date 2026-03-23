@@ -293,7 +293,7 @@ export default function AdminUserDetailWorkspace({
             <p className="text-sm leading-7 text-(--text-muted)">{text.userDetail.summaryDescription}</p>
           </div>
 
-          <LinkButton href={buildLocalizedAdminUsersPath(locale)} variant="ghost" size="sm" className="rounded-full px-4">
+          <LinkButton href={buildLocalizedAdminUsersPath(locale)} variant="ghost" size="sm" className="rounded-full px-4" documentNavigation>
             {text.userDetail.backToUsers}
           </LinkButton>
         </div>

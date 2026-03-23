@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import Button from '@/components/atoms/Button';
@@ -435,12 +434,12 @@ export default function AdminUsersWorkspace({
                         <p className="break-all text-sm leading-7 text-(--text-muted)">{user.email}</p>
                       </div>
 
-                      <Link
+                      <a
                         href={buildLocalizedAdminUserDetailPath(locale, user.id)}
                         className="inline-flex items-center justify-center rounded-full border border-orange-400/35 bg-orange-400/12 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-(--text-strong) transition hover:border-orange-400/50 hover:bg-orange-400/18"
                       >
                         {text.users.openUser}
-                      </Link>
+                      </a>
                     </div>
 
                     <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
