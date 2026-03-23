@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
 import Button from '@/components/atoms/Button';
@@ -13,6 +13,15 @@ import { useAdminClientSession } from '@/shared/admin/adminClientSession';
 import {
   buildLocalizedAdminAuditBrowsePath,
 } from '@/shared/admin/adminRouting';
+import {
+  appendAdminAuditPageStack,
+  flattenAdminAuditPageStack,
+  replaceAdminAuditPageStack,
+  resolveAdminAuditPreviousCursor,
+  resolveNextAdminAuditBrowseState,
+  type AdminAuditBrowseStateUpdate,
+  type AdminAuditPageEntry,
+} from '@/shared/admin/adminAuditBrowseState';
 import {
   type AdminAuditActionFilter,
   type AdminAuditBrowseFilters,
@@ -30,6 +39,7 @@ type AdminAuditWorkspaceProps = {
 };
 
 type AuditRequestStatus = 'idle' | 'loading' | 'success' | 'error';
+type AuditPaginationMode = 'reset' | 'append';
 
 const AUDIT_PAGE_SIZE = 20;
 const FORM_CONTROL_CLASS = 'w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--text-strong)] outline-none transition-colors focus:border-[var(--accent)]';
@@ -52,25 +62,32 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
   const [activeCursor, setActiveCursor] = useState(initialFilters.cursor);
   const [searchInput, setSearchInput] = useState(initialFilters.query ?? '');
   const [requestStatus, setRequestStatus] = useState<AuditRequestStatus>('idle');
-  const [auditPage, setAuditPage] = useState<AdminCursorPage<AdminAuditEntry>>(buildEmptyAuditPage);
+  const [auditPages, setAuditPages] = useState<AdminAuditPageEntry[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const paginationModeRef = useRef<AuditPaginationMode>('reset');
+  const skipNextFetchRef = useRef(false);
 
   const syncBrowseState = useCallback(
-    (nextState: {
-      action?: AdminAuditActionFilter;
-      query?: string | null;
-      cursor?: string | null;
-      searchInputValue?: string;
-    }) => {
-      const nextAction = nextState.action ?? activeAction;
-      const nextQuery = nextState.query ?? activeQuery;
-      const nextCursor = nextState.cursor ?? activeCursor;
+    (nextState: AdminAuditBrowseStateUpdate & { searchInputValue?: string; paginationMode?: AuditPaginationMode }) => {
+      const nextBrowseState = resolveNextAdminAuditBrowseState(
+        {
+          action: activeAction,
+          query: activeQuery,
+          cursor: activeCursor,
+        },
+        nextState,
+      );
 
-      setActiveAction(nextAction);
-      setActiveQuery(nextQuery);
-      setActiveCursor(nextCursor);
+      setActiveAction(nextBrowseState.action);
+      setActiveQuery(nextBrowseState.query);
+      setActiveCursor(nextBrowseState.cursor);
       setRequestStatus('loading');
       setErrorMessage(null);
+      paginationModeRef.current = nextState.paginationMode ?? 'reset';
+
+      if ((nextState.paginationMode ?? 'reset') === 'reset') {
+        setAuditPages([]);
+      }
 
       if (nextState.searchInputValue !== undefined) {
         setSearchInput(nextState.searchInputValue);
@@ -78,9 +95,9 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
 
       router.replace(
         buildLocalizedAdminAuditBrowsePath(locale, {
-          action: nextAction,
-          query: nextQuery,
-          cursor: nextCursor,
+          action: nextBrowseState.action,
+          query: nextBrowseState.query,
+          cursor: nextBrowseState.cursor,
         }),
       );
     },
@@ -89,6 +106,11 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
 
   useEffect(() => {
     if (!isHydrated || authStatus === 'checking' || token === null) {
+      return;
+    }
+
+    if (skipNextFetchRef.current) {
+      skipNextFetchRef.current = false;
       return;
     }
 
@@ -104,15 +126,20 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
         action: activeAction === 'all' ? null : activeAction,
       })
       .then((nextPage) => {
-        setAuditPage(nextPage);
+        setAuditPages((currentPages) =>
+          paginationModeRef.current === 'append'
+            ? appendAdminAuditPageStack(currentPages, activeCursor, nextPage)
+            : replaceAdminAuditPageStack(activeCursor, nextPage),
+        );
         setRequestStatus('success');
+        paginationModeRef.current = 'reset';
       })
       .catch((caughtError: unknown) => {
         if (abortController.signal.aborted) {
           return;
         }
 
-        setAuditPage(buildEmptyAuditPage());
+        setAuditPages([]);
         setRequestStatus('error');
 
         if (
@@ -146,6 +173,7 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
         query: normalizedQuery.length > 0 ? normalizedQuery : null,
         cursor: null,
         searchInputValue: searchInput,
+        paginationMode: 'reset',
       });
     },
     [searchInput, syncBrowseState],
@@ -157,10 +185,56 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
       query: null,
       cursor: null,
       searchInputValue: '',
+      paginationMode: 'reset',
     });
   }, [syncBrowseState]);
 
+  const onNextPage = useCallback(
+    (nextCursor: string) => {
+      syncBrowseState({
+        cursor: nextCursor,
+        paginationMode: 'append',
+      });
+    },
+    [syncBrowseState],
+  );
+
+  const onPreviousPage = useCallback(() => {
+    setAuditPages((currentPages) => {
+      if (currentPages.length < 2) {
+        return currentPages;
+      }
+
+      const nextPages = currentPages.slice(0, -1);
+      const previousCursor = nextPages[nextPages.length - 1]?.requestCursor ?? null;
+
+      skipNextFetchRef.current = true;
+      paginationModeRef.current = 'reset';
+      setActiveCursor(previousCursor);
+      setRequestStatus('success');
+      setErrorMessage(null);
+      router.replace(
+        buildLocalizedAdminAuditBrowsePath(locale, {
+          action: activeAction,
+          query: activeQuery,
+          cursor: previousCursor,
+        }),
+      );
+
+      return nextPages;
+    });
+  }, [activeAction, activeQuery, locale, router]);
+
   const hasActiveFilters = activeAction !== 'all' || activeQuery !== null;
+  const visibleAuditEntries = useMemo(
+    () => flattenAdminAuditPageStack(auditPages),
+    [auditPages],
+  );
+  const currentAuditPage = auditPages[auditPages.length - 1]?.page ?? buildEmptyAuditPage();
+  const previousCursor = useMemo(
+    () => resolveAdminAuditPreviousCursor(auditPages),
+    [auditPages],
+  );
 
   return (
     <div className="grid gap-4 xl:gap-5">
@@ -174,7 +248,7 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-[1.45rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.audit.summaryCards.visible}</p>
-              <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{auditPage.items.length}</p>
+              <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-(--text-strong)">{visibleAuditEntries.length}</p>
             </div>
             <div className="rounded-[1.45rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.audit.summaryCards.filtered}</p>
@@ -240,9 +314,9 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
             <div className="rounded-[1.35rem] border border-rose-500/40 bg-rose-500/10 px-4 py-4 text-sm leading-7 text-rose-100">
               {errorMessage ?? text.audit.unavailable}
             </div>
-          ) : auditPage.items.length > 0 ? (
+          ) : visibleAuditEntries.length > 0 ? (
             <div className="grid gap-3">
-              {auditPage.items.map((entry) => (
+              {visibleAuditEntries.map((entry) => (
                 <article key={entry.id} className="rounded-[1.35rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1 space-y-2">
@@ -283,15 +357,15 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
             </div>
           )}
 
-          {requestStatus === 'success' && (auditPage.prevCursor !== null || auditPage.nextCursor !== null) ? (
+          {requestStatus === 'success' && (previousCursor !== null || currentAuditPage.nextCursor !== null) ? (
             <div className="flex flex-wrap gap-3 border-t border-(--border-subtle) pt-2">
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 className="rounded-full px-4"
-                disabled={auditPage.prevCursor === null}
-                onClick={() => syncBrowseState({ cursor: auditPage.prevCursor })}
+                disabled={previousCursor === null}
+                onClick={onPreviousPage}
               >
                 {text.audit.pagination.previous}
               </Button>
@@ -300,8 +374,12 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
                 variant="secondary"
                 size="sm"
                 className="rounded-full px-4"
-                disabled={auditPage.nextCursor === null}
-                onClick={() => syncBrowseState({ cursor: auditPage.nextCursor })}
+                disabled={currentAuditPage.nextCursor === null}
+                onClick={() => {
+                  if (currentAuditPage.nextCursor !== null) {
+                    onNextPage(currentAuditPage.nextCursor);
+                  }
+                }}
               >
                 {text.audit.pagination.next}
               </Button>
