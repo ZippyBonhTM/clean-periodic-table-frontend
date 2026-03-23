@@ -7,6 +7,7 @@ import type { AuthEntryMode } from './appHeader.types';
 type AppHeaderAuthActionsProps = {
   hasToken: boolean;
   authEntryMode: AuthEntryMode;
+  documentNavigation?: boolean;
   loginHref: string;
   registerHref: string;
   text: AppHeaderTextCatalog['auth'];
@@ -17,6 +18,7 @@ type AppHeaderAuthActionsProps = {
 export default function AppHeaderAuthActions({
   hasToken,
   authEntryMode,
+  documentNavigation = false,
   loginHref,
   registerHref,
   text,
@@ -35,6 +37,7 @@ export default function AppHeaderAuthActions({
           variant="ghost"
           size="sm"
           uppercase
+          documentNavigation={documentNavigation}
           className="px-2.5 text-[10px]"
         >
           {text.login}
@@ -44,6 +47,7 @@ export default function AppHeaderAuthActions({
           variant="ghost"
           size="sm"
           uppercase
+          documentNavigation={documentNavigation}
           className="px-2.5 text-[10px]"
         >
           {text.register}

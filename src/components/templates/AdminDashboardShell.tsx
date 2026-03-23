@@ -96,6 +96,7 @@ export default function AdminDashboardShell({
       <AppShell
         hasToken={token !== null}
         authStatus={authSession.status}
+        headerDocumentNavigation
         onLogout={onLogout}
       >
         <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-5">
