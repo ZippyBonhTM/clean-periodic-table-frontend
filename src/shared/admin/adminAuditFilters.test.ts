@@ -24,6 +24,11 @@ describe('adminAuditFilters', () => {
       query: null,
       cursor: null,
     });
+    expect(resolveAdminAuditBrowseFilters({ action: 'directory_sync' })).toEqual({
+      action: 'directory_sync',
+      query: null,
+      cursor: null,
+    });
   });
 
   it('builds compact search params for non-default audit filters', () => {

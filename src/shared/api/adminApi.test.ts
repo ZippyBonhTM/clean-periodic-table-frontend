@@ -85,6 +85,11 @@ describe('adminApi', () => {
       token: 'token-1',
       userId: 'user-123',
     });
+    await api.syncUserDirectory({
+      token: 'token-1',
+      cursor: 'cursor-2',
+      limit: 25,
+    });
 
     expect(fetchSpy).toHaveBeenNthCalledWith(
       1,
@@ -99,6 +104,14 @@ describe('adminApi', () => {
       new URL('http://localhost:3000/api/admin/users/user-123'),
       expect.objectContaining({
         method: 'GET',
+        credentials: 'include',
+      }),
+    );
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      3,
+      new URL('http://localhost:3000/api/admin/users/sync-directory'),
+      expect.objectContaining({
+        method: 'POST',
         credentials: 'include',
       }),
     );

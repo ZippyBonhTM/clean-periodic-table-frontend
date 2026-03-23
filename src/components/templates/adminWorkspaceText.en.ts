@@ -140,7 +140,21 @@ export const adminWorkspaceTextEn = {
     unavailable: 'The protected admin user directory is unavailable in this environment.',
     currentAdminTitle: 'Current admin record',
     currentAdminDescription: 'The acting ADMIN profile remains the authority anchor for every protected route and follow-up action in this panel.',
-    productDirectoryScope: 'This directory lists product-backed accounts only. Auth-only legacy identities do not appear here until they are synchronized by a protected product request or a future backfill job.',
+    syncTitle: 'Legacy sync',
+    syncDescription: 'Synchronize bounded batches of auth-only identities into product-backed accounts so the directory can operate on them safely.',
+    syncAction: 'Sync next batch',
+    syncCursorLabel: 'Next sync cursor',
+    syncStartCursor: 'Start of directory',
+    syncReady: 'Ready to sync from the beginning of the auth directory.',
+    syncProgress: 'The next batch will continue from the last cursor returned by the auth service.',
+    syncSuccess: 'Directory batch synchronized successfully.',
+    syncUnavailable: 'Legacy directory sync is unavailable in this environment.',
+    syncSummary: {
+      synced: 'Synced in batch',
+      created: 'Created',
+      updated: 'Updated',
+    },
+    productDirectoryScope: 'This directory lists product-backed accounts only. Auth-only legacy identities appear here after they are synchronized by a protected product request or by the guarded legacy sync action below.',
     liveGuardrailsTitle: 'Live user guardrails',
     liveGuardrails: [
       'Admin routes stay server-guarded and deny by default when session resolution is uncertain.',
@@ -169,6 +183,11 @@ export const adminWorkspaceTextEn = {
         title: 'Session revocation',
         endpoint: 'POST /api/v1/admin/users/{user_id}/sessions/revoke',
         note: 'Allow revoking all sessions or all except current, with audit and rate limiting.',
+      },
+      directorySync: {
+        title: 'Legacy directory sync',
+        endpoint: 'POST /api/v1/admin/users/sync-directory',
+        note: 'Pull a bounded batch from the protected auth directory, upsert product users, and write an audit entry for the sync action.',
       },
     },
     pagination: {
@@ -235,6 +254,7 @@ export const adminWorkspaceTextEn = {
       role_change: 'Role changes',
       moderation: 'Moderation',
       session_revoke: 'Session revocation',
+      directory_sync: 'Directory sync',
       access_check: 'Access checks',
     },
     summaryCards: {

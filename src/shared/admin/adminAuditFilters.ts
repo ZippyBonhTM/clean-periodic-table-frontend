@@ -3,6 +3,7 @@ type AdminAuditActionFilter =
   | 'role_change'
   | 'moderation'
   | 'session_revoke'
+  | 'directory_sync'
   | 'access_check';
 
 type AdminAuditBrowseFilters = {
@@ -39,6 +40,7 @@ function resolveAdminAuditActionFilter(input: AdminAuditSearchParamsInput): Admi
     normalizedValue === 'role_change' ||
     normalizedValue === 'moderation' ||
     normalizedValue === 'session_revoke' ||
+    normalizedValue === 'directory_sync' ||
     normalizedValue === 'access_check'
   ) {
     return normalizedValue;

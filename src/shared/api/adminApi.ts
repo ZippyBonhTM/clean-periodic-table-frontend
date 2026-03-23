@@ -8,10 +8,12 @@ import type {
   AdminListUsersInput,
   AdminModerateUserInput,
   AdminRevokeUserSessionsInput,
+  AdminSyncUserDirectoryInput,
 } from '@/shared/api/adminApi.types';
 import type {
   AdminAuditEntry,
   AdminCursorPage,
+  AdminDirectorySyncResult,
   AdminSession,
   AdminSessionUser,
   AdminUserDetail,
@@ -124,6 +126,18 @@ function createAdminApi(): AdminApi {
     async listUsers(input: AdminListUsersInput): Promise<AdminCursorPage<AdminUserSummary>> {
       return await requestJson<AdminCursorPage<AdminUserSummary>>(baseUrl, buildAdminUsersPath(input), {
         method: 'GET',
+        token: input.token,
+        signal: input.signal,
+        credentials: 'include',
+      });
+    },
+    async syncUserDirectory(input: AdminSyncUserDirectoryInput): Promise<AdminDirectorySyncResult> {
+      return await requestJson<AdminDirectorySyncResult>(baseUrl, '/api/admin/users/sync-directory', {
+        method: 'POST',
+        body: {
+          cursor: input.cursor ?? null,
+          limit: input.limit,
+        },
         token: input.token,
         signal: input.signal,
         credentials: 'include',

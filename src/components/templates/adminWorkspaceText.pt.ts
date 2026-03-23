@@ -140,7 +140,21 @@ export const adminWorkspaceTextPt = {
     unavailable: 'O diretório protegido de usuários admin está indisponível neste ambiente.',
     currentAdminTitle: 'Registro do admin atual',
     currentAdminDescription: 'O perfil ADMIN atuante continua sendo a âncora de autoridade para cada rota protegida e ação posterior neste painel.',
-    productDirectoryScope: 'Este diretório lista apenas contas já respaldadas pelo produto. Identidades legadas que existem só no auth ainda não aparecem aqui até serem sincronizadas por uma requisição protegida do produto ou por um backfill futuro.',
+    syncTitle: 'Sync legado',
+    syncDescription: 'Sincronize lotes limitados de identidades que existem só no auth para contas do produto, para que o diretório possa operá-las com segurança.',
+    syncAction: 'Sincronizar próximo lote',
+    syncCursorLabel: 'Próximo cursor de sync',
+    syncStartCursor: 'Início do diretório',
+    syncReady: 'Pronto para sincronizar desde o início do diretório do auth.',
+    syncProgress: 'O próximo lote continuará a partir do último cursor retornado pelo serviço de auth.',
+    syncSuccess: 'Lote do diretório sincronizado com sucesso.',
+    syncUnavailable: 'O sync legado do diretório está indisponível neste ambiente.',
+    syncSummary: {
+      synced: 'Sincronizados no lote',
+      created: 'Criados',
+      updated: 'Atualizados',
+    },
+    productDirectoryScope: 'Este diretório lista apenas contas já respaldadas pelo produto. Identidades legadas que existem só no auth passam a aparecer aqui depois de serem sincronizadas por uma requisição protegida do produto ou pela ação protegida de sync legado abaixo.',
     liveGuardrailsTitle: 'Guardrails de usuários já ativos',
     liveGuardrails: [
       'Rotas admin continuam protegidas no servidor e negam por padrão quando a resolução da sessão fica incerta.',
@@ -169,6 +183,11 @@ export const adminWorkspaceTextPt = {
         title: 'Revogação de sessões',
         endpoint: 'POST /api/v1/admin/users/{user_id}/sessions/revoke',
         note: 'Deve permitir revogar todas as sessões ou todas exceto a atual, com auditoria e rate limit.',
+      },
+      directorySync: {
+        title: 'Sync legado do diretório',
+        endpoint: 'POST /api/v1/admin/users/sync-directory',
+        note: 'Busca um lote limitado do diretório protegido do auth, faz upsert em product_users e registra uma entrada de auditoria para a ação de sync.',
       },
     },
     pagination: {
@@ -235,6 +254,7 @@ export const adminWorkspaceTextPt = {
       role_change: 'Mudanças de papel',
       moderation: 'Moderação',
       session_revoke: 'Revogação de sessão',
+      directory_sync: 'Sync de diretório',
       access_check: 'Checagens de acesso',
     },
     summaryCards: {

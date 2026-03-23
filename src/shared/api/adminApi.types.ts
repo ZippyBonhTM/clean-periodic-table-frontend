@@ -1,6 +1,7 @@
 import type {
   AdminAuditEntry,
   AdminCursorPage,
+  AdminDirectorySyncResult,
   AdminSession,
   AdminUserAccountVersion,
   AdminUserAccountStatus,
@@ -61,9 +62,15 @@ type AdminListAuditInput = AdminCursorInput & {
   action?: string | null;
 };
 
+type AdminSyncUserDirectoryInput = AdminAuthenticatedInput & {
+  cursor?: string | null;
+  limit?: number;
+};
+
 interface AdminApi {
   getSession(input: AdminAuthenticatedInput): Promise<AdminSession>;
   listUsers(input: AdminListUsersInput): Promise<AdminCursorPage<AdminUserSummary>>;
+  syncUserDirectory(input: AdminSyncUserDirectoryInput): Promise<AdminDirectorySyncResult>;
   getUserById(input: AdminGetUserInput): Promise<AdminUserDetail>;
   changeUserRole(input: AdminChangeUserRoleInput): Promise<AdminUserRoleMutationResult>;
   moderateUser(input: AdminModerateUserInput): Promise<AdminUserModerationMutationResult>;
@@ -81,4 +88,5 @@ export type {
   AdminListUsersInput,
   AdminModerateUserInput,
   AdminRevokeUserSessionsInput,
+  AdminSyncUserDirectoryInput,
 };

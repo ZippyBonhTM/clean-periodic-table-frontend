@@ -88,9 +88,19 @@ type AdminUserSessionRevokeResult = {
   message: string;
 };
 
+type AdminDirectorySyncResult = {
+  itemsSynced: number;
+  createdCount: number;
+  updatedCount: number;
+  nextCursor: string | null;
+  auditEntryId: string | null;
+  message: string;
+};
+
 export type {
   AdminAuditActor,
   AdminAuditEntry,
+  AdminDirectorySyncResult,
   AdminAuditTarget,
   AdminCursorPage,
   AdminSession,
