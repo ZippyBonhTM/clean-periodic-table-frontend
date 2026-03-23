@@ -15,6 +15,7 @@ type LinkButtonProps = {
   className?: string;
   children: React.ReactNode;
   external?: boolean;
+  documentNavigation?: boolean;
   target?: string;
   rel?: string;
 };
@@ -28,6 +29,7 @@ function LinkButton({
   className = '',
   children,
   external = false,
+  documentNavigation = false,
   target,
   rel,
 }: LinkButtonProps) {
@@ -39,7 +41,7 @@ function LinkButton({
     className,
   });
 
-  if (external) {
+  if (external || documentNavigation) {
     return (
       <a
         href={href}

@@ -1,6 +1,4 @@
 import type * as React from 'react';
-import Link from 'next/link';
-
 import Button from '@/components/atoms/Button';
 import type { AppHeaderTextCatalog } from '@/components/shared/header/appHeaderText';
 import type { AuthUserProfile } from '@/shared/types/auth';
@@ -117,13 +115,13 @@ export default function AppHeaderUserMenu({
 
         {hasAdminAccess ? (
           <div className="mt-4 rounded-lg border border-sky-400/30 bg-sky-400/10 p-2">
-            <Link
+            <a
               href={adminHref}
               onClick={onClose}
               className="inline-flex w-full items-center justify-center rounded-full border border-sky-300/40 px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-sky-100 transition hover:bg-sky-300/10"
             >
               {text.adminPanel}
-            </Link>
+            </a>
           </div>
         ) : null}
 

@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import Panel from '@/components/atoms/Panel';
@@ -146,7 +145,7 @@ export default function AdminDashboardShell({
                     const isActive = isNavigationItemActive(pathname, item.href, item.key);
 
                     return (
-                      <Link
+                      <a
                         key={item.key}
                         href={item.href}
                         className={`rounded-[1.2rem] border px-4 py-3 transition ${
@@ -157,7 +156,7 @@ export default function AdminDashboardShell({
                       >
                         <p className="text-sm font-black tracking-[-0.02em]">{sectionText.navLabel}</p>
                         <p className="mt-1 text-xs leading-6 opacity-80">{sectionText.description}</p>
-                      </Link>
+                      </a>
                     );
                   })}
                 </nav>

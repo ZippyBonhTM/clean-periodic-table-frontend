@@ -46,13 +46,13 @@ export default function AdminContentWorkspace({
 
             {articleLinksAvailable ? (
               <div className="flex flex-wrap gap-3">
-                <LinkButton href={buildLocalizedArticleFeedPath(locale)} variant="secondary" size="sm" className="rounded-full px-4">
+                <LinkButton href={buildLocalizedArticleFeedPath(locale)} variant="secondary" size="sm" className="rounded-full px-4" documentNavigation>
                   {text.content.openFeed}
                 </LinkButton>
-                <LinkButton href={buildLocalizedArticlePrivateListPath(locale)} variant="secondary" size="sm" className="rounded-full px-4">
+                <LinkButton href={buildLocalizedArticlePrivateListPath(locale)} variant="secondary" size="sm" className="rounded-full px-4" documentNavigation>
                   {text.content.openWorkspace}
                 </LinkButton>
-                <LinkButton href={buildLocalizedArticleEditorCreatePath(locale)} variant="ghost" size="sm" className="rounded-full px-4">
+                <LinkButton href={buildLocalizedArticleEditorCreatePath(locale)} variant="ghost" size="sm" className="rounded-full px-4" documentNavigation>
                   {text.content.openEditor}
                 </LinkButton>
               </div>
