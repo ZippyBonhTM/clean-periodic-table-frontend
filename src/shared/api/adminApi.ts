@@ -10,6 +10,7 @@ import type {
   AdminRevokeUserSessionsInput,
   AdminSyncUserDirectoryInput,
 } from '@/shared/api/adminApi.types';
+import { executeWithFreshToken } from '@/shared/hooks/authRequestUtils';
 import type {
   AdminAuditEntry,
   AdminCursorPage,
@@ -109,91 +110,124 @@ function resolveAdminSession(payload: AdminSessionPayload): AdminSession {
   throw new Error('Admin session response is missing the user payload.');
 }
 
-function createAdminApi(): AdminApi {
+type CreateAdminApiOptions = {
+  refreshTokenOnce?: (() => Promise<string>) | null;
+};
+
+function createAdminApi(options: CreateAdminApiOptions = {}): AdminApi {
   const baseUrl = resolveAdminRequestBaseUrl();
+  const refreshTokenOnce = options.refreshTokenOnce ?? null;
+
+  async function executeAdminRequest<Result>(
+    token: string,
+    operation: (activeToken: string) => Promise<Result>,
+  ): Promise<Result> {
+    if (refreshTokenOnce === null) {
+      return await operation(token);
+    }
+
+    const { result } = await executeWithFreshToken(token, refreshTokenOnce, operation);
+    return result;
+  }
 
   return {
     async getSession(input: AdminAuthenticatedInput): Promise<AdminSession> {
-      const payload = await requestJson<AdminSessionPayload>(baseUrl, '/api/admin/session', {
-        method: 'GET',
-        token: input.token,
-        signal: input.signal,
-        credentials: 'include',
+      const payload = await executeAdminRequest(input.token, async (activeToken) => {
+        return await requestJson<AdminSessionPayload>(baseUrl, '/api/admin/session', {
+          method: 'GET',
+          token: activeToken,
+          signal: input.signal,
+          credentials: 'include',
+        });
       });
 
       return resolveAdminSession(payload);
     },
     async listUsers(input: AdminListUsersInput): Promise<AdminCursorPage<AdminUserSummary>> {
-      return await requestJson<AdminCursorPage<AdminUserSummary>>(baseUrl, buildAdminUsersPath(input), {
-        method: 'GET',
-        token: input.token,
-        signal: input.signal,
-        credentials: 'include',
+      return await executeAdminRequest(input.token, async (activeToken) => {
+        return await requestJson<AdminCursorPage<AdminUserSummary>>(baseUrl, buildAdminUsersPath(input), {
+          method: 'GET',
+          token: activeToken,
+          signal: input.signal,
+          credentials: 'include',
+        });
       });
     },
     async syncUserDirectory(input: AdminSyncUserDirectoryInput): Promise<AdminDirectorySyncResult> {
-      return await requestJson<AdminDirectorySyncResult>(baseUrl, '/api/admin/users/sync-directory', {
-        method: 'POST',
-        body: {
-          cursor: input.cursor ?? null,
-          limit: input.limit,
-        },
-        token: input.token,
-        signal: input.signal,
-        credentials: 'include',
+      return await executeAdminRequest(input.token, async (activeToken) => {
+        return await requestJson<AdminDirectorySyncResult>(baseUrl, '/api/admin/users/sync-directory', {
+          method: 'POST',
+          body: {
+            cursor: input.cursor ?? null,
+            limit: input.limit,
+          },
+          token: activeToken,
+          signal: input.signal,
+          credentials: 'include',
+        });
       });
     },
     async getUserById(input: AdminGetUserInput): Promise<AdminUserDetail> {
-      return await requestJson<AdminUserDetail>(baseUrl, `/api/admin/users/${encodeURIComponent(input.userId)}`, {
-        method: 'GET',
-        token: input.token,
-        signal: input.signal,
-        credentials: 'include',
+      return await executeAdminRequest(input.token, async (activeToken) => {
+        return await requestJson<AdminUserDetail>(baseUrl, `/api/admin/users/${encodeURIComponent(input.userId)}`, {
+          method: 'GET',
+          token: activeToken,
+          signal: input.signal,
+          credentials: 'include',
+        });
       });
     },
     async changeUserRole(input: AdminChangeUserRoleInput): Promise<AdminUserRoleMutationResult> {
-      return await requestJson<AdminUserRoleMutationResult>(baseUrl, `/api/admin/users/${encodeURIComponent(input.userId)}/role`, {
-        method: 'POST',
-        body: {
-          role: input.role,
-          reason: input.reason,
-        },
-        token: input.token,
-        signal: input.signal,
-        credentials: 'include',
+      return await executeAdminRequest(input.token, async (activeToken) => {
+        return await requestJson<AdminUserRoleMutationResult>(baseUrl, `/api/admin/users/${encodeURIComponent(input.userId)}/role`, {
+          method: 'POST',
+          body: {
+            role: input.role,
+            reason: input.reason,
+          },
+          token: activeToken,
+          signal: input.signal,
+          credentials: 'include',
+        });
       });
     },
     async moderateUser(input: AdminModerateUserInput): Promise<AdminUserModerationMutationResult> {
-      return await requestJson<AdminUserModerationMutationResult>(baseUrl, `/api/admin/users/${encodeURIComponent(input.userId)}/moderation`, {
-        method: 'POST',
-        body: {
-          status: input.status,
-          reason: input.reason,
-          expiresAt: input.expiresAt ?? null,
-        },
-        token: input.token,
-        signal: input.signal,
-        credentials: 'include',
+      return await executeAdminRequest(input.token, async (activeToken) => {
+        return await requestJson<AdminUserModerationMutationResult>(baseUrl, `/api/admin/users/${encodeURIComponent(input.userId)}/moderation`, {
+          method: 'POST',
+          body: {
+            status: input.status,
+            reason: input.reason,
+            expiresAt: input.expiresAt ?? null,
+          },
+          token: activeToken,
+          signal: input.signal,
+          credentials: 'include',
+        });
       });
     },
     async revokeUserSessions(input: AdminRevokeUserSessionsInput): Promise<AdminUserSessionRevokeResult> {
-      return await requestJson<AdminUserSessionRevokeResult>(baseUrl, `/api/admin/users/${encodeURIComponent(input.userId)}/sessions/revoke`, {
-        method: 'POST',
-        body: {
-          reason: input.reason,
-          mode: input.mode ?? 'except-current',
-        },
-        token: input.token,
-        signal: input.signal,
-        credentials: 'include',
+      return await executeAdminRequest(input.token, async (activeToken) => {
+        return await requestJson<AdminUserSessionRevokeResult>(baseUrl, `/api/admin/users/${encodeURIComponent(input.userId)}/sessions/revoke`, {
+          method: 'POST',
+          body: {
+            reason: input.reason,
+            mode: input.mode ?? 'except-current',
+          },
+          token: activeToken,
+          signal: input.signal,
+          credentials: 'include',
+        });
       });
     },
     async listAudit(input: AdminListAuditInput): Promise<AdminCursorPage<AdminAuditEntry>> {
-      return await requestJson<AdminCursorPage<AdminAuditEntry>>(baseUrl, buildAdminAuditPath(input), {
-        method: 'GET',
-        token: input.token,
-        signal: input.signal,
-        credentials: 'include',
+      return await executeAdminRequest(input.token, async (activeToken) => {
+        return await requestJson<AdminCursorPage<AdminAuditEntry>>(baseUrl, buildAdminAuditPath(input), {
+          method: 'GET',
+          token: activeToken,
+          signal: input.signal,
+          credentials: 'include',
+        });
       });
     },
   };

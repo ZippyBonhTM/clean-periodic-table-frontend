@@ -1,12 +1,13 @@
 'use client';
 
+import { useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 
 import Panel from '@/components/atoms/Panel';
 import AppShell from '@/components/templates/AppShell';
 import { getAdminWorkspaceText } from '@/components/templates/adminWorkspaceText';
 import { AdminClientSessionProvider } from '@/shared/admin/adminClientSession';
-import { logoutSession } from '@/shared/api/authApi';
+import { logoutSession, refreshAccessToken } from '@/shared/api/authApi';
 import {
   buildAdminPanelNavigation,
   type AdminPanelSectionKey,
@@ -68,6 +69,11 @@ export default function AdminDashboardShell({
   const pathname = usePathname();
   const text = getAdminWorkspaceText(locale);
   const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
+  const refreshTokenOnce = useCallback(async () => {
+    const refreshResponse = await refreshAccessToken();
+    persistToken(refreshResponse.accessToken);
+    return refreshResponse.accessToken;
+  }, [persistToken]);
   const authSession = useAuthSession({
     token,
     onTokenRefresh: persistToken,
@@ -90,6 +96,7 @@ export default function AdminDashboardShell({
         isHydrated,
         isSilentRefreshBlocked,
         persistToken,
+        refreshTokenOnce,
         removeToken,
       }}
     >

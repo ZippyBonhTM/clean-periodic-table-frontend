@@ -5,13 +5,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { refreshAccessToken } from '@/shared/api/authApi';
 import { getCachedElements, listElements } from '@/shared/api/backendApi';
 import { ApiError } from '@/shared/api/httpClient';
+import { executeWithFreshToken, isUnauthorizedError } from '@/shared/hooks/authRequestUtils';
 import {
   ELEMENTS_GENERIC_ERROR_MESSAGE,
   ELEMENTS_NETWORK_ERROR_MESSAGE,
   SESSION_EXPIRED_ERROR_MESSAGE,
 } from '@/shared/hooks/hookErrorMessages';
 import type { ChemicalElement } from '@/shared/types/element';
-import { readJwtExpiryMs } from '@/shared/utils/jwt';
 
 type ElementsSnapshot = {
   token: string | null;
@@ -25,26 +25,10 @@ type ElementsState = {
   error: string | null;
 };
 
-const ACCESS_TOKEN_REFRESH_WINDOW_MS = 30_000;
-
-function shouldRefreshBeforeRequest(token: string): boolean {
-  const expiryMs = readJwtExpiryMs(token);
-
-  if (expiryMs === null) {
-    return false;
-  }
-
-  return expiryMs - Date.now() <= ACCESS_TOKEN_REFRESH_WINDOW_MS;
-}
-
 async function refreshTokenOnce(onTokenRefresh: (token: string) => void): Promise<string> {
   const refreshResponse = await refreshAccessToken();
   onTokenRefresh(refreshResponse.accessToken);
   return refreshResponse.accessToken;
-}
-
-function isUnauthorizedError(error: unknown): error is ApiError {
-  return error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403);
 }
 
 function mapElementsErrorMessage(error: unknown): string {
@@ -90,18 +74,16 @@ function useElements({
     let isCancelled = false;
 
     const loadElements = async () => {
-      let activeToken = token;
-      let didAutoRefresh = false;
-
       try {
-        if (shouldRefreshBeforeRequest(token)) {
-          activeToken = await refreshTokenOnce(onTokenRefresh);
-          didAutoRefresh = true;
-        }
-
-        const response = await listElements(activeToken, {
-          forceRefresh: didAutoRefresh,
-        });
+        const { activeToken, result } = await executeWithFreshToken(
+          token,
+          async () => await refreshTokenOnce(onTokenRefresh),
+          async (resolvedToken) => {
+            return await listElements(resolvedToken, {
+              forceRefresh: resolvedToken !== token,
+            });
+          },
+        );
 
         if (isCancelled) {
           return;
@@ -109,7 +91,7 @@ function useElements({
 
         setSnapshot({
           token: activeToken,
-          data: response,
+          data: result,
           error: null,
         });
       } catch (caughtError: unknown) {
@@ -118,46 +100,17 @@ function useElements({
         }
 
         if (isUnauthorizedError(caughtError)) {
-          try {
-            const refreshedToken = await refreshTokenOnce(onTokenRefresh);
-            const refreshedElements = await listElements(refreshedToken, { forceRefresh: true });
-
-            if (isCancelled) {
-              return;
-            }
-
-            setSnapshot({
-              token: refreshedToken,
-              data: refreshedElements,
-              error: null,
-            });
-            return;
-          } catch (refreshError: unknown) {
-            if (isCancelled) {
-              return;
-            }
-
-            if (!isUnauthorizedError(refreshError)) {
-              setSnapshot({
-                token: activeToken,
-                data: [],
-                error: mapElementsErrorMessage(refreshError),
-              });
-              return;
-            }
-
-            onUnauthorized();
-            setSnapshot({
-              token,
-              data: [],
-              error: SESSION_EXPIRED_ERROR_MESSAGE,
-            });
-            return;
-          }
+          onUnauthorized();
+          setSnapshot({
+            token,
+            data: [],
+            error: SESSION_EXPIRED_ERROR_MESSAGE,
+          });
+          return;
         }
 
         setSnapshot({
-          token: activeToken,
+          token,
           data: [],
           error: mapElementsErrorMessage(caughtError),
         });

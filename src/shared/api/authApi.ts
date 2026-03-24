@@ -1,5 +1,4 @@
 import publicEnv from '@/shared/config/publicEnv';
-import { readJwtExpiryMs } from '@/shared/utils/jwt';
 import { requestJson } from './httpClient';
 import { ApiError } from './httpClient';
 import type {
@@ -14,7 +13,6 @@ import type {
 
 let pendingRefreshRequest: Promise<RefreshResponse> | null = null;
 const pendingValidationRequests = new Map<string, Promise<ValidateTokenResponse>>();
-const ACCESS_TOKEN_REFRESH_WINDOW_MS = 30_000;
 
 function resolveAuthRequestBaseUrl(): string {
   if (typeof window !== 'undefined') {
@@ -45,16 +43,6 @@ async function requestRefreshAccessToken(): Promise<RefreshResponse> {
     method: 'POST',
     credentials: 'include',
   });
-}
-
-function shouldRefreshBeforeProfileRequest(accessToken: string): boolean {
-  const expiryMs = readJwtExpiryMs(accessToken);
-
-  if (expiryMs === null) {
-    return false;
-  }
-
-  return expiryMs - Date.now() <= ACCESS_TOKEN_REFRESH_WINDOW_MS;
 }
 
 function isUnauthorizedError(error: unknown): error is ApiError {
@@ -105,17 +93,10 @@ async function validateAccessToken(accessToken: string): Promise<ValidateTokenRe
 }
 
 async function fetchProfile(accessToken: string): Promise<ProfileResponse> {
-  let activeToken = accessToken;
-
-  if (shouldRefreshBeforeProfileRequest(activeToken)) {
-    const refreshResponse = await refreshAccessToken();
-    activeToken = refreshResponse.accessToken;
-  }
-
   try {
     return await requestJson<ProfileResponse>(resolveAuthRequestBaseUrl(), '/api/auth/profile', {
       method: 'GET',
-      token: activeToken,
+      token: accessToken,
       credentials: 'include',
     });
   } catch (caughtError: unknown) {
@@ -124,11 +105,10 @@ async function fetchProfile(accessToken: string): Promise<ProfileResponse> {
     }
 
     const refreshResponse = await refreshAccessToken();
-    activeToken = refreshResponse.accessToken;
 
     return await requestJson<ProfileResponse>(resolveAuthRequestBaseUrl(), '/api/auth/profile', {
       method: 'GET',
-      token: activeToken,
+      token: refreshResponse.accessToken,
       credentials: 'include',
     });
   }

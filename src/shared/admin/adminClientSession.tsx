@@ -14,6 +14,7 @@ type AdminClientSessionValue = {
   isHydrated: boolean;
   isSilentRefreshBlocked: boolean;
   persistToken: (token: string) => void;
+  refreshTokenOnce: () => Promise<string>;
   removeToken: (options?: RemoveTokenOptions) => void;
 };
 

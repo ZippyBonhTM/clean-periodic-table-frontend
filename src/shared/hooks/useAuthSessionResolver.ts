@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 
 import { validateAccessToken } from '@/shared/api/authApi';
-import { isUnauthorizedError, shouldRefreshBeforeRequest } from '@/shared/hooks/authRequestUtils';
+import { isUnauthorizedError } from '@/shared/hooks/authRequestUtils';
 
 type AuthSessionStatus = 'anonymous' | 'checking' | 'authenticated' | 'unverified';
 
@@ -70,41 +70,6 @@ export default function useAuthSessionResolver({
     };
 
     const resolveSession = async (currentToken: string) => {
-      const shouldRefreshBeforeValidation = shouldRefreshBeforeRequest(currentToken);
-
-      if (shouldRefreshBeforeValidation) {
-        try {
-          const refreshedToken = await refreshTokenOnce();
-
-          if (isCancelled) {
-            return;
-          }
-
-          setSnapshot({
-            token: refreshedToken,
-            status: 'authenticated',
-            message: null,
-          });
-          return;
-        } catch (refreshError: unknown) {
-          if (isCancelled) {
-            return;
-          }
-
-          if (isUnauthorizedError(refreshError)) {
-            onUnauthorized();
-            return;
-          }
-
-          setSnapshot({
-            token: currentToken,
-            status: 'unverified',
-            message: mapVerificationErrorMessage(refreshError),
-          });
-          return;
-        }
-      }
-
       if (skipTokenValidation) {
         setSnapshot({
           token: currentToken,

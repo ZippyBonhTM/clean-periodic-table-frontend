@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { isAdminUserProfile } from '@/shared/admin/adminAccess';
 import { createAdminApi } from '@/shared/api/adminApi';
-import { fetchProfile } from '@/shared/api/authApi';
+import { fetchProfile, refreshAccessToken } from '@/shared/api/authApi';
 import {
   persistCachedAdminSession,
   readCachedAdminSession,
@@ -52,7 +52,12 @@ export default function useAppHeaderUserMenu({
   const userMenuDragOffsetRef = useRef(0);
   const fetchedProfileTokenRef = useRef<string | null>(null);
   const fetchedAdminSessionTokenRef = useRef<string | null>(null);
-  const adminApi = useMemo(() => createAdminApi(), []);
+  const refreshTokenOnce = useCallback(async () => {
+    const refreshResponse = await refreshAccessToken();
+    onPersistToken(refreshResponse.accessToken);
+    return refreshResponse.accessToken;
+  }, [onPersistToken]);
+  const adminApi = useMemo(() => createAdminApi({ refreshTokenOnce }), [refreshTokenOnce]);
 
   const userDisplayName = useMemo(() => {
     const cachedUserProfile = token === null ? null : readCachedAuthProfile(token);
