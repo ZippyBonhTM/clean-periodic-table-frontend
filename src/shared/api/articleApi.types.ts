@@ -119,6 +119,7 @@ interface ArticleApi {
   getHashtagFeed(input: ArticleHashtagFeedInput): Promise<ArticleCursorPage<ArticleFeedItem>>;
   getHashtagSuggestions(input: ArticleHashtagSuggestionsInput): Promise<ArticleHashtag[]>;
   listMyArticles(input: ArticleAuthenticatedCursorInput): Promise<ArticleCursorPage<ArticleSummary>>;
+  listSavedArticles(input: ArticleAuthenticatedCursorInput): Promise<ArticleCursorPage<ArticleSummary>>;
   createDraft(input: CreateArticleDraftInput): Promise<ArticleDetail>;
   updateArticle(input: UpdateArticleInput): Promise<ArticleDetail>;
   publishArticle(input: ArticlePublishInput): Promise<ArticleDetail>;

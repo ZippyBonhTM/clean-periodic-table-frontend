@@ -262,7 +262,47 @@ article_id
 
 ---
 
-# 7. ArticleStats Table
+# 7. ArticleSaves Mapping Table
+
+Defines which user saved which article.
+
+---
+
+## Table: article_saves
+
+Required fields:
+
+* user_id (UUID)
+* article_id (UUID, Foreign Key -> articles.id)
+* created_at (Timestamp)
+
+---
+
+## Required Constraints
+
+Composite Unique Key:
+
+user_id + article_id
+
+This prevents:
+
+Duplicate saves.
+
+---
+
+## Required Indexes
+
+Index on:
+
+user_id
+
+Index on:
+
+article_id
+
+---
+
+# 8. ArticleStats Table
 
 Stores aggregated metrics.
 
@@ -296,7 +336,7 @@ Never computed dynamically per request.
 
 ---
 
-# 8. Slug Design Rules
+# 9. Slug Design Rules
 
 Slug is used for article URLs.
 
@@ -334,7 +374,7 @@ Slug-based routing.
 
 ---
 
-# 9. Full Text Search Design
+# 10. Full Text Search Design
 
 Search must use:
 

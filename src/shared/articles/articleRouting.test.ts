@@ -4,6 +4,7 @@ import {
   ARTICLE_EDITOR_CREATE_PATHNAME,
   ARTICLE_FEED_PATHNAME,
   ARTICLE_PRIVATE_LIST_PATHNAME,
+  ARTICLE_SAVED_LIST_PATHNAME,
   buildLocalizedArticleDetailPath,
   buildLocalizedArticleEditorCreatePath,
   buildLocalizedArticleEditorPath,
@@ -11,6 +12,7 @@ import {
   buildLocalizedArticleFeedPath,
   buildLocalizedArticlePrivateListBrowsePath,
   buildLocalizedArticlePrivateListPath,
+  buildLocalizedArticleSavedListPath,
 } from '@/shared/articles/articleRouting';
 
 describe('articleRouting', () => {
@@ -38,6 +40,12 @@ describe('articleRouting', () => {
     expect(ARTICLE_EDITOR_CREATE_PATHNAME).toBe('/me/articles/new');
     expect(buildLocalizedArticleEditorCreatePath('en-US')).toBe('/en/me/articles/new');
     expect(buildLocalizedArticleEditorCreatePath('pt-BR')).toBe('/pt/me/articles/new');
+  });
+
+  it('builds the localized saved article list path outside global app routing', () => {
+    expect(ARTICLE_SAVED_LIST_PATHNAME).toBe('/me/articles/saved');
+    expect(buildLocalizedArticleSavedListPath('en-US')).toBe('/en/me/articles/saved');
+    expect(buildLocalizedArticleSavedListPath('pt-BR')).toBe('/pt/me/articles/saved');
   });
 
   it('builds the localized article editor path for an owned article id', () => {
