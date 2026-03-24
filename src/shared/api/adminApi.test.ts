@@ -201,4 +201,87 @@ describe('adminApi', () => {
       expect.objectContaining({ method: 'GET' }),
     );
   });
+
+  it('retries admin requests once with a refreshed token when the access token is expired', async () => {
+    vi.stubGlobal('window', {
+      location: {
+        origin: 'http://localhost:3000',
+      },
+    });
+
+    const refreshTokenOnce = vi.fn(async () => 'fresh-token');
+    const fetchSpy = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const authorizationHeader =
+        init?.headers instanceof Headers
+          ? init.headers.get('Authorization')
+          : new Headers(init?.headers).get('Authorization');
+
+      if (input instanceof URL && input.pathname === '/api/admin/session' && authorizationHeader === 'Bearer token-1') {
+        return {
+          ok: false,
+          status: 401,
+          json: async () => ({
+            message: 'Unauthorized',
+          }),
+        };
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          user: {
+            id: 'admin-2',
+            name: 'Fresh Admin',
+            email: 'fresh@example.com',
+            role: 'ADMIN',
+          },
+        }),
+      };
+    });
+
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const api: AdminApi = createAdminApi({
+      refreshTokenOnce,
+    });
+
+    const session = await api.getSession({
+      token: 'token-1',
+    });
+
+    expect(session).toEqual({
+      user: {
+        id: 'admin-2',
+        name: 'Fresh Admin',
+        email: 'fresh@example.com',
+        role: 'ADMIN',
+      },
+    });
+    expect(refreshTokenOnce).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      1,
+      new URL('http://localhost:3000/api/admin/session'),
+      expect.objectContaining({
+        method: 'GET',
+        credentials: 'include',
+        headers: expect.any(Headers),
+      }),
+    );
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      2,
+      new URL('http://localhost:3000/api/admin/session'),
+      expect.objectContaining({
+        method: 'GET',
+        credentials: 'include',
+        headers: expect.any(Headers),
+      }),
+    );
+
+    const firstRequestHeaders = fetchSpy.mock.calls[0]?.[1]?.headers as Headers;
+    const secondRequestHeaders = fetchSpy.mock.calls[1]?.[1]?.headers as Headers;
+
+    expect(firstRequestHeaders.get('Authorization')).toBe('Bearer token-1');
+    expect(secondRequestHeaders.get('Authorization')).toBe('Bearer fresh-token');
+  });
 });

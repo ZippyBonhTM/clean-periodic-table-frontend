@@ -11,16 +11,10 @@ vi.mock('@/shared/api/httpClient', async () => {
   };
 });
 
-vi.mock('@/shared/utils/jwt', () => ({
-  readJwtExpiryMs: vi.fn(),
-}));
-
 import { fetchProfile } from '@/shared/api/authApi';
 import { ApiError, requestJson } from '@/shared/api/httpClient';
-import { readJwtExpiryMs } from '@/shared/utils/jwt';
 
 const mockedRequestJson = vi.mocked(requestJson);
-const mockedReadJwtExpiryMs = vi.mocked(readJwtExpiryMs);
 
 describe('authApi', () => {
   afterEach(() => {
@@ -29,26 +23,19 @@ describe('authApi', () => {
     vi.unstubAllGlobals();
   });
 
-  it('refreshes before requesting profile when the access token is near expiry', async () => {
+  it('requests the profile directly when the current access token is still accepted', async () => {
     vi.stubGlobal('window', {
       location: {
         origin: 'http://localhost:3000',
       },
     });
 
-    mockedReadJwtExpiryMs.mockReturnValue(Date.now() + 10_000);
     mockedRequestJson.mockImplementation(async (_baseUrl, path, input) => {
-      if (path === '/api/auth/refresh') {
-        return {
-          accessToken: 'fresh-token',
-        };
-      }
-
       if (path === '/api/auth/profile') {
-        expect(input?.token).toBe('fresh-token');
+        expect(input?.token).toBe('still-valid-token');
 
         return {
-          accessToken: 'fresh-token',
+          accessToken: 'still-valid-token',
           userProfile: {
             id: 'user-1',
             name: 'Ada',
@@ -61,7 +48,7 @@ describe('authApi', () => {
       throw new Error(`Unexpected path ${path}`);
     });
 
-    const response = await fetchProfile('stale-token');
+    const response = await fetchProfile('still-valid-token');
 
     expect(response.userProfile).toEqual({
       id: 'user-1',
@@ -69,22 +56,14 @@ describe('authApi', () => {
       email: 'ada@example.com',
       role: 'USER',
     });
+    expect(mockedRequestJson).toHaveBeenCalledTimes(1);
     expect(mockedRequestJson).toHaveBeenNthCalledWith(
       1,
-      'http://localhost:3000',
-      '/api/auth/refresh',
-      expect.objectContaining({
-        method: 'POST',
-        credentials: 'include',
-      }),
-    );
-    expect(mockedRequestJson).toHaveBeenNthCalledWith(
-      2,
       'http://localhost:3000',
       '/api/auth/profile',
       expect.objectContaining({
         method: 'GET',
-        token: 'fresh-token',
+        token: 'still-valid-token',
         credentials: 'include',
       }),
     );
@@ -97,7 +76,6 @@ describe('authApi', () => {
       },
     });
 
-    mockedReadJwtExpiryMs.mockReturnValue(Date.now() + 60_000);
     let profileAttempt = 0;
 
     mockedRequestJson.mockImplementation(async (_baseUrl, path, input) => {
@@ -174,28 +152,30 @@ describe('authApi', () => {
       },
     });
 
-    mockedReadJwtExpiryMs.mockReturnValue(Date.now() + 5_000);
-
     let refreshResolver: ((value: { accessToken: string }) => void) | null = null;
     const refreshPromise = new Promise<{ accessToken: string }>((resolve) => {
       refreshResolver = resolve;
     });
 
     mockedRequestJson.mockImplementation(async (_baseUrl, path, input) => {
-      if (path === '/api/auth/refresh') {
-        return await refreshPromise;
-      }
-
       if (path === '/api/auth/profile') {
+        if (input?.token !== 'shared-fresh-token') {
+          throw new ApiError('Unauthorized', 401);
+        }
+
         return {
-          accessToken: 'shared-fresh-token',
           userProfile: {
-            id: input?.token === 'shared-fresh-token' ? 'user-3' : 'unexpected',
+            id: 'user-3',
             name: 'Linus',
             email: 'linus@example.com',
             role: 'USER',
           },
+          accessToken: 'shared-fresh-token',
         };
+      }
+
+      if (path === '/api/auth/refresh') {
+        return await refreshPromise;
       }
 
       throw new Error(`Unexpected path ${path}`);
@@ -213,13 +193,9 @@ describe('authApi', () => {
     const responses = await pendingProfileRequests;
 
     expect(responses).toHaveLength(2);
-    expect(mockedRequestJson).toHaveBeenCalledTimes(3);
-    expect(mockedRequestJson).toHaveBeenCalledWith(
-      'http://localhost:3000',
-      '/api/auth/refresh',
-      expect.objectContaining({
-        method: 'POST',
-      }),
-    );
+    expect(mockedRequestJson).toHaveBeenCalledTimes(5);
+    expect(
+      mockedRequestJson.mock.calls.filter(([, path]) => path === '/api/auth/refresh'),
+    ).toHaveLength(1);
   });
 });

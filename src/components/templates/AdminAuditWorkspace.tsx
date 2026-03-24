@@ -56,8 +56,8 @@ function buildEmptyAuditPage(): AdminCursorPage<AdminAuditEntry> {
 export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAuditWorkspaceProps) {
   const router = useRouter();
   const text = getAdminWorkspaceText(locale);
-  const adminApi = useMemo(() => createAdminApi(), []);
-  const { token, authStatus, isHydrated } = useAdminClientSession();
+  const { token, authStatus, isHydrated, refreshTokenOnce } = useAdminClientSession();
+  const adminApi = useMemo(() => createAdminApi({ refreshTokenOnce }), [refreshTokenOnce]);
   const [activeAction, setActiveAction] = useState<AdminAuditActionFilter>(initialFilters.action);
   const [draftAction, setDraftAction] = useState<AdminAuditActionFilter>(initialFilters.action);
   const [activeQuery, setActiveQuery] = useState(initialFilters.query);

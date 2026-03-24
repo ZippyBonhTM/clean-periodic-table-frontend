@@ -69,8 +69,8 @@ export default function AdminUsersWorkspace({
 }: AdminUsersWorkspaceProps) {
   const router = useRouter();
   const text = getAdminWorkspaceText(locale);
-  const adminApi = useMemo(() => createAdminApi(), []);
-  const { token, authStatus, isHydrated } = useAdminClientSession();
+  const { token, authStatus, isHydrated, refreshTokenOnce } = useAdminClientSession();
+  const adminApi = useMemo(() => createAdminApi({ refreshTokenOnce }), [refreshTokenOnce]);
   const [activeRole, setActiveRole] = useState<AdminUsersRoleFilter>(initialFilters.role);
   const [activeVersion, setActiveVersion] = useState<AdminUsersVersionFilter>(initialFilters.version);
   const [activeStatus, setActiveStatus] = useState<AdminUsersStatusFilter>(initialFilters.status);

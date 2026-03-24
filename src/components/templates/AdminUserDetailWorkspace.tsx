@@ -48,8 +48,8 @@ export default function AdminUserDetailWorkspace({
   userId,
 }: AdminUserDetailWorkspaceProps) {
   const text = getAdminWorkspaceText(locale);
-  const adminApi = useMemo(() => createAdminApi(), []);
-  const { token, authStatus, isHydrated } = useAdminClientSession();
+  const { token, authStatus, isHydrated, refreshTokenOnce } = useAdminClientSession();
+  const adminApi = useMemo(() => createAdminApi({ refreshTokenOnce }), [refreshTokenOnce]);
   const [requestStatus, setRequestStatus] = useState<DetailRequestStatus>('idle');
   const [userDetail, setUserDetail] = useState<AdminUserDetail | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
