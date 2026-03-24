@@ -16,6 +16,7 @@ import {
 } from '@/shared/admin/adminRouting';
 import {
   appendAdminUsersPageStack,
+  areAdminUsersBrowseFiltersEqual,
   flattenAdminUsersPageStack,
   replaceAdminUsersPageStack,
   resolveAdminUsersPreviousCursor,
@@ -94,17 +95,26 @@ export default function AdminUsersWorkspace({
 
   const syncBrowseState = useCallback(
     (nextState: AdminUsersBrowseStateUpdate & { searchInputValue?: string; paginationMode?: DirectoryPaginationMode }) => {
+      const currentBrowseState = {
+        role: activeRole,
+        version: activeVersion,
+        status: activeStatus,
+        sort: activeSort,
+        query: activeQuery,
+        cursor: activeCursor,
+      } satisfies AdminUsersBrowseFilters;
       const nextBrowseState = resolveNextAdminUsersBrowseState(
-        {
-          role: activeRole,
-          version: activeVersion,
-          status: activeStatus,
-          sort: activeSort,
-          query: activeQuery,
-          cursor: activeCursor,
-        },
+        currentBrowseState,
         nextState,
       );
+
+      if (areAdminUsersBrowseFiltersEqual(currentBrowseState, nextBrowseState)) {
+        if (nextState.searchInputValue !== undefined) {
+          setSearchInput(nextState.searchInputValue);
+        }
+
+        return;
+      }
 
       setActiveRole(nextBrowseState.role);
       setActiveVersion(nextBrowseState.version);

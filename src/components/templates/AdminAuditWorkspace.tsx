@@ -15,6 +15,7 @@ import {
 } from '@/shared/admin/adminRouting';
 import {
   appendAdminAuditPageStack,
+  areAdminAuditBrowseFiltersEqual,
   flattenAdminAuditPageStack,
   replaceAdminAuditPageStack,
   resolveAdminAuditPreviousCursor,
@@ -70,14 +71,23 @@ export default function AdminAuditWorkspace({ locale, initialFilters }: AdminAud
 
   const syncBrowseState = useCallback(
     (nextState: AdminAuditBrowseStateUpdate & { searchInputValue?: string; paginationMode?: AuditPaginationMode }) => {
+      const currentBrowseState = {
+        action: activeAction,
+        query: activeQuery,
+        cursor: activeCursor,
+      } satisfies AdminAuditBrowseFilters;
       const nextBrowseState = resolveNextAdminAuditBrowseState(
-        {
-          action: activeAction,
-          query: activeQuery,
-          cursor: activeCursor,
-        },
+        currentBrowseState,
         nextState,
       );
+
+      if (areAdminAuditBrowseFiltersEqual(currentBrowseState, nextBrowseState)) {
+        if (nextState.searchInputValue !== undefined) {
+          setSearchInput(nextState.searchInputValue);
+        }
+
+        return;
+      }
 
       setActiveAction(nextBrowseState.action);
       setActiveQuery(nextBrowseState.query);
