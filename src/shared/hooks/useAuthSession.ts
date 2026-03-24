@@ -18,6 +18,7 @@ type UseAuthSessionInput = {
   onTokenRefresh: (token: string) => void;
   onUnauthorized: () => void;
   allowAnonymousRefresh?: boolean;
+  enableProactiveRefresh?: boolean;
   skipTokenValidation?: boolean;
 };
 
@@ -54,6 +55,7 @@ function useAuthSession({
   onTokenRefresh,
   onUnauthorized,
   allowAnonymousRefresh = true,
+  enableProactiveRefresh = false,
   skipTokenValidation = false,
 }: UseAuthSessionInput): UseAuthSessionOutput {
   const [snapshot, setSnapshot] = useState<VerificationSnapshot>({
@@ -112,6 +114,7 @@ function useAuthSession({
   });
 
   useAuthSessionRefreshTimer({
+    enabled: enableProactiveRefresh,
     mapVerificationErrorMessage,
     onUnauthorized,
     refreshTokenOnce,
