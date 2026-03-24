@@ -46,6 +46,20 @@ function resolveNextAdminUsersBrowseState(
   };
 }
 
+function areAdminUsersBrowseFiltersEqual(
+  first: AdminUsersBrowseFilters,
+  second: AdminUsersBrowseFilters,
+): boolean {
+  return (
+    first.role === second.role &&
+    first.version === second.version &&
+    first.status === second.status &&
+    first.sort === second.sort &&
+    first.query === second.query &&
+    first.cursor === second.cursor
+  );
+}
+
 function replaceAdminUsersPageStack(
   requestCursor: string | null,
   page: AdminCursorPage<AdminUserSummary>,
@@ -92,6 +106,7 @@ function resolveAdminUsersPreviousCursor(current: AdminUsersDirectoryPageEntry[]
 
 export {
   appendAdminUsersPageStack,
+  areAdminUsersBrowseFiltersEqual,
   flattenAdminUsersPageStack,
   replaceAdminUsersPageStack,
   resolveAdminUsersPreviousCursor,

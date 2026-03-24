@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { AdminCursorPage, AdminUserSummary } from '@/shared/types/admin';
 import {
   appendAdminUsersPageStack,
+  areAdminUsersBrowseFiltersEqual,
   flattenAdminUsersPageStack,
   replaceAdminUsersPageStack,
   resolveAdminUsersPreviousCursor,
@@ -60,6 +61,50 @@ describe('adminUsersBrowseState', () => {
       query: null,
       cursor: null,
     });
+  });
+
+  it('compares browse states by applied filter values', () => {
+    expect(
+      areAdminUsersBrowseFiltersEqual(
+        {
+          role: 'all',
+          version: 'all',
+          status: 'all',
+          sort: 'created-desc',
+          query: null,
+          cursor: null,
+        },
+        {
+          role: 'all',
+          version: 'all',
+          status: 'all',
+          sort: 'created-desc',
+          query: null,
+          cursor: null,
+        },
+      ),
+    ).toBe(true);
+
+    expect(
+      areAdminUsersBrowseFiltersEqual(
+        {
+          role: 'all',
+          version: 'all',
+          status: 'all',
+          sort: 'created-desc',
+          query: null,
+          cursor: null,
+        },
+        {
+          role: 'ADMIN',
+          version: 'all',
+          status: 'all',
+          sort: 'created-desc',
+          query: null,
+          cursor: null,
+        },
+      ),
+    ).toBe(false);
   });
 
   it('appends forward pages and resolves the previous cursor from local history', () => {

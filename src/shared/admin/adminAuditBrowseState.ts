@@ -30,6 +30,17 @@ function resolveNextAdminAuditBrowseState(
   };
 }
 
+function areAdminAuditBrowseFiltersEqual(
+  first: AdminAuditBrowseFilters,
+  second: AdminAuditBrowseFilters,
+): boolean {
+  return (
+    first.action === second.action &&
+    first.query === second.query &&
+    first.cursor === second.cursor
+  );
+}
+
 function replaceAdminAuditPageStack(
   requestCursor: string | null,
   page: AdminCursorPage<AdminAuditEntry>,
@@ -76,6 +87,7 @@ function resolveAdminAuditPreviousCursor(current: AdminAuditPageEntry[]): string
 
 export {
   appendAdminAuditPageStack,
+  areAdminAuditBrowseFiltersEqual,
   flattenAdminAuditPageStack,
   replaceAdminAuditPageStack,
   resolveAdminAuditPreviousCursor,

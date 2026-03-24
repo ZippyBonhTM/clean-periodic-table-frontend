@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { AdminAuditEntry, AdminCursorPage } from '@/shared/types/admin';
 import {
   appendAdminAuditPageStack,
+  areAdminAuditBrowseFiltersEqual,
   flattenAdminAuditPageStack,
   replaceAdminAuditPageStack,
   resolveAdminAuditPreviousCursor,
@@ -53,6 +54,38 @@ describe('adminAuditBrowseState', () => {
       query: null,
       cursor: null,
     });
+  });
+
+  it('compares browse states by applied filter values', () => {
+    expect(
+      areAdminAuditBrowseFiltersEqual(
+        {
+          action: 'all',
+          query: null,
+          cursor: null,
+        },
+        {
+          action: 'all',
+          query: null,
+          cursor: null,
+        },
+      ),
+    ).toBe(true);
+
+    expect(
+      areAdminAuditBrowseFiltersEqual(
+        {
+          action: 'all',
+          query: null,
+          cursor: null,
+        },
+        {
+          action: 'moderation',
+          query: null,
+          cursor: null,
+        },
+      ),
+    ).toBe(false);
   });
 
   it('appends forward audit pages and keeps previous cursor in local history', () => {
