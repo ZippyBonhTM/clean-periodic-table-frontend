@@ -4,6 +4,7 @@ export const articlePrivateListTextEn = {
     'Review your drafts, private posts, and published writing without exposing this route publicly.',
   internalBadge: 'Internal Preview',
   createDraft: 'New draft',
+  savedArticles: 'Saved articles',
   search: {
     label: 'Search loaded articles',
     placeholder: 'Search title, excerpt, slug, author, or hashtag',
@@ -33,7 +34,7 @@ export const articlePrivateListTextEn = {
     unavailable: 'The article workspace is not available right now.',
     loadFailed: 'We could not load your articles right now.',
     loadFailedNetwork: 'We could not load your articles. Check your connection and try again.',
-    empty: 'You do not have any saved articles yet.',
+    empty: 'You do not have any articles here yet.',
     signInRequired: 'Sign in to open your private article workspace.',
     loadingMore: 'Loading more articles...',
     loadMore: 'Load more',

@@ -67,6 +67,8 @@ const MOCK_ARTICLES: ArticleDetail[] = [
   },
 ];
 
+const MOCK_SAVED_ARTICLE_IDS = ['article-atomic-orbitals'] as const;
+
 function toFeedItem(article: ArticleDetail): ArticleFeedItem {
   return {
     id: article.id,
@@ -214,6 +216,14 @@ function createMockArticleApi(): ArticleApi {
 
     async listMyArticles(input) {
       return paginateItems(MOCK_ARTICLES.map(toSummary), input);
+    },
+
+    async listSavedArticles(input) {
+      const savedArticles = MOCK_SAVED_ARTICLE_IDS.map((articleId) =>
+        toSummary(findMockArticleById(articleId)),
+      );
+
+      return paginateItems(savedArticles, input);
     },
 
     async createDraft(input: CreateArticleDraftInput) {

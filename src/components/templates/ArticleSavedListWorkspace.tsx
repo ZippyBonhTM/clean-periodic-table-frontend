@@ -2,36 +2,24 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import Button from '@/components/atoms/Button';
-import Input from '@/components/atoms/Input';
 import LinkButton from '@/components/atoms/LinkButton';
 import Panel from '@/components/atoms/Panel';
 import useAuthText from '@/components/organisms/auth/useAuthText';
-import ElementsState from '@/components/organisms/elements/ElementsState';
 import type { AuthModalMode } from '@/components/organisms/auth/AuthModal';
-import { getArticlePrivateListText } from '@/components/templates/articlePrivateListText';
+import ElementsState from '@/components/organisms/elements/ElementsState';
 import AppShell from '@/components/templates/AppShell';
+import { getArticleSavedListText } from '@/components/templates/articleSavedListText';
 import { resolveSessionWorkspaceMessage } from '@/components/templates/workspaceErrorCopy';
 import { articleApi, ArticleApiConfigurationError } from '@/shared/api/articleApi';
 import { logoutSession } from '@/shared/api/authApi';
 import { ApiError } from '@/shared/api/httpClient';
 import {
-  filterAndSortPrivateArticles,
-  type ArticlePrivateListSort,
-  countPrivateArticlesByStatus,
-  normalizeArticlePrivateListQuery,
-  type ArticlePrivateListBrowseFilters,
-  type ArticlePrivateListStatusFilter,
-} from '@/shared/articles/articlePrivateListFilters';
-import {
   buildLocalizedArticleDetailPath,
-  buildLocalizedArticleEditorCreatePath,
-  buildLocalizedArticleEditorPath,
-  buildLocalizedArticlePrivateListBrowsePath,
-  buildLocalizedArticleSavedListPath,
+  buildLocalizedArticleFeedPath,
+  buildLocalizedArticlePrivateListPath,
 } from '@/shared/articles/articleRouting';
 import type { ArticleFeatureStage } from '@/shared/config/articleFeature';
 import useAuthSession from '@/shared/hooks/useAuthSession';
@@ -46,15 +34,14 @@ import type {
 
 const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'));
 
-type ArticlePrivateListWorkspaceProps = {
+type ArticleSavedListWorkspaceProps = {
   locale: AppLocale;
   featureStage: ArticleFeatureStage;
-  initialFilters: ArticlePrivateListBrowseFilters;
 };
 
 function resolveArticleStatusLabel(
   status: ArticleStatus,
-  text: ReturnType<typeof getArticlePrivateListText>,
+  text: ReturnType<typeof getArticleSavedListText>,
 ): string {
   if (status === 'draft') {
     return text.cards.draft;
@@ -69,7 +56,7 @@ function resolveArticleStatusLabel(
 
 function resolveArticleVisibilityLabel(
   visibility: ArticleVisibility,
-  text: ReturnType<typeof getArticlePrivateListText>,
+  text: ReturnType<typeof getArticleSavedListText>,
 ): string {
   return visibility === 'public' ? text.cards.publicVisibility : text.cards.privateVisibility;
 }
@@ -84,7 +71,7 @@ function mergeArticleItems(
 
 function resolveArticleWorkspaceMessage(
   error: unknown,
-  text: ReturnType<typeof getArticlePrivateListText>,
+  text: ReturnType<typeof getArticleSavedListText>,
 ): string {
   if (error instanceof ArticleApiConfigurationError) {
     return text.states.unavailable;
@@ -109,26 +96,28 @@ function resolveArticleWorkspaceMessage(
   return text.states.loadFailed;
 }
 
-function ArticlePrivateListCard({
+function ArticleSavedListCard({
   item,
   locale,
   text,
 }: {
   item: ArticleSummary;
   locale: AppLocale;
-  text: ReturnType<typeof getArticlePrivateListText>;
+  text: ReturnType<typeof getArticleSavedListText>;
 }) {
-  const updatedLabel = new Intl.DateTimeFormat(locale, {
-    dateStyle: 'medium',
-  }).format(new Date(item.updatedAt));
   const authorLabel =
     item.author.displayName?.trim() ||
     item.author.username?.trim() ||
     text.cards.bylineFallback;
-  const canOpenPublicArticle = item.visibility === 'public' && item.status === 'published';
+  const canOpenArticle = item.visibility === 'public' && item.status === 'published';
   const articleHref = buildLocalizedArticleDetailPath(locale, item.slug);
-  const editorHref = buildLocalizedArticleEditorPath(locale, item.id);
   const titleLabel = item.title.trim().length > 0 ? item.title : text.cards.untitled;
+  const dateLabelSource = item.publishedAt ?? item.updatedAt;
+  const dateLabel = new Intl.DateTimeFormat(locale, {
+    dateStyle: 'medium',
+  }).format(new Date(dateLabelSource));
+  const datePrefix =
+    item.publishedAt !== null ? text.cards.publishedAtPrefix : text.cards.updatedAtPrefix;
 
   return (
     <article className="surface-panel flex h-full flex-col justify-between rounded-[2rem] border border-(--border-subtle) p-5 shadow-sm">
@@ -144,9 +133,13 @@ function ArticlePrivateListCard({
 
         <div className="space-y-3">
           <h2 className="text-2xl font-black leading-tight text-(--text-strong)">
-            <Link href={editorHref} className="transition hover:text-(--accent)">
-              {titleLabel}
-            </Link>
+            {canOpenArticle ? (
+              <Link href={articleHref} className="transition hover:text-(--accent)">
+                {titleLabel}
+              </Link>
+            ) : (
+              titleLabel
+            )}
           </h2>
           <p className="text-sm leading-7 text-(--text-muted)">
             {item.excerpt.trim().length > 0 ? item.excerpt : text.cards.noExcerpt}
@@ -154,36 +147,33 @@ function ArticlePrivateListCard({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {item.hashtags.length > 0 ? (
-            item.hashtags.map((hashtag) => (
-              <span
-                key={hashtag.id}
-                className="inline-flex rounded-full border border-(--border-subtle) bg-[var(--surface-2)] px-3 py-1 text-xs font-semibold text-(--text-muted)"
-              >
-                #{hashtag.name}
-              </span>
-            ))
-          ) : null}
+          {item.hashtags.map((hashtag) => (
+            <span
+              key={hashtag.id}
+              className="inline-flex rounded-full border border-(--border-subtle) bg-[var(--surface-2)] px-3 py-1 text-xs font-semibold text-(--text-muted)"
+            >
+              #{hashtag.name}
+            </span>
+          ))}
         </div>
       </div>
 
       <div className="mt-6 flex items-center justify-between gap-4 border-t border-(--border-subtle) pt-4">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-(--text-strong)">{authorLabel}</p>
-          <p className="truncate text-xs text-(--text-muted)">{updatedLabel}</p>
+          <p className="truncate text-xs text-(--text-muted)">
+            {datePrefix} · {dateLabel}
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <LinkButton href={editorHref} variant="secondary" size="sm" className="rounded-full px-4">
-            {text.cards.openEditor}
-          </LinkButton>
-          {canOpenPublicArticle ? (
-            <LinkButton href={articleHref} variant="ghost" size="sm" className="rounded-full px-4">
-              {text.cards.openPublicArticle}
+          {canOpenArticle ? (
+            <LinkButton href={articleHref} variant="secondary" size="sm" className="rounded-full px-4">
+              {text.cards.openArticle}
             </LinkButton>
           ) : (
             <span className="text-xs font-semibold uppercase tracking-[0.16em] text-(--text-muted)">
-              {text.cards.noPublicPage}
+              {text.cards.unavailableArticle}
             </span>
           )}
         </div>
@@ -192,13 +182,11 @@ function ArticlePrivateListCard({
   );
 }
 
-export default function ArticlePrivateListWorkspace({
+export default function ArticleSavedListWorkspace({
   locale,
   featureStage,
-  initialFilters,
-}: ArticlePrivateListWorkspaceProps) {
-  const router = useRouter();
-  const text = getArticlePrivateListText(locale);
+}: ArticleSavedListWorkspaceProps) {
+  const text = getArticleSavedListText(locale);
   const authText = useAuthText();
   const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
   const authSession = useAuthSession({
@@ -215,25 +203,12 @@ export default function ArticlePrivateListWorkspace({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<ArticlePrivateListStatusFilter>(
-    initialFilters.status,
-  );
-  const [activeQuery, setActiveQuery] = useState(initialFilters.query);
-  const [activeSort, setActiveSort] = useState<ArticlePrivateListSort>(initialFilters.sort);
-  const [searchInput, setSearchInput] = useState(initialFilters.query ?? '');
   const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
   const resolvedSessionMessage = resolveSessionWorkspaceMessage(authSession.message, authText);
-  const createDraftHref = buildLocalizedArticleEditorCreatePath(locale);
-  const savedArticlesHref = buildLocalizedArticleSavedListPath(locale);
-
-  useEffect(() => {
-    setActiveFilter(initialFilters.status);
-    setActiveQuery(initialFilters.query);
-    setActiveSort(initialFilters.sort);
-    setSearchInput(initialFilters.query ?? '');
-  }, [initialFilters]);
+  const workspaceHref = buildLocalizedArticlePrivateListPath(locale);
+  const feedHref = buildLocalizedArticleFeedPath(locale);
 
   const onLogout = useCallback(() => {
     void logoutSession().catch(() => undefined);
@@ -272,7 +247,7 @@ export default function ArticlePrivateListWorkspace({
       setErrorMessage(null);
 
       try {
-        const response: ArticleCursorPage<ArticleSummary> = await articleApi.listMyArticles({
+        const response: ArticleCursorPage<ArticleSummary> = await articleApi.listSavedArticles({
           token,
           cursor,
           limit: 12,
@@ -319,31 +294,6 @@ export default function ArticlePrivateListWorkspace({
     await loadArticles(nextCursor, 'append');
   }, [isLoadingMore, loadArticles, nextCursor]);
 
-  const onApplyFilter = useCallback(
-    (nextFilter: ArticlePrivateListStatusFilter) => {
-      const normalizedQuery = normalizeArticlePrivateListQuery(searchInput);
-
-      if (
-        nextFilter === activeFilter &&
-        normalizedQuery === activeQuery
-      ) {
-        return;
-      }
-
-      setActiveFilter(nextFilter);
-      setActiveQuery(normalizedQuery);
-      setSearchInput(normalizedQuery ?? '');
-      router.push(
-        buildLocalizedArticlePrivateListBrowsePath(locale, {
-          status: nextFilter,
-          query: normalizedQuery,
-          sort: activeSort,
-        }),
-      );
-    },
-    [activeFilter, activeQuery, activeSort, locale, router, searchInput],
-  );
-
   useEffect(() => {
     if (nextCursor === null || loadMoreSentinelRef.current === null || !hasValidSession) {
       return;
@@ -369,110 +319,14 @@ export default function ArticlePrivateListWorkspace({
 
   const heroStyle = {
     background: [
-      'radial-gradient(circle at top left, rgba(34,197,94,0.14), transparent 25%)',
-      'radial-gradient(circle at 82% 18%, rgba(14,165,233,0.14), transparent 28%)',
+      'radial-gradient(circle at top left, rgba(251,191,36,0.16), transparent 25%)',
+      'radial-gradient(circle at 82% 18%, rgba(45,212,191,0.14), transparent 28%)',
       'linear-gradient(160deg, color-mix(in oklab, var(--surface-2) 94%, var(--background-top)), color-mix(in oklab, var(--surface-1) 88%, var(--background-base)))',
     ].join(', '),
   } as const;
-  const statusCounts = useMemo(() => countPrivateArticlesByStatus(items), [items]);
-  const filteredItems = useMemo(
-    () =>
-      filterAndSortPrivateArticles(items, {
-        status: activeFilter,
-        query: activeQuery,
-        sort: activeSort,
-      }),
-    [activeFilter, activeQuery, activeSort, items],
-  );
-  const hasAppliedBrowseFilters = activeFilter !== 'all' || activeQuery !== null;
   const summaryLabel = useMemo(
-    () =>
-      !hasAppliedBrowseFilters
-        ? `${items.length} ${text.stats.loadedCountLabel}`
-        : `${filteredItems.length} ${text.stats.visibleCountLabel} · ${items.length} ${text.stats.loadedCountLabel}`,
-    [
-      filteredItems.length,
-      hasAppliedBrowseFilters,
-      items.length,
-      text.stats.loadedCountLabel,
-      text.stats.visibleCountLabel,
-    ],
-  );
-  const filterOptions: Array<{
-    key: ArticlePrivateListStatusFilter;
-    label: string;
-  }> = useMemo(
-    () => [
-      { key: 'all', label: text.filters.all },
-      { key: 'draft', label: text.filters.draft },
-      { key: 'published', label: text.filters.published },
-      { key: 'archived', label: text.filters.archived },
-    ],
-    [text.filters.all, text.filters.archived, text.filters.draft, text.filters.published],
-  );
-  const hasActiveSearch =
-    normalizeArticlePrivateListQuery(searchInput) !== null || activeQuery !== null;
-  const onSubmitSearch = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-
-      const normalizedQuery = normalizeArticlePrivateListQuery(searchInput);
-
-      setActiveQuery(normalizedQuery);
-      setSearchInput(normalizedQuery ?? '');
-      router.push(
-        buildLocalizedArticlePrivateListBrowsePath(locale, {
-          status: activeFilter,
-          query: normalizedQuery,
-          sort: activeSort,
-        }),
-      );
-    },
-    [activeFilter, activeSort, locale, router, searchInput],
-  );
-  const onClearSearch = useCallback(() => {
-    setActiveQuery(null);
-    setSearchInput('');
-    router.push(
-      buildLocalizedArticlePrivateListBrowsePath(locale, {
-        status: activeFilter,
-        sort: activeSort,
-      }),
-    );
-  }, [activeFilter, activeSort, locale, router]);
-  const onChangeSort = useCallback(
-    (nextSort: ArticlePrivateListSort) => {
-      if (nextSort === activeSort) {
-        return;
-      }
-
-      setActiveSort(nextSort);
-      router.push(
-        buildLocalizedArticlePrivateListBrowsePath(locale, {
-          status: activeFilter,
-          query: activeQuery,
-          sort: nextSort,
-        }),
-      );
-    },
-    [activeFilter, activeQuery, activeSort, locale, router],
-  );
-  const sortOptions: Array<{
-    key: ArticlePrivateListSort;
-    label: string;
-  }> = useMemo(
-    () => [
-      { key: 'updated-desc', label: text.sort.updatedDesc },
-      { key: 'updated-asc', label: text.sort.updatedAsc },
-      { key: 'created-desc', label: text.sort.createdDesc },
-      { key: 'created-asc', label: text.sort.createdAsc },
-    ],
-    [
-      text.sort.createdAsc,
-      text.sort.createdDesc,
-      text.sort.updatedAsc,
-      text.sort.updatedDesc,
-    ],
+    () => `${items.length} ${text.stats.loadedCountLabel}`,
+    [items.length, text.stats.loadedCountLabel],
   );
 
   if (!isHydrated) {
@@ -494,10 +348,13 @@ export default function ArticlePrivateListWorkspace({
       showFooter={false}
     >
       <div className="space-y-8 pb-10">
-        <section className="relative overflow-hidden rounded-[2.6rem] px-5 py-8 shadow-[0_40px_120px_-72px_rgba(15,23,42,1)] md:px-8 md:py-10" style={heroStyle}>
+        <section
+          className="relative overflow-hidden rounded-[2.6rem] px-5 py-8 shadow-[0_40px_120px_-72px_rgba(15,23,42,1)] md:px-8 md:py-10"
+          style={heroStyle}
+        >
           <div className="absolute inset-0 opacity-80">
-            <div className="absolute -left-10 top-10 h-32 w-32 rounded-full bg-emerald-300/10 blur-3xl" />
-            <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-sky-300/10 blur-3xl" />
+            <div className="absolute -left-10 top-10 h-32 w-32 rounded-full bg-amber-300/10 blur-3xl" />
+            <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-teal-300/10 blur-3xl" />
           </div>
 
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -519,11 +376,11 @@ export default function ArticlePrivateListWorkspace({
                   {text.internalBadge}
                 </span>
               ) : null}
-              <LinkButton href={savedArticlesHref} variant="ghost" size="sm" className="rounded-full px-4">
-                {text.savedArticles}
+              <LinkButton href={workspaceHref} variant="ghost" size="sm" className="rounded-full px-4">
+                {text.yourArticles}
               </LinkButton>
-              <LinkButton href={createDraftHref} variant="primary" size="sm" className="rounded-full px-4">
-                {text.createDraft}
+              <LinkButton href={feedHref} variant="secondary" size="sm" className="rounded-full px-4">
+                {text.browseFeed}
               </LinkButton>
               <span className="inline-flex rounded-full border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-(--text-strong)">
                 {summaryLabel}
@@ -554,118 +411,25 @@ export default function ArticlePrivateListWorkspace({
           <ElementsState
             tone="error"
             message={errorMessage}
-            actionLabel={authText.common.tryAgain}
+            actionLabel={text.states.retry}
             onAction={() => void loadArticles(null, 'replace')}
           />
         ) : hasLoaded && items.length === 0 ? (
           <Panel className="space-y-3">
             <p className="text-sm text-(--text-muted)">{text.states.empty}</p>
             <div>
-              <LinkButton href={createDraftHref} variant="secondary" size="sm" className="rounded-full px-4">
-                {text.states.createFirstDraft}
+              <LinkButton href={feedHref} variant="secondary" size="sm" className="rounded-full px-4">
+                {text.states.discoverArticles}
               </LinkButton>
             </div>
           </Panel>
         ) : (
           <>
-            <Panel className="space-y-4">
-              <form className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto]" onSubmit={onSubmitSearch}>
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="article-private-list-search"
-                    className="text-[11px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)"
-                  >
-                    {text.search.label}
-                  </label>
-                  <Input
-                    id="article-private-list-search"
-                    name="article-private-list-search"
-                    placeholder={text.search.placeholder}
-                    value={searchInput}
-                    onChange={setSearchInput}
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button type="submit" variant="secondary" size="sm" className="rounded-full px-4">
-                    {text.search.submit}
-                  </Button>
-                </div>
-                <div className="flex items-end">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="rounded-full px-4"
-                    onClick={onClearSearch}
-                    disabled={!hasActiveSearch}
-                  >
-                    {text.search.clear}
-                  </Button>
-                </div>
-              </form>
-              <div className="grid gap-3 lg:max-w-sm">
-                <label
-                  htmlFor="article-private-list-sort"
-                  className="text-[11px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)"
-                >
-                  {text.sort.label}
-                </label>
-                <select
-                  id="article-private-list-sort"
-                  name="article-private-list-sort"
-                  value={activeSort}
-                  onChange={(event) => onChangeSort(event.target.value as ArticlePrivateListSort)}
-                  className="w-full rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-soft) px-3 py-2.5 text-sm text-foreground outline-none transition-colors focus:border-(--accent)"
-                >
-                  {sortOptions.map((sortOption) => (
-                    <option key={sortOption.key} value={sortOption.key}>
-                      {sortOption.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {filterOptions.map((filterOption) => {
-                  const isActive = filterOption.key === activeFilter;
-
-                  return (
-                    <Button
-                      key={filterOption.key}
-                      variant={isActive ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className="rounded-full px-4"
-                      onClick={() => onApplyFilter(filterOption.key)}
-                    >
-                      {filterOption.label} ({statusCounts[filterOption.key]})
-                    </Button>
-                  );
-                })}
-              </div>
-            </Panel>
-
-            {filteredItems.length === 0 ? (
-              <Panel className="space-y-3">
-                <p className="text-sm text-(--text-muted)">{text.states.filteredEmpty}</p>
-                {activeFilter !== 'all' ? (
-                  <div>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="rounded-full px-4"
-                      onClick={() => onApplyFilter('all')}
-                    >
-                      {text.filters.clear}
-                    </Button>
-                  </div>
-                ) : null}
-              </Panel>
-            ) : (
-              <section className="grid gap-4 lg:grid-cols-2">
-                {filteredItems.map((item) => (
-                  <ArticlePrivateListCard key={item.id} item={item} locale={locale} text={text} />
-                ))}
-              </section>
-            )}
+            <section className="grid gap-4 lg:grid-cols-2">
+              {items.map((item) => (
+                <ArticleSavedListCard key={item.id} item={item} locale={locale} text={text} />
+              ))}
+            </section>
 
             {nextCursor !== null ? (
               <div className="flex flex-col items-center gap-3 py-4">

@@ -209,6 +209,45 @@ describe('articleApi', () => {
     );
   });
 
+  it('uses the expected private endpoints for owned and saved article lists', async () => {
+    process.env.NEXT_PUBLIC_ARTICLE_API_URL = 'http://localhost:4010';
+
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        items: [],
+        nextCursor: null,
+      }),
+    }));
+
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const { createArticleApi } = await import('@/shared/api/articleApi');
+    const api: ArticleApi = createArticleApi();
+
+    await api.listMyArticles({
+      token: 'token-1',
+      cursor: 'cursor-1',
+      limit: 12,
+    });
+    await api.listSavedArticles({
+      token: 'token-1',
+      cursor: 'cursor-2',
+      limit: 8,
+    });
+
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      1,
+      new URL('http://localhost:4010/api/v1/me/articles?cursor=cursor-1&limit=12'),
+      expect.any(Object),
+    );
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      2,
+      new URL('http://localhost:4010/api/v1/me/articles/saved?cursor=cursor-2&limit=8'),
+      expect.any(Object),
+    );
+  });
+
   it('records article views through the asynchronous engagement endpoint', async () => {
     process.env.NEXT_PUBLIC_ARTICLE_API_URL = 'http://localhost:4010';
 
@@ -365,6 +404,9 @@ describe('articleApi', () => {
     const api: ArticleApi = createMockArticleApi();
 
     const feed = await api.getGlobalFeed();
+    const savedFeed = await api.listSavedArticles({
+      token: 'token-1',
+    });
     const ownDetail = await api.getMyArticleById({
       articleId: 'article-stoichiometry-draft',
       token: 'token-1',
@@ -414,6 +456,8 @@ describe('articleApi', () => {
     });
 
     expect(feed.items).toHaveLength(1);
+    expect(savedFeed.items).toHaveLength(1);
+    expect(savedFeed.items[0]?.id).toBe('article-atomic-orbitals');
     expect(feed.items[0]?.status).toBe('published');
     expect(ownDetail.id).toBe('article-stoichiometry-draft');
     expect(publishedDetail.status).toBe('published');

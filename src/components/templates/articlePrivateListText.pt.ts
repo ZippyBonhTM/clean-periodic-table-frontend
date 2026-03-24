@@ -4,6 +4,7 @@ export const articlePrivateListTextPt = {
     'Revise seus rascunhos, posts privados e textos publicados sem expor esta rota publicamente.',
   internalBadge: 'Preview Interno',
   createDraft: 'Novo rascunho',
+  savedArticles: 'Artigos salvos',
   search: {
     label: 'Buscar entre os artigos carregados',
     placeholder: 'Busque por título, resumo, slug, autor ou hashtag',
@@ -33,7 +34,7 @@ export const articlePrivateListTextPt = {
     unavailable: 'O workspace de artigos não está disponível agora.',
     loadFailed: 'Não foi possível carregar seus artigos agora.',
     loadFailedNetwork: 'Não foi possível carregar seus artigos. Verifique sua conexão e tente de novo.',
-    empty: 'Você ainda não tem artigos salvos.',
+    empty: 'Você ainda não tem artigos aqui.',
     signInRequired: 'Entre para abrir seu workspace privado de artigos.',
     loadingMore: 'Carregando mais artigos...',
     loadMore: 'Carregar mais',

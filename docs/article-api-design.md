@@ -295,6 +295,29 @@ User private articles.
 
 ---
 
+## Get Saved Articles
+
+GET
+/api/v1/me/articles/saved
+
+Requires:
+
+Authentication.
+
+Returns:
+
+Saved public article summaries for the current user.
+
+Supports:
+
+Cursor pagination.
+
+Must enforce:
+
+Current visibility rules and bounded queries.
+
+---
+
 # 6. Search Endpoints
 
 Search must use:

@@ -96,6 +96,7 @@ Support:
 * Text search
 * Sorting by relevance
 * Public article discovery
+* Authenticated saved-article library
 
 ---
 

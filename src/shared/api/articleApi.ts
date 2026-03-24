@@ -285,6 +285,18 @@ function createArticleApi(): ArticleApi {
       );
     },
 
+    async listSavedArticles(input) {
+      return await requestJson<ArticleCursorPage<ArticleSummary>>(
+        resolveArticleApiBaseUrl(),
+        `/api/v1/me/articles/saved${buildCursorQuery(input)}`,
+        {
+          method: 'GET',
+          token: input.token,
+          signal: input.signal,
+        },
+      );
+    },
+
     async createDraft(input) {
       return await requestJson<ArticleDetail>(
         resolveArticleApiBaseUrl(),

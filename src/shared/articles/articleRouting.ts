@@ -5,6 +5,7 @@ import { buildArticlePrivateListSearchParams } from '@/shared/articles/articlePr
 
 const ARTICLE_FEED_PATHNAME = '/articles';
 const ARTICLE_PRIVATE_LIST_PATHNAME = '/me/articles';
+const ARTICLE_SAVED_LIST_PATHNAME = '/me/articles/saved';
 const ARTICLE_EDITOR_CREATE_PATHNAME = '/me/articles/new';
 
 function buildLocalizedArticleFeedPath(locale: AppLocale): string {
@@ -27,6 +28,10 @@ function buildLocalizedArticleFeedBrowsePath(
 
 function buildLocalizedArticlePrivateListPath(locale: AppLocale): string {
   return `/${APP_LOCALE_SEGMENT_BY_LOCALE[locale]}${ARTICLE_PRIVATE_LIST_PATHNAME}`;
+}
+
+function buildLocalizedArticleSavedListPath(locale: AppLocale): string {
+  return `/${APP_LOCALE_SEGMENT_BY_LOCALE[locale]}${ARTICLE_SAVED_LIST_PATHNAME}`;
 }
 
 function buildLocalizedArticlePrivateListBrowsePath(
@@ -62,6 +67,7 @@ export {
   ARTICLE_EDITOR_CREATE_PATHNAME,
   ARTICLE_FEED_PATHNAME,
   ARTICLE_PRIVATE_LIST_PATHNAME,
+  ARTICLE_SAVED_LIST_PATHNAME,
   buildLocalizedArticleDetailPath,
   buildLocalizedArticleEditorCreatePath,
   buildLocalizedArticleEditorPath,
@@ -69,4 +75,5 @@ export {
   buildLocalizedArticleFeedPath,
   buildLocalizedArticlePrivateListBrowsePath,
   buildLocalizedArticlePrivateListPath,
+  buildLocalizedArticleSavedListPath,
 };
