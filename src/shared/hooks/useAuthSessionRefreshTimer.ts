@@ -14,6 +14,7 @@ type VerificationSnapshot = {
 };
 
 type UseAuthSessionRefreshTimerOptions = {
+  enabled?: boolean;
   mapVerificationErrorMessage: (error: unknown) => string;
   onUnauthorized: () => void;
   refreshTokenOnce: () => Promise<string>;
@@ -22,6 +23,7 @@ type UseAuthSessionRefreshTimerOptions = {
 };
 
 export default function useAuthSessionRefreshTimer({
+  enabled = false,
   mapVerificationErrorMessage,
   onUnauthorized,
   refreshTokenOnce,
@@ -29,6 +31,10 @@ export default function useAuthSessionRefreshTimer({
   token,
 }: UseAuthSessionRefreshTimerOptions) {
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     if (token === null) {
       return;
     }
@@ -79,5 +85,5 @@ export default function useAuthSessionRefreshTimer({
       isCancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [mapVerificationErrorMessage, onUnauthorized, refreshTokenOnce, setSnapshot, token]);
+  }, [enabled, mapVerificationErrorMessage, onUnauthorized, refreshTokenOnce, setSnapshot, token]);
 }
