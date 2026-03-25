@@ -25,9 +25,11 @@ type ElementsState = {
   error: string | null;
 };
 
-async function refreshTokenOnce(onTokenRefresh: (token: string) => void): Promise<string> {
+async function refreshTokenOnce(
+  onTokenRefresh: (token: string, options?: { clearSilentRefreshBlocked?: boolean }) => void,
+): Promise<string> {
   const refreshResponse = await refreshAccessToken();
-  onTokenRefresh(refreshResponse.accessToken);
+  onTokenRefresh(refreshResponse.accessToken, { clearSilentRefreshBlocked: true });
   return refreshResponse.accessToken;
 }
 
@@ -49,7 +51,7 @@ function mapElementsErrorMessage(error: unknown): string {
 
 type UseElementsInput = {
   token: string | null;
-  onTokenRefresh: (token: string) => void;
+  onTokenRefresh: (token: string, options?: { clearSilentRefreshBlocked?: boolean }) => void;
   onUnauthorized: () => void;
   initialData?: ChemicalElement[] | null;
 };

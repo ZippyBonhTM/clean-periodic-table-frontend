@@ -50,7 +50,7 @@ function useSavedMolecules({ token, onTokenRefresh, onUnauthorized }: UseSavedMo
 
   const refreshTokenOnce = useCallback(async () => {
     const refreshResponse = await refreshAccessToken();
-    onTokenRefresh(refreshResponse.accessToken);
+    onTokenRefresh(refreshResponse.accessToken, { clearSilentRefreshBlocked: true });
     return refreshResponse.accessToken;
   }, [onTokenRefresh]);
 

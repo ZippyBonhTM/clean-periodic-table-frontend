@@ -22,7 +22,7 @@ import type { UserProfileRequestStatus } from './appHeader.types';
 type UseAppHeaderUserMenuParams = {
   hasToken: boolean;
   token: string | null;
-  onPersistToken: (token: string) => void;
+  onPersistToken: (token: string, options?: { clearSilentRefreshBlocked?: boolean }) => void;
   guestDisplayName: string;
   userDisplayNameFallback: string;
   profileLoadErrorFallback: string;
@@ -55,7 +55,7 @@ export default function useAppHeaderUserMenu({
   const fetchedAdminSessionTokenRef = useRef<string | null>(null);
   const refreshTokenOnce = useCallback(async () => {
     const refreshResponse = await refreshAccessToken();
-    onPersistToken(refreshResponse.accessToken);
+    onPersistToken(refreshResponse.accessToken, { clearSilentRefreshBlocked: true });
     return refreshResponse.accessToken;
   }, [onPersistToken]);
   const adminApi = useMemo(() => createAdminApi({ refreshTokenOnce }), [refreshTokenOnce]);

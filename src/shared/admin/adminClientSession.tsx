@@ -13,7 +13,7 @@ type AdminClientSessionValue = {
   authStatus: AuthSessionStatus;
   isHydrated: boolean;
   isSilentRefreshBlocked: boolean;
-  persistToken: (token: string) => void;
+  persistToken: (token: string, options?: { clearSilentRefreshBlocked?: boolean }) => void;
   refreshTokenOnce: () => Promise<string>;
   removeToken: (options?: RemoveTokenOptions) => void;
 };

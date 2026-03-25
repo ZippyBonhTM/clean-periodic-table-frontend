@@ -71,13 +71,13 @@ export default function AdminDashboardShell({
   const { token, isHydrated, isSilentRefreshBlocked, persistToken, removeToken } = useAuthToken();
   const refreshTokenOnce = useCallback(async () => {
     const refreshResponse = await refreshAccessToken();
-    persistToken(refreshResponse.accessToken);
+    persistToken(refreshResponse.accessToken, { clearSilentRefreshBlocked: true });
     return refreshResponse.accessToken;
   }, [persistToken]);
   const authSession = useAuthSession({
     token,
     onTokenRefresh: persistToken,
-    onUnauthorized: () => removeToken({ blockSilentRefresh: true }),
+    onUnauthorized: removeToken,
     allowAnonymousRefresh: isHydrated && !isSilentRefreshBlocked,
     skipTokenValidation: true,
   });

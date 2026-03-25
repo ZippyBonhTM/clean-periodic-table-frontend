@@ -10,7 +10,7 @@ type SavedMoleculesSnapshot = {
 
 type UseSavedMoleculesInput = {
   token: string | null;
-  onTokenRefresh: (token: string) => void;
+  onTokenRefresh: (token: string, options?: { clearSilentRefreshBlocked?: boolean }) => void;
   onUnauthorized: () => void;
 };
 
