@@ -79,6 +79,42 @@ export function isLocalizedAppPath(pathname: string | null): boolean {
   return LOCALIZED_APP_PATHS.has(normalizedPathname);
 }
 
+export function buildLocalizedPathname(locale: AppLocale, pathname: string | null): string | null {
+  if (pathname === null) {
+    return null;
+  }
+
+  const trimmed = pathname.trim();
+
+  if (trimmed.length === 0) {
+    return `/${APP_LOCALE_SEGMENT_BY_LOCALE[locale]}`;
+  }
+
+  const normalizedPath = trimmed === '/' ? '/' : trimmed.replace(/\/+$/, '');
+  const segments = normalizedPath.split('/').filter(Boolean);
+
+  if (segments.length === 0) {
+    return `/${APP_LOCALE_SEGMENT_BY_LOCALE[locale]}`;
+  }
+
+  if (isAppLocaleSegment(segments[0])) {
+    const [, ...remainingSegments] = segments;
+    const localizedBase = `/${APP_LOCALE_SEGMENT_BY_LOCALE[locale]}`;
+
+    if (remainingSegments.length === 0) {
+      return localizedBase;
+    }
+
+    return `${localizedBase}/${remainingSegments.join('/')}`;
+  }
+
+  if (LOCALIZED_APP_PATHS.has(normalizedPath)) {
+    return buildLocalizedAppPath(locale, normalizedPath);
+  }
+
+  return pathname;
+}
+
 export function buildLocalizedAppPath(locale: AppLocale, pathname: string): string {
   const normalizedPathname = normalizeAppPathname(pathname);
 
