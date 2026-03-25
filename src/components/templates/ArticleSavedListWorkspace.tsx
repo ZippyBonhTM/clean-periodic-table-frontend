@@ -13,9 +13,9 @@ import ElementsState from '@/components/organisms/elements/ElementsState';
 import AppShell from '@/components/templates/AppShell';
 import { getArticleSavedListText } from '@/components/templates/articleSavedListText';
 import { resolveSessionWorkspaceMessage } from '@/components/templates/workspaceErrorCopy';
-import { articleApi, ArticleApiConfigurationError } from '@/shared/api/articleApi';
+import { articleApi } from '@/shared/api/articleApi';
 import { logoutSession } from '@/shared/api/authApi';
-import { ApiError } from '@/shared/api/httpClient';
+import { resolveArticleWorkspaceMessage } from '@/shared/articles/articleWorkspaceError';
 import {
   buildLocalizedArticleDetailPath,
   buildLocalizedArticleFeedPath,
@@ -67,33 +67,6 @@ function mergeArticleItems(
 ): ArticleSummary[] {
   const knownIds = new Set(currentItems.map((item) => item.id));
   return currentItems.concat(nextItems.filter((item) => !knownIds.has(item.id)));
-}
-
-function resolveArticleWorkspaceMessage(
-  error: unknown,
-  text: ReturnType<typeof getArticleSavedListText>,
-): string {
-  if (error instanceof ArticleApiConfigurationError) {
-    return text.states.unavailable;
-  }
-
-  if (error instanceof ApiError && error.statusCode === 0) {
-    return text.states.loadFailedNetwork;
-  }
-
-  if (error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403)) {
-    return text.states.signInRequired;
-  }
-
-  if (error instanceof ApiError && error.message.trim().length > 0) {
-    return error.message;
-  }
-
-  if (error instanceof Error && error.message.trim().length > 0) {
-    return error.message;
-  }
-
-  return text.states.loadFailed;
 }
 
 function ArticleSavedListCard({
@@ -261,7 +234,14 @@ export default function ArticleSavedListWorkspace({
         setNextCursor(response.nextCursor);
         setHasLoaded(true);
       } catch (caughtError: unknown) {
-        setErrorMessage(resolveArticleWorkspaceMessage(caughtError, text));
+        setErrorMessage(
+          resolveArticleWorkspaceMessage(caughtError, {
+            unavailable: text.states.unavailable,
+            loadFailed: text.states.loadFailed,
+            loadFailedNetwork: text.states.loadFailedNetwork,
+            signInRequired: text.states.signInRequired,
+          }),
+        );
       } finally {
         if (mode === 'replace') {
           setIsInitialLoading(false);
