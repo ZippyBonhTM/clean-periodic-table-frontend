@@ -15,7 +15,7 @@ type AuthSessionStatus = 'anonymous' | 'checking' | 'authenticated' | 'unverifie
 
 type UseAuthSessionInput = {
   token: string | null;
-  onTokenRefresh: (token: string) => void;
+  onTokenRefresh: (token: string, options?: { clearSilentRefreshBlocked?: boolean }) => void;
   onUnauthorized: () => void;
   allowAnonymousRefresh?: boolean;
   enableProactiveRefresh?: boolean;
@@ -92,7 +92,7 @@ function useAuthSession({
 
   const refreshTokenOnce = useCallback(async () => {
     const refreshResponse = await refreshAccessToken();
-    onTokenRefresh(refreshResponse.accessToken);
+    onTokenRefresh(refreshResponse.accessToken, { clearSilentRefreshBlocked: true });
     return refreshResponse.accessToken;
   }, [onTokenRefresh]);
 
