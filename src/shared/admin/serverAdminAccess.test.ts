@@ -111,6 +111,36 @@ describe('serverAdminAccess', () => {
     );
   });
 
+  it('marks backend admin SSR resolution as recoverable when a refresh cookie is still present', async () => {
+    const fetchSpy = vi.fn(async (input: RequestInfo | URL) => {
+      const url = input instanceof URL ? input : new URL(String(input));
+
+      if (url.origin === 'https://backend.example.com') {
+        return {
+          ok: false,
+          status: 401,
+          json: async () => null,
+        } satisfies Partial<Response>;
+      }
+
+      return {
+        ok: false,
+        status: 500,
+        json: async () => null,
+      } satisfies Partial<Response>;
+    });
+
+    vi.stubGlobal('fetch', fetchSpy);
+    vi.resetModules();
+
+    const { resolveServerAdminAccessGate } = await import('@/shared/admin/serverAdminAccess');
+
+    await expect(resolveServerAdminAccessGate()).resolves.toEqual({
+      resolution: 'recoverable',
+      userProfile: null,
+    });
+  });
+
   it('does not rotate refresh cookies during legacy profile SSR resolution', async () => {
     process.env.ADMIN_AUTHZ_SOURCE = 'legacy-auth';
 
@@ -145,5 +175,23 @@ describe('serverAdminAccess', () => {
     expect(calledUrl instanceof URL ? calledUrl.toString() : String(calledUrl)).toContain(
       'https://auth.example.com/profile',
     );
+  });
+
+  it('still denies access immediately when no refresh cookie exists to recover the session', async () => {
+    const fetchSpy = vi.fn(async () => {
+      return {
+        ok: false,
+        status: 401,
+        json: async () => null,
+      } satisfies Partial<Response>;
+    });
+
+    mockedHeaders.mockResolvedValue(createHeaderStore(null));
+    vi.stubGlobal('fetch', fetchSpy);
+    vi.resetModules();
+
+    const { resolveServerAdminAccessGate } = await import('@/shared/admin/serverAdminAccess');
+
+    await expect(resolveServerAdminAccessGate()).resolves.toBeNull();
   });
 });

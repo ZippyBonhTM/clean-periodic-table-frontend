@@ -42,7 +42,7 @@ import type { AuthUserProfile } from '@/shared/types/auth';
 
 type AdminUsersWorkspaceProps = {
   locale: AppLocale;
-  adminProfile: AuthUserProfile;
+  adminProfile: AuthUserProfile | null;
   initialFilters: AdminUsersBrowseFilters;
 };
 
@@ -693,15 +693,15 @@ export default function AdminUsersWorkspace({
               <dl className="grid gap-3">
                 <div className="rounded-[1.2rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-3">
                   <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.common.name}</dt>
-                  <dd className="mt-1 text-sm font-semibold text-(--text-strong)">{adminProfile.name}</dd>
+                  <dd className="mt-1 text-sm font-semibold text-(--text-strong)">{adminProfile?.name ?? text.common.loading}</dd>
                 </div>
                 <div className="rounded-[1.2rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-3">
                   <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.common.email}</dt>
-                  <dd className="mt-1 break-all text-sm font-semibold text-(--text-strong)">{adminProfile.email}</dd>
+                  <dd className="mt-1 break-all text-sm font-semibold text-(--text-strong)">{adminProfile?.email ?? text.common.loading}</dd>
                 </div>
                 <div className="rounded-[1.2rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-3">
                   <dt className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.common.role}</dt>
-                  <dd className="mt-1 text-sm font-semibold text-(--text-strong)">{text.users.roleFilters[adminProfile.role]}</dd>
+                  <dd className="mt-1 text-sm font-semibold text-(--text-strong)">{adminProfile === null ? text.common.loading : text.users.roleFilters[adminProfile.role]}</dd>
                 </div>
               </dl>
 

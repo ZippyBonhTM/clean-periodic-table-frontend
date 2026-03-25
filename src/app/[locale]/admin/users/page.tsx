@@ -5,7 +5,7 @@ import AdminDashboardShell from '@/components/templates/AdminDashboardShell';
 import AdminUsersWorkspace from '@/components/templates/AdminUsersWorkspace';
 import { buildAdminPageMetadata } from '@/shared/admin/adminPageMetadata';
 import { resolveAdminUsersBrowseFilters } from '@/shared/admin/adminUsersFilters';
-import { requireServerAdminAccess } from '@/shared/admin/serverAdminAccess';
+import { resolveServerAdminAccessGate } from '@/shared/admin/serverAdminAccess';
 import { getArticleFeatureStage } from '@/shared/config/articleFeature';
 import { resolveAppLocaleFromSegment } from '@/shared/i18n/appLocaleRouting';
 
@@ -49,19 +49,24 @@ export default async function LocalizedAdminUsersPage({
     notFound();
   }
 
-  const adminProfile = await requireServerAdminAccess();
+  const adminAccess = await resolveServerAdminAccessGate();
+
+  if (adminAccess === null) {
+    notFound();
+  }
+
   const articleFeatureStage = getArticleFeatureStage();
 
   return (
     <AdminDashboardShell
       locale={resolvedLocale}
-      adminProfile={adminProfile}
+      adminProfile={adminAccess.userProfile}
       articleFeatureStage={articleFeatureStage}
     >
       <AdminUsersWorkspace
         key={`${initialFilters.role}:${initialFilters.version}:${initialFilters.status}:${initialFilters.sort}:${initialFilters.query ?? ''}`}
         locale={resolvedLocale}
-        adminProfile={adminProfile}
+        adminProfile={adminAccess.userProfile}
         initialFilters={initialFilters}
       />
     </AdminDashboardShell>

@@ -14,6 +14,18 @@ export const adminWorkspaceTextPt = {
     },
     serverGuardLabel: 'Modo de guarda',
     serverGuardValue: 'Negação padrão no servidor',
+    recoveryTitle: 'Restaurando acesso admin…',
+    recoveryDescription:
+      'A sessão protegida ainda está sendo revalidada neste carregamento. Assim que o client confirmar o papel admin novamente, o painel volta sem precisar sair da rota.',
+    recoveryPendingTitle: 'Sessão admin em recuperação',
+    recoveryPendingDescription: 'Aguarde enquanto o acesso privilegiado é confirmado novamente.',
+    recoveryDeniedTitle: 'Acesso admin não pôde ser confirmado',
+    recoveryDeniedDescription:
+      'O servidor não conseguiu confirmar uma sessão admin válida para este carregamento. Se a sessão realmente expirou, entre novamente; se não, volte para uma rota comum e tente abrir o painel depois que a sessão for restaurada.',
+    recoveryUnavailableTitle: 'Não foi possível restaurar o acesso admin agora',
+    recoveryUnavailableDescription:
+      'A revalidação do painel falhou neste momento. Tente novamente ou volte para uma rota pública até a sessão estabilizar.',
+    recoveryBackToSite: 'Voltar para o site',
   },
   sections: {
     overview: {

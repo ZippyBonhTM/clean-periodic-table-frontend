@@ -1,13 +1,17 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
+import Button from '@/components/atoms/Button';
 import Panel from '@/components/atoms/Panel';
 import AppShell from '@/components/templates/AppShell';
 import { getAdminWorkspaceText } from '@/components/templates/adminWorkspaceText';
 import { AdminClientSessionProvider } from '@/shared/admin/adminClientSession';
+import { isAdminUserProfile } from '@/shared/admin/adminAccess';
+import { createAdminApi } from '@/shared/api/adminApi';
 import { logoutSession, refreshAccessToken } from '@/shared/api/authApi';
+import { ApiError } from '@/shared/api/httpClient';
 import {
   buildAdminPanelNavigation,
   type AdminPanelSectionKey,
@@ -15,15 +19,23 @@ import {
 import type { ArticleFeatureStage } from '@/shared/config/articleFeature';
 import useAuthSession from '@/shared/hooks/useAuthSession';
 import useAuthToken from '@/shared/hooks/useAuthToken';
+import { buildLocalizedAppPath } from '@/shared/i18n/appLocaleRouting';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
 import type { AuthUserProfile } from '@/shared/types/auth';
 
 type AdminDashboardShellProps = {
   locale: AppLocale;
-  adminProfile: AuthUserProfile;
+  adminProfile: AuthUserProfile | null;
   articleFeatureStage: ArticleFeatureStage;
   children: React.ReactNode;
 };
+
+type ClientAdminRecoveryErrorState =
+  | {
+      token: string;
+      state: 'denied' | 'unavailable';
+    }
+  | null;
 
 function resolveArticleStageLabel(
   featureStage: ArticleFeatureStage,
@@ -74,13 +86,105 @@ export default function AdminDashboardShell({
     persistToken(refreshResponse.accessToken, { clearSilentRefreshBlocked: true });
     return refreshResponse.accessToken;
   }, [persistToken]);
+  const adminApi = useMemo(() => createAdminApi({ refreshTokenOnce }), [refreshTokenOnce]);
   const authSession = useAuthSession({
     token,
     onTokenRefresh: persistToken,
     onUnauthorized: removeToken,
     allowAnonymousRefresh: isHydrated && !isSilentRefreshBlocked,
   });
+  const [resolvedAdminProfile, setResolvedAdminProfile] = useState<AuthUserProfile | null>(adminProfile);
+  const [recoveryErrorState, setRecoveryErrorState] = useState<ClientAdminRecoveryErrorState>(null);
+  const attemptedRecoveryTokenRef = useRef<string | null>(null);
   const navigationItems = buildAdminPanelNavigation(locale);
+  const localizedHomePath = buildLocalizedAppPath(locale, '/');
+
+  useEffect(() => {
+    if (resolvedAdminProfile !== null) {
+      return;
+    }
+
+    if (!isHydrated || authSession.status !== 'authenticated' || token === null) {
+      attemptedRecoveryTokenRef.current = null;
+      return;
+    }
+
+    if (attemptedRecoveryTokenRef.current === token) {
+      return;
+    }
+
+    attemptedRecoveryTokenRef.current = token;
+    let isCancelled = false;
+
+    void adminApi
+      .getSession({
+        token,
+      })
+      .then((adminSession) => {
+        if (isCancelled) {
+          return;
+        }
+
+        if (!isAdminUserProfile(adminSession.user)) {
+          setRecoveryErrorState({
+            token,
+            state: 'denied',
+          });
+          return;
+        }
+
+        setResolvedAdminProfile(adminSession.user);
+      })
+      .catch((caughtError: unknown) => {
+        if (isCancelled) {
+          return;
+        }
+
+        if (
+          caughtError instanceof ApiError &&
+          (caughtError.statusCode === 401 || caughtError.statusCode === 403)
+        ) {
+          setRecoveryErrorState({
+            token,
+            state: 'denied',
+          });
+          return;
+        }
+
+        setRecoveryErrorState({
+          token,
+          state: 'unavailable',
+        });
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [adminApi, authSession.status, isHydrated, resolvedAdminProfile, token]);
+
+  const recoveryStatus = useMemo(() => {
+    if (resolvedAdminProfile !== null) {
+      return 'granted' as const;
+    }
+
+    if (!isHydrated || authSession.status === 'checking') {
+      return 'checking' as const;
+    }
+
+    if (token === null || authSession.status !== 'authenticated') {
+      return 'denied' as const;
+    }
+
+    if (recoveryErrorState?.token === token && recoveryErrorState.state === 'unavailable') {
+      return 'unavailable' as const;
+    }
+
+    if (recoveryErrorState?.token === token && recoveryErrorState.state === 'denied') {
+      return 'denied' as const;
+    }
+
+    return 'checking' as const;
+  }, [authSession.status, isHydrated, recoveryErrorState, resolvedAdminProfile, token]);
 
   const onLogout = () => {
     void logoutSession().catch(() => undefined);
@@ -126,8 +230,17 @@ export default function AdminDashboardShell({
                     <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-300/80">
                       {text.shell.currentAdminLabel}
                     </p>
-                    <p className="mt-2 text-sm font-semibold text-white">{adminProfile.name}</p>
-                    <p className="mt-1 break-all text-xs text-slate-300/80">{adminProfile.email}</p>
+                    {resolvedAdminProfile !== null ? (
+                      <>
+                        <p className="mt-2 text-sm font-semibold text-white">{resolvedAdminProfile.name}</p>
+                        <p className="mt-1 break-all text-xs text-slate-300/80">{resolvedAdminProfile.email}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="mt-2 text-sm font-semibold text-white">{text.shell.recoveryPendingTitle}</p>
+                        <p className="mt-1 text-xs text-slate-300/80">{text.shell.recoveryPendingDescription}</p>
+                      </>
+                    )}
                   </div>
                   <div className={`rounded-[1.35rem] border px-4 py-4 ${resolveArticleStageClass(articleFeatureStage)}`}>
                     <p className="text-[11px] font-black uppercase tracking-[0.18em]">
@@ -181,7 +294,64 @@ export default function AdminDashboardShell({
           </aside>
 
           <div className="min-w-0 space-y-4 xl:space-y-5">
-            {children}
+            {resolvedAdminProfile !== null ? (
+              children
+            ) : recoveryStatus === 'denied' ? (
+              <Panel className="rounded-[2rem]">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-black tracking-[-0.03em] text-(--text-strong)">
+                      {text.shell.recoveryDeniedTitle}
+                    </h2>
+                    <p className="text-sm leading-7 text-(--text-muted)">
+                      {text.shell.recoveryDeniedDescription}
+                    </p>
+                  </div>
+                  <a
+                    href={localizedHomePath}
+                    className="inline-flex items-center justify-center rounded-xl border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-3 text-sm font-semibold text-(--text-strong) transition hover:border-(--accent) hover:text-(--text-strong)"
+                  >
+                    {text.shell.recoveryBackToSite}
+                  </a>
+                </div>
+              </Panel>
+            ) : recoveryStatus === 'unavailable' ? (
+              <Panel className="rounded-[2rem]">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-black tracking-[-0.03em] text-(--text-strong)">
+                      {text.shell.recoveryUnavailableTitle}
+                    </h2>
+                    <p className="text-sm leading-7 text-(--text-muted)">
+                      {text.shell.recoveryUnavailableDescription}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="lg"
+                    className="rounded-xl px-4"
+                    onClick={authSession.revalidate}
+                  >
+                    {text.common.retry}
+                  </Button>
+                </div>
+              </Panel>
+            ) : (
+              <Panel className="rounded-[2rem]">
+                <div className="space-y-3">
+                  <h2 className="text-2xl font-black tracking-[-0.03em] text-(--text-strong)">
+                    {text.shell.recoveryTitle}
+                  </h2>
+                  <p className="text-sm leading-7 text-(--text-muted)">
+                    {text.shell.recoveryDescription}
+                  </p>
+                  <p className="text-sm font-semibold text-(--text-strong)">
+                    {text.common.loading}
+                  </p>
+                </div>
+              </Panel>
+            )}
           </div>
         </div>
       </AppShell>
