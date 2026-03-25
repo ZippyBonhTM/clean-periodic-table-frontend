@@ -166,7 +166,7 @@ export default function useAppHeaderUserMenu({
           fetchedProfileTokenRef.current = nextAccessToken;
 
           if (nextAccessToken !== token) {
-            onPersistToken(nextAccessToken);
+            onPersistToken(nextAccessToken, { clearSilentRefreshBlocked: true });
           }
         }
 

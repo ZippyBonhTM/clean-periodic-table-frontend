@@ -16,7 +16,7 @@ type VerificationSnapshot = {
 type UseAuthSessionRefreshTimerOptions = {
   enabled?: boolean;
   mapVerificationErrorMessage: (error: unknown) => string;
-  onUnauthorized: () => void;
+  onUnauthorized: (options?: { blockSilentRefresh?: boolean; expectedToken?: string | null }) => void;
   refreshTokenOnce: () => Promise<string>;
   setSnapshot: React.Dispatch<React.SetStateAction<VerificationSnapshot>>;
   token: string | null;
@@ -68,7 +68,7 @@ export default function useAuthSessionRefreshTimer({
           }
 
           if (isUnauthorizedError(refreshError)) {
-            onUnauthorized();
+            onUnauthorized({ expectedToken: token });
             return;
           }
 

@@ -16,7 +16,7 @@ type AuthSessionStatus = 'anonymous' | 'checking' | 'authenticated' | 'unverifie
 type UseAuthSessionInput = {
   token: string | null;
   onTokenRefresh: (token: string, options?: { clearSilentRefreshBlocked?: boolean }) => void;
-  onUnauthorized: () => void;
+  onUnauthorized: (options?: { blockSilentRefresh?: boolean; expectedToken?: string | null }) => void;
   allowAnonymousRefresh?: boolean;
   enableProactiveRefresh?: boolean;
   skipTokenValidation?: boolean;

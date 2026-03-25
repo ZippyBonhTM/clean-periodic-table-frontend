@@ -17,6 +17,7 @@ import {
 
 type RemoveTokenOptions = {
   blockSilentRefresh?: boolean;
+  expectedToken?: string | null;
 };
 
 type PersistTokenOptions = {
@@ -46,6 +47,28 @@ function emitTokenChange(): void {
   }
 
   window.dispatchEvent(new Event('auth-token-changed'));
+}
+
+function normalizeExpectedToken(expectedToken?: string | null): string | null {
+  if (typeof expectedToken !== 'string') {
+    return null;
+  }
+
+  const normalizedToken = expectedToken.trim();
+  return normalizedToken.length > 0 ? normalizedToken : null;
+}
+
+function shouldInvalidateCurrentToken(
+  currentToken: string | null,
+  expectedToken?: string | null,
+): boolean {
+  const normalizedExpectedToken = normalizeExpectedToken(expectedToken);
+
+  if (normalizedExpectedToken === null) {
+    return true;
+  }
+
+  return currentToken === normalizedExpectedToken;
 }
 
 function useAuthToken() {
@@ -97,6 +120,12 @@ function useAuthToken() {
   }, []);
 
   const removeToken = useCallback((options: RemoveTokenOptions = {}) => {
+    const currentToken = readAccessToken();
+
+    if (!shouldInvalidateCurrentToken(currentToken, options.expectedToken)) {
+      return;
+    }
+
     clearElementsCache();
     clearAccessToken();
     setSilentRefreshBlocked(options.blockSilentRefresh === true);
@@ -113,3 +142,4 @@ function useAuthToken() {
 }
 
 export default useAuthToken;
+export { shouldInvalidateCurrentToken };
