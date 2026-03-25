@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import ArticleAccessRecoveryWorkspace from '@/components/templates/ArticleAccessRecoveryWorkspace';
 import ArticleFeedWorkspace from '@/components/templates/ArticleFeedWorkspace';
 import { getArticleFeedText } from '@/components/templates/articleFeedText';
 import { listPublicArticleFeedServer } from '@/shared/api/articleServerApi';
-import { requireAdminForInternalArticleStage } from '@/shared/admin/serverAdminAccess';
+import { resolveServerArticleStageAccessGate } from '@/shared/admin/serverAdminAccess';
 import { resolveArticleFeedBrowseFilters } from '@/shared/articles/articleFeedFilters';
 import {
   getArticleFeatureStage,
@@ -98,7 +99,15 @@ export default async function LocalizedArticleFeedPage({
     notFound();
   }
 
-  await requireAdminForInternalArticleStage(featureStage);
+  const articleAccess = await resolveServerArticleStageAccessGate(featureStage);
+
+  if (articleAccess === null) {
+    notFound();
+  }
+
+  if (articleAccess.resolution === 'recoverable') {
+    return <ArticleAccessRecoveryWorkspace locale={resolvedLocale} />;
+  }
 
   const { feed, isAvailable, errorMessage } = await listPublicArticleFeedServer({
     limit: 12,

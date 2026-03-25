@@ -56,6 +56,16 @@ type ServerAdminAccessGate =
       userProfile: null;
     };
 
+type ServerArticleStageAccessGate =
+  | {
+      resolution: 'granted';
+      userProfile: AuthUserProfile | null;
+    }
+  | {
+      resolution: 'recoverable';
+      userProfile: null;
+    };
+
 function hasRefreshTokenCookie(cookieHeader: string | null): boolean {
   if (cookieHeader === null || cookieHeader.trim().length === 0) {
     return false;
@@ -345,6 +355,19 @@ export async function requireAdminForInternalArticleStage(
   }
 
   await requireServerAdminAccess();
+}
+
+export async function resolveServerArticleStageAccessGate(
+  featureStage: ArticleFeatureStage,
+): Promise<ServerArticleStageAccessGate | null> {
+  if (!shouldRequireAdminForArticleStage(featureStage)) {
+    return {
+      resolution: 'granted',
+      userProfile: null,
+    };
+  }
+
+  return await resolveServerAdminAccessGate();
 }
 
 export { resolveServerAdminAccessGate };

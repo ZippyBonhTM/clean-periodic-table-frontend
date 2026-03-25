@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import ArticleAccessRecoveryWorkspace from '@/components/templates/ArticleAccessRecoveryWorkspace';
 import ArticlePrivateListWorkspace from '@/components/templates/ArticlePrivateListWorkspace';
 import { getArticlePrivateListText } from '@/components/templates/articlePrivateListText';
-import { requireAdminForInternalArticleStage } from '@/shared/admin/serverAdminAccess';
+import { resolveServerArticleStageAccessGate } from '@/shared/admin/serverAdminAccess';
 import { resolveArticlePrivateListBrowseFilters } from '@/shared/articles/articlePrivateListFilters';
 import {
   getArticleFeatureStage,
@@ -68,7 +69,15 @@ export default async function LocalizedArticlePrivateListPage({
     notFound();
   }
 
-  await requireAdminForInternalArticleStage(featureStage);
+  const articleAccess = await resolveServerArticleStageAccessGate(featureStage);
+
+  if (articleAccess === null) {
+    notFound();
+  }
+
+  if (articleAccess.resolution === 'recoverable') {
+    return <ArticleAccessRecoveryWorkspace locale={resolvedLocale} />;
+  }
 
   return (
     <ArticlePrivateListWorkspace
