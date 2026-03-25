@@ -13,6 +13,7 @@ import {
 type ProxyAuthenticatedBackendRequestInput = {
   request: NextRequest;
   upstreamPath: string;
+  authMode?: 'required' | 'optional';
   unavailableMessage?: string;
   unresolvedUrlMessage?: string;
   networkFailureMessage?: string;
@@ -21,6 +22,7 @@ type ProxyAuthenticatedBackendRequestInput = {
 async function proxyAuthenticatedBackendRequest({
   request,
   upstreamPath,
+  authMode = 'required',
   unavailableMessage = 'Backend API URL is not configured on the frontend runtime.',
   unresolvedUrlMessage = 'Could not resolve backend URL for this request.',
   networkFailureMessage = 'Failed to reach backend service.',
@@ -60,17 +62,22 @@ async function proxyAuthenticatedBackendRequest({
     if (resolvedAuthSession.resolution === 'authenticated') {
       authorizationToken = resolvedAuthSession.accessToken;
     } else if (resolvedAuthSession.resolution === 'anonymous') {
+      if (authMode !== 'optional') {
+        const response = NextResponse.json(
+          { message: resolvedAuthSession.message },
+          { status: 401 },
+        );
+        applyResolvedAuthSessionCookies(response, resolvedAuthSession);
+        return response;
+      }
+    } else if (authMode !== 'optional') {
       const response = NextResponse.json(
-        { message: resolvedAuthSession.message },
-        { status: 401 },
-      );
-      applyResolvedAuthSessionCookies(response, resolvedAuthSession);
-      return response;
-    } else {
-      return NextResponse.json(
         { message: resolvedAuthSession.message },
         { status: resolvedAuthSession.statusCode },
       );
+      return response;
+    } else {
+      resolvedAuthSession = null;
     }
   }
 

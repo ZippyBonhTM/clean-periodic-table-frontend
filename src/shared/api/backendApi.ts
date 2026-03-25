@@ -1,4 +1,3 @@
-import publicEnv from '@/shared/config/publicEnv';
 import { requestJson } from './httpClient';
 import type { ChemicalElement } from '@/shared/types/element';
 
@@ -15,6 +14,14 @@ type ListElementsOptions = {
 const ELEMENTS_CACHE_TTL_MS = 1000 * 60 * 5;
 const elementsCache = new Map<string, ElementsCacheEntry>();
 const pendingByToken = new Map<string, Promise<ChemicalElement[]>>();
+
+function resolveBackendRequestBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+
+  return 'http://localhost:3000';
+}
 
 function isExpired(entry: ElementsCacheEntry): boolean {
   return Date.now() - entry.fetchedAt > ELEMENTS_CACHE_TTL_MS;
@@ -61,11 +68,15 @@ async function listElements(
     }
   }
 
-  const pendingRequest = requestJson<ChemicalElement[]>(publicEnv.backendApiUrl, '/elements', {
+  const pendingRequest = requestJson<ChemicalElement[]>(
+    resolveBackendRequestBaseUrl(),
+    '/api/elements',
+    {
     method: 'GET',
-    token,
-    signal: input.signal,
-  })
+      credentials: 'include',
+      signal: input.signal,
+    },
+  )
     .then((response) => {
       cacheElements(token, response);
       return response;
