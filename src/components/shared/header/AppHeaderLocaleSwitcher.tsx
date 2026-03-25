@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 
 import useAppHeaderText from '@/components/shared/header/useAppHeaderText';
-import { buildLocalizedAppPath, isLocalizedAppPath } from '@/shared/i18n/appLocaleRouting';
+import { buildLocalizedPathname } from '@/shared/i18n/appLocaleRouting';
 import useAppLocale from '@/shared/i18n/useAppLocale';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
@@ -26,8 +26,19 @@ function AppHeaderLocaleSwitcher({ mobile = false }: AppHeaderLocaleSwitcherProp
 
     setLocale(nextLocale);
 
-    if (isLocalizedAppPath(pathname) && pathname !== null) {
-      router.replace(buildLocalizedAppPath(nextLocale, pathname));
+    const localizedPathname = buildLocalizedPathname(nextLocale, pathname);
+
+    if (localizedPathname !== null) {
+      const serializedSearchParams =
+        typeof window === 'undefined'
+          ? ''
+          : new URLSearchParams(window.location.search).toString();
+      const href =
+        serializedSearchParams.length > 0
+          ? `${localizedPathname}?${serializedSearchParams}`
+          : localizedPathname;
+
+      router.replace(href);
     }
   };
 
