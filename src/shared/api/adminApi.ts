@@ -119,14 +119,20 @@ function createAdminApi(options: CreateAdminApiOptions = {}): AdminApi {
   const refreshTokenOnce = options.refreshTokenOnce ?? null;
 
   async function executeAdminRequest<Result>(
-    token: string,
-    operation: (activeToken: string) => Promise<Result>,
+    token: string | null | undefined,
+    operation: (activeToken: string | null) => Promise<Result>,
   ): Promise<Result> {
-    if (refreshTokenOnce === null) {
-      return await operation(token);
+    const normalizedToken = token?.trim() ?? '';
+
+    if (normalizedToken.length === 0) {
+      return await operation(null);
     }
 
-    const { result } = await executeWithFreshToken(token, refreshTokenOnce, operation);
+    if (refreshTokenOnce === null) {
+      return await operation(normalizedToken);
+    }
+
+    const { result } = await executeWithFreshToken(normalizedToken, refreshTokenOnce, operation);
     return result;
   }
 
@@ -135,7 +141,7 @@ function createAdminApi(options: CreateAdminApiOptions = {}): AdminApi {
       const payload = await executeAdminRequest(input.token, async (activeToken) => {
         return await requestJson<AdminSessionPayload>(baseUrl, '/api/admin/session', {
           method: 'GET',
-          token: activeToken,
+          token: activeToken ?? undefined,
           signal: input.signal,
           credentials: 'include',
         });
@@ -147,7 +153,7 @@ function createAdminApi(options: CreateAdminApiOptions = {}): AdminApi {
       return await executeAdminRequest(input.token, async (activeToken) => {
         return await requestJson<AdminCursorPage<AdminUserSummary>>(baseUrl, buildAdminUsersPath(input), {
           method: 'GET',
-          token: activeToken,
+          token: activeToken ?? undefined,
           signal: input.signal,
           credentials: 'include',
         });
@@ -161,7 +167,7 @@ function createAdminApi(options: CreateAdminApiOptions = {}): AdminApi {
             cursor: input.cursor ?? null,
             limit: input.limit,
           },
-          token: activeToken,
+          token: activeToken ?? undefined,
           signal: input.signal,
           credentials: 'include',
         });
@@ -171,7 +177,7 @@ function createAdminApi(options: CreateAdminApiOptions = {}): AdminApi {
       return await executeAdminRequest(input.token, async (activeToken) => {
         return await requestJson<AdminUserDetail>(baseUrl, `/api/admin/users/${encodeURIComponent(input.userId)}`, {
           method: 'GET',
-          token: activeToken,
+          token: activeToken ?? undefined,
           signal: input.signal,
           credentials: 'include',
         });
@@ -185,7 +191,7 @@ function createAdminApi(options: CreateAdminApiOptions = {}): AdminApi {
             role: input.role,
             reason: input.reason,
           },
-          token: activeToken,
+          token: activeToken ?? undefined,
           signal: input.signal,
           credentials: 'include',
         });
@@ -200,7 +206,7 @@ function createAdminApi(options: CreateAdminApiOptions = {}): AdminApi {
             reason: input.reason,
             expiresAt: input.expiresAt ?? null,
           },
-          token: activeToken,
+          token: activeToken ?? undefined,
           signal: input.signal,
           credentials: 'include',
         });
@@ -214,7 +220,7 @@ function createAdminApi(options: CreateAdminApiOptions = {}): AdminApi {
             reason: input.reason,
             mode: input.mode ?? 'except-current',
           },
-          token: activeToken,
+          token: activeToken ?? undefined,
           signal: input.signal,
           credentials: 'include',
         });
@@ -224,7 +230,7 @@ function createAdminApi(options: CreateAdminApiOptions = {}): AdminApi {
       return await executeAdminRequest(input.token, async (activeToken) => {
         return await requestJson<AdminCursorPage<AdminAuditEntry>>(baseUrl, buildAdminAuditPath(input), {
           method: 'GET',
-          token: activeToken,
+          token: activeToken ?? undefined,
           signal: input.signal,
           credentials: 'include',
         });

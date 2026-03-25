@@ -20,12 +20,12 @@ type AdminCursorInput = {
 };
 
 type AdminAuthenticatedInput = {
-  token: string;
+  token?: string | null;
   signal?: AbortSignal;
 };
 
 type AdminListUsersInput = AdminCursorInput & {
-  token: string;
+  token?: string | null;
   query?: string | null;
   role?: AdminUserRole | 'all' | null;
   version?: AdminUserAccountVersion | 'all' | null;
@@ -57,7 +57,7 @@ type AdminRevokeUserSessionsInput = AdminAuthenticatedInput & {
 };
 
 type AdminListAuditInput = AdminCursorInput & {
-  token: string;
+  token?: string | null;
   query?: string | null;
   action?: string | null;
 };

@@ -8,8 +8,12 @@ import {
 import {
   buildAuthUpstreamApiUrl,
   resolveAuthUpstreamBaseUrl,
-  stripForwardedAuthCookieHeader,
 } from '@/shared/auth/authUpstream';
+import {
+  applyResolvedAuthSessionCookies,
+  resolveBearerToken,
+  resolveServerAuthSession,
+} from '@/shared/auth/serverResolvedAuthSession';
 
 type RouteContext = {
   params: Promise<{ path?: string[] }> | { path?: string[] };
@@ -111,11 +115,11 @@ async function proxyAdminRequest(request: NextRequest, context: RouteContext): P
   const headers = new Headers();
   const accept = request.headers.get('accept');
   const contentType = request.headers.get('content-type');
-  const authorization = request.headers.get('authorization');
-  const cookie =
-    proxyTarget === 'legacy-auth'
-      ? stripForwardedAuthCookieHeader(request.headers.get('cookie'))
-      : null;
+  const providedAuthorization = request.headers.get('authorization');
+  let authorizationToken = resolveBearerToken(providedAuthorization);
+  let resolvedAuthSession:
+    | Awaited<ReturnType<typeof resolveServerAuthSession>>
+    | null = null;
 
   if (accept !== null) {
     headers.set('accept', accept);
@@ -125,12 +129,28 @@ async function proxyAdminRequest(request: NextRequest, context: RouteContext): P
     headers.set('content-type', contentType);
   }
 
-  if (authorization !== null) {
-    headers.set('authorization', authorization);
+  if (authorizationToken === null) {
+    resolvedAuthSession = await resolveServerAuthSession(request);
+
+    if (resolvedAuthSession.resolution === 'authenticated') {
+      authorizationToken = resolvedAuthSession.accessToken;
+    } else if (resolvedAuthSession.resolution === 'anonymous') {
+      const response = NextResponse.json(
+        { message: resolvedAuthSession.message },
+        { status: 401 },
+      );
+      applyResolvedAuthSessionCookies(response, resolvedAuthSession);
+      return response;
+    } else {
+      return NextResponse.json(
+        { message: resolvedAuthSession.message },
+        { status: resolvedAuthSession.statusCode },
+      );
+    }
   }
 
-  if (cookie !== null) {
-    headers.set('cookie', cookie);
+  if (authorizationToken !== null) {
+    headers.set('authorization', `Bearer ${authorizationToken}`);
   }
 
   const body =
@@ -175,6 +195,10 @@ async function proxyAdminRequest(request: NextRequest, context: RouteContext): P
 
   if (responseWwwAuthenticate !== null) {
     response.headers.set('www-authenticate', responseWwwAuthenticate);
+  }
+
+  if (resolvedAuthSession !== null) {
+    applyResolvedAuthSessionCookies(response, resolvedAuthSession);
   }
 
   return response;

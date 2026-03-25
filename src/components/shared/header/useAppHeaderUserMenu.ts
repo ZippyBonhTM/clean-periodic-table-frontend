@@ -228,7 +228,7 @@ export default function useAppHeaderUserMenu({
 
     void adminApi
       .getSession({
-        token,
+        token: null,
       })
       .then((adminSession) => {
         if (isCancelled) {

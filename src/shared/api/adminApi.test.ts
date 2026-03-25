@@ -52,6 +52,36 @@ describe('adminApi', () => {
     );
   });
 
+  it('allows the admin session request to omit the bearer token and rely on the local BFF route', async () => {
+    vi.stubGlobal('window', {
+      location: {
+        origin: 'http://localhost:3000',
+      },
+    });
+
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        user: {
+          id: 'admin-1',
+          name: 'Admin One',
+          email: 'admin@example.com',
+          role: 'ADMIN',
+        },
+      }),
+    }));
+
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const api: AdminApi = createAdminApi();
+
+    await api.getSession({});
+
+    const requestHeaders = fetchSpy.mock.calls[0]?.[1]?.headers as Headers;
+
+    expect(requestHeaders.get('Authorization')).toBeNull();
+  });
+
   it('calls the expected admin directory and detail endpoints through the local proxy', async () => {
     vi.stubGlobal('window', {
       location: {
