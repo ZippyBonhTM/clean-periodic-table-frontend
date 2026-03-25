@@ -174,7 +174,6 @@ export default function ArticleEditorWorkspace({
     onTokenRefresh: persistToken,
     onUnauthorized: removeToken,
     allowAnonymousRefresh: isHydrated && !isSilentRefreshBlocked,
-    skipTokenValidation: true,
   });
   const hasValidSession = authSession.status === 'authenticated';
   const [title, setTitle] = useState('');
