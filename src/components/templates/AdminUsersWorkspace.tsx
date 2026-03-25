@@ -92,23 +92,26 @@ export default function AdminUsersWorkspace({
   const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null);
   const paginationModeRef = useRef<DirectoryPaginationMode>('reset');
   const skipNextFetchRef = useRef(false);
+  const activeBrowseState = useMemo(
+    () => ({
+      role: activeRole,
+      version: activeVersion,
+      status: activeStatus,
+      sort: activeSort,
+      query: activeQuery,
+      cursor: activeCursor,
+    }),
+    [activeCursor, activeQuery, activeRole, activeSort, activeStatus, activeVersion],
+  );
 
   const syncBrowseState = useCallback(
     (nextState: AdminUsersBrowseStateUpdate & { searchInputValue?: string; paginationMode?: DirectoryPaginationMode }) => {
-      const currentBrowseState = {
-        role: activeRole,
-        version: activeVersion,
-        status: activeStatus,
-        sort: activeSort,
-        query: activeQuery,
-        cursor: activeCursor,
-      } satisfies AdminUsersBrowseFilters;
       const nextBrowseState = resolveNextAdminUsersBrowseState(
-        currentBrowseState,
+        activeBrowseState,
         nextState,
       );
 
-      if (areAdminUsersBrowseFiltersEqual(currentBrowseState, nextBrowseState)) {
+      if (areAdminUsersBrowseFiltersEqual(activeBrowseState, nextBrowseState)) {
         if (nextState.searchInputValue !== undefined) {
           setSearchInput(nextState.searchInputValue);
         }
@@ -126,10 +129,6 @@ export default function AdminUsersWorkspace({
       setErrorMessage(null);
       paginationModeRef.current = nextState.paginationMode ?? 'reset';
 
-      if ((nextState.paginationMode ?? 'reset') === 'reset') {
-        setDirectoryPages([]);
-      }
-
       if (nextState.searchInputValue !== undefined) {
         setSearchInput(nextState.searchInputValue);
       }
@@ -143,9 +142,10 @@ export default function AdminUsersWorkspace({
           query: nextBrowseState.query,
           cursor: nextBrowseState.cursor,
         }),
+        { scroll: false },
       );
     },
-    [activeCursor, activeQuery, activeRole, activeSort, activeStatus, activeVersion, locale, router],
+    [activeBrowseState, locale, router],
   );
 
   useEffect(() => {
@@ -280,6 +280,7 @@ export default function AdminUsersWorkspace({
           query: activeQuery,
           cursor: previousCursor,
         }),
+        { scroll: false },
       );
 
       return nextPages;
@@ -315,7 +316,6 @@ export default function AdminUsersWorkspace({
       setSyncCursor(result.nextCursor);
       setSyncStatus('success');
       paginationModeRef.current = 'reset';
-      setDirectoryPages([]);
       setActiveCursor(null);
       router.replace(
         buildLocalizedAdminUsersBrowsePath(locale, {
@@ -326,6 +326,7 @@ export default function AdminUsersWorkspace({
           query: activeQuery,
           cursor: null,
         }),
+        { scroll: false },
       );
       setReloadKey((currentValue) => currentValue + 1);
     } catch (caughtError: unknown) {
@@ -525,7 +526,7 @@ export default function AdminUsersWorkspace({
               </div>
             </form>
 
-            {!isHydrated || authStatus === 'checking' || token === null || requestStatus === 'loading' ? (
+            {!isHydrated || authStatus === 'checking' || token === null || (requestStatus === 'loading' && visibleUsers.length === 0) ? (
               <div className="rounded-[1.35rem] border border-(--border-subtle) bg-[var(--surface-2)] px-4 py-4 text-sm leading-7 text-(--text-muted)">
                 {text.common.loading}
               </div>
