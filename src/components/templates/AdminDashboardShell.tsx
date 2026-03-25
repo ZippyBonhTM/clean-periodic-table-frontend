@@ -118,7 +118,7 @@ export default function AdminDashboardShell({
 
     void adminApi
       .getSession({
-        token,
+        token: null,
       })
       .then((adminSession) => {
         if (isCancelled) {
