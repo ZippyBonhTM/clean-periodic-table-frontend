@@ -7,6 +7,8 @@ import {
 } from '@/shared/auth/serverAccessTokenCookie';
 
 const originalAuthApiUrl = process.env.AUTH_API_URL;
+const originalBackendApiUrl = process.env.BACKEND_API_URL;
+const originalPublicBackendApiUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 const originalArticleApiUrl = process.env.ARTICLE_API_URL;
 const originalPublicArticleApiUrl = process.env.NEXT_PUBLIC_ARTICLE_API_URL;
 const originalNodeEnv = process.env.NODE_ENV;
@@ -14,6 +16,8 @@ const originalNodeEnv = process.env.NODE_ENV;
 describe('article proxy route', () => {
   beforeEach(() => {
     process.env.AUTH_API_URL = 'https://auth.example.com';
+    process.env.BACKEND_API_URL = 'https://backend.example.com';
+    process.env.NEXT_PUBLIC_BACKEND_API_URL = 'https://backend.example.com';
     process.env.ARTICLE_API_URL = 'https://article.example.com';
     process.env.NEXT_PUBLIC_ARTICLE_API_URL = 'https://public-article.example.com';
     process.env.NODE_ENV = 'test';
@@ -22,6 +26,8 @@ describe('article proxy route', () => {
 
   afterEach(() => {
     process.env.AUTH_API_URL = originalAuthApiUrl;
+    process.env.BACKEND_API_URL = originalBackendApiUrl;
+    process.env.NEXT_PUBLIC_BACKEND_API_URL = originalPublicBackendApiUrl;
     process.env.ARTICLE_API_URL = originalArticleApiUrl;
     process.env.NEXT_PUBLIC_ARTICLE_API_URL = originalPublicArticleApiUrl;
     process.env.NODE_ENV = originalNodeEnv;
@@ -153,7 +159,7 @@ describe('article proxy route', () => {
       }
 
       if (
-        url.origin === 'https://article.example.com' &&
+        url.origin === 'https://backend.example.com' &&
         url.pathname === '/api/v1/articles/by-slug/atomic-orbitals' &&
         authorizationHeader === null
       ) {
@@ -191,5 +197,46 @@ describe('article proxy route', () => {
 
     expect(response.status).toBe(200);
     expect(body.slug).toBe('atomic-orbitals');
+  });
+
+  it('proxies public article feed reads through the backend upstream', async () => {
+    const fetchSpy = vi.fn(async (input: RequestInfo | URL) => {
+      const url = input instanceof URL ? input : new URL(String(input));
+
+      if (url.origin === 'https://backend.example.com' && url.pathname === '/api/v1/feed') {
+        return new Response(
+          JSON.stringify({
+            items: [],
+            nextCursor: null,
+          }),
+          {
+            status: 200,
+            headers: {
+              'content-type': 'application/json',
+            },
+          },
+        );
+      }
+
+      throw new Error(`Unexpected request to ${url.toString()}`);
+    });
+
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const { GET } = await import('@/app/api/article/[...path]/route');
+    const request = new NextRequest('http://localhost:3000/api/article/feed');
+
+    const response = await GET(request, {
+      params: Promise.resolve({
+        path: ['feed'],
+      }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({
+      items: [],
+      nextCursor: null,
+    });
   });
 });
