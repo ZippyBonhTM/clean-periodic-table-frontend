@@ -43,7 +43,15 @@ type ProfileResponse = {
   message: string;
 };
 
+type AuthSessionResponse = {
+  authenticated: true;
+  accessToken: string;
+  userProfile: AuthUserProfile;
+  message: string;
+};
+
 export type {
+  AuthSessionResponse,
   AuthUserProfile,
   LoginInput,
   LoginResponse,

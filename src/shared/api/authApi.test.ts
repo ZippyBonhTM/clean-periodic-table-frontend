@@ -11,8 +11,8 @@ vi.mock('@/shared/api/httpClient', async () => {
   };
 });
 
-import { fetchProfile } from '@/shared/api/authApi';
-import { ApiError, requestJson } from '@/shared/api/httpClient';
+import { fetchProfile, resolveAuthSession } from '@/shared/api/authApi';
+import { requestJson } from '@/shared/api/httpClient';
 
 const mockedRequestJson = vi.mocked(requestJson);
 
@@ -23,7 +23,7 @@ describe('authApi', () => {
     vi.unstubAllGlobals();
   });
 
-  it('requests the profile directly when the current access token is still accepted', async () => {
+  it('resolves the current session through the dedicated session endpoint', async () => {
     vi.stubGlobal('window', {
       location: {
         origin: 'http://localhost:3000',
@@ -31,10 +31,11 @@ describe('authApi', () => {
     });
 
     mockedRequestJson.mockImplementation(async (_baseUrl, path, input) => {
-      if (path === '/api/auth/profile') {
+      if (path === '/api/auth/session') {
         expect(input?.token).toBe('still-valid-token');
 
         return {
+          authenticated: true,
           accessToken: 'still-valid-token',
           userProfile: {
             id: 'user-1',
@@ -48,7 +49,7 @@ describe('authApi', () => {
       throw new Error(`Unexpected path ${path}`);
     });
 
-    const response = await fetchProfile('still-valid-token');
+    const response = await resolveAuthSession('still-valid-token');
 
     expect(response.userProfile).toEqual({
       id: 'user-1',
@@ -60,7 +61,7 @@ describe('authApi', () => {
     expect(mockedRequestJson).toHaveBeenNthCalledWith(
       1,
       'http://localhost:3000',
-      '/api/auth/profile',
+      '/api/auth/session',
       expect.objectContaining({
         method: 'GET',
         token: 'still-valid-token',
@@ -69,27 +70,19 @@ describe('authApi', () => {
     );
   });
 
-  it('retries the profile request after an unauthorized response by using refresh once', async () => {
+  it('fetches the profile by reusing the session endpoint instead of doing local refresh choreography', async () => {
     vi.stubGlobal('window', {
       location: {
         origin: 'http://localhost:3000',
       },
     });
 
-    let profileAttempt = 0;
-
     mockedRequestJson.mockImplementation(async (_baseUrl, path, input) => {
-      if (path === '/api/auth/profile') {
-        profileAttempt += 1;
-
-        if (profileAttempt === 1) {
-          expect(input?.token).toBe('expired-token');
-          throw new ApiError('Unauthorized', 401);
-        }
-
-        expect(input?.token).toBe('fresh-token');
+      if (path === '/api/auth/session') {
+        expect(input?.token).toBe('expired-token');
 
         return {
+          authenticated: true,
           accessToken: 'fresh-token',
           userProfile: {
             id: 'user-2',
@@ -97,12 +90,6 @@ describe('authApi', () => {
             email: 'grace@example.com',
             role: 'USER',
           },
-        };
-      }
-
-      if (path === '/api/auth/refresh') {
-        return {
-          accessToken: 'fresh-token',
         };
       }
 
@@ -120,82 +107,62 @@ describe('authApi', () => {
     expect(mockedRequestJson).toHaveBeenNthCalledWith(
       1,
       'http://localhost:3000',
-      '/api/auth/profile',
+      '/api/auth/session',
       expect.objectContaining({
         method: 'GET',
         token: 'expired-token',
       }),
     );
-    expect(mockedRequestJson).toHaveBeenNthCalledWith(
-      2,
-      'http://localhost:3000',
-      '/api/auth/refresh',
-      expect.objectContaining({
-        method: 'POST',
-      }),
-    );
-    expect(mockedRequestJson).toHaveBeenNthCalledWith(
-      3,
-      'http://localhost:3000',
-      '/api/auth/profile',
-      expect.objectContaining({
-        method: 'GET',
-        token: 'fresh-token',
-      }),
-    );
+    expect(mockedRequestJson).toHaveBeenCalledTimes(1);
   });
 
-  it('deduplicates concurrent refresh calls while multiple profile requests recover together', async () => {
+  it('deduplicates concurrent session resolution calls for the same token', async () => {
     vi.stubGlobal('window', {
       location: {
         origin: 'http://localhost:3000',
       },
     });
 
-    let refreshResolver: ((value: { accessToken: string }) => void) | null = null;
-    const refreshPromise = new Promise<{ accessToken: string }>((resolve) => {
-      refreshResolver = resolve;
+    let sessionResolver: ((value: {
+      authenticated: true;
+      accessToken: string;
+      userProfile: { id: string; name: string; email: string; role: 'USER' };
+    }) => void) | null = null;
+    const sessionPromise = new Promise<{
+      authenticated: true;
+      accessToken: string;
+      userProfile: { id: string; name: string; email: string; role: 'USER' };
+    }>((resolve) => {
+      sessionResolver = resolve;
     });
 
-    mockedRequestJson.mockImplementation(async (_baseUrl, path, input) => {
-      if (path === '/api/auth/profile') {
-        if (input?.token !== 'shared-fresh-token') {
-          throw new ApiError('Unauthorized', 401);
-        }
-
-        return {
-          userProfile: {
-            id: 'user-3',
-            name: 'Linus',
-            email: 'linus@example.com',
-            role: 'USER',
-          },
-          accessToken: 'shared-fresh-token',
-        };
-      }
-
-      if (path === '/api/auth/refresh') {
-        return await refreshPromise;
+    mockedRequestJson.mockImplementation(async (_baseUrl, path) => {
+      if (path === '/api/auth/session') {
+        return await sessionPromise;
       }
 
       throw new Error(`Unexpected path ${path}`);
     });
 
-    const pendingProfileRequests = Promise.all([
-      fetchProfile('stale-token'),
-      fetchProfile('stale-token'),
+    const pendingSessionRequests = Promise.all([
+      resolveAuthSession('stale-token'),
+      resolveAuthSession('stale-token'),
     ]);
 
-    refreshResolver?.({
+    sessionResolver?.({
+      authenticated: true,
       accessToken: 'shared-fresh-token',
+      userProfile: {
+        id: 'user-3',
+        name: 'Linus',
+        email: 'linus@example.com',
+        role: 'USER',
+      },
     });
 
-    const responses = await pendingProfileRequests;
+    const responses = await pendingSessionRequests;
 
     expect(responses).toHaveLength(2);
-    expect(mockedRequestJson).toHaveBeenCalledTimes(5);
-    expect(
-      mockedRequestJson.mock.calls.filter(([, path]) => path === '/api/auth/refresh'),
-    ).toHaveLength(1);
+    expect(mockedRequestJson).toHaveBeenCalledTimes(1);
   });
 });
