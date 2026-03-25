@@ -2,7 +2,7 @@
 
 Next.js frontend for integrating with:
 
-- Auth API (`/login`, `/register`, `/validate-token`)
+- Auth API (`/login`, `/register`, `/validate-token`, `/refresh`) through frontend BFF routes, plus the local session resolver `/api/auth/session`
 - Backend API (`/elements`)
 
 ## Repositories

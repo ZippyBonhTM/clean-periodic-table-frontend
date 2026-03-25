@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-import { validateAccessToken } from '@/shared/api/authApi';
+import { resolveAuthSession } from '@/shared/api/authApi';
 import { isUnauthorizedError } from '@/shared/hooks/authRequestUtils';
 
 type AuthSessionStatus = 'anonymous' | 'checking' | 'authenticated' | 'unverified';
@@ -16,9 +16,8 @@ type VerificationSnapshot = {
 type UseAuthSessionResolverOptions = {
   allowAnonymousRefresh: boolean;
   mapVerificationErrorMessage: (error: unknown) => string;
-  onTokenRefresh: (token: string) => void;
+  onTokenRefresh: (token: string, options?: { clearSilentRefreshBlocked?: boolean }) => void;
   onUnauthorized: (options?: { blockSilentRefresh?: boolean; expectedToken?: string | null }) => void;
-  refreshTokenOnce: () => Promise<string>;
   setIsRestoringAnonymousSession: React.Dispatch<React.SetStateAction<boolean>>;
   setSnapshot: React.Dispatch<React.SetStateAction<VerificationSnapshot>>;
   skipTokenValidation: boolean;
@@ -29,8 +28,8 @@ type UseAuthSessionResolverOptions = {
 export default function useAuthSessionResolver({
   allowAnonymousRefresh,
   mapVerificationErrorMessage,
+  onTokenRefresh,
   onUnauthorized,
-  refreshTokenOnce,
   setIsRestoringAnonymousSession,
   setSnapshot,
   skipTokenValidation,
@@ -49,19 +48,26 @@ export default function useAuthSessionResolver({
       setIsRestoringAnonymousSession(true);
 
       try {
-        const refreshedToken = await refreshTokenOnce();
+        const resolvedSession = await resolveAuthSession();
 
         if (isCancelled) {
           return;
         }
 
+        onTokenRefresh(resolvedSession.accessToken, { clearSilentRefreshBlocked: true });
         setSnapshot({
-          token: refreshedToken,
+          token: resolvedSession.accessToken,
           status: 'authenticated',
           message: null,
         });
-      } catch {
-        // Keep anonymous when no refresh session exists.
+      } catch (resolveError: unknown) {
+        if (!isUnauthorizedError(resolveError)) {
+          setSnapshot({
+            token: null,
+            status: 'unverified',
+            message: mapVerificationErrorMessage(resolveError),
+          });
+        }
       } finally {
         if (!isCancelled) {
           setIsRestoringAnonymousSession(false);
@@ -80,14 +86,18 @@ export default function useAuthSessionResolver({
       }
 
       try {
-        await validateAccessToken(currentToken);
+        const resolvedSession = await resolveAuthSession(currentToken);
 
         if (isCancelled) {
           return;
         }
 
+        if (resolvedSession.accessToken !== currentToken) {
+          onTokenRefresh(resolvedSession.accessToken, { clearSilentRefreshBlocked: true });
+        }
+
         setSnapshot({
-          token: currentToken,
+          token: resolvedSession.accessToken,
           status: 'authenticated',
           message: null,
         });
@@ -98,36 +108,8 @@ export default function useAuthSessionResolver({
         }
 
         if (isUnauthorizedError(validationError)) {
-          try {
-            const refreshedToken = await refreshTokenOnce();
-
-            if (isCancelled) {
-              return;
-            }
-
-            setSnapshot({
-              token: refreshedToken,
-              status: 'authenticated',
-              message: null,
-            });
-            return;
-          } catch (refreshError: unknown) {
-            if (isCancelled) {
-              return;
-            }
-
-            if (!isUnauthorizedError(refreshError)) {
-              setSnapshot({
-                token: currentToken,
-                status: 'unverified',
-                message: mapVerificationErrorMessage(refreshError),
-              });
-              return;
-            }
-
-            onUnauthorized({ expectedToken: currentToken });
-            return;
-          }
+          onUnauthorized({ expectedToken: currentToken });
+          return;
         }
 
         setSnapshot({
@@ -155,8 +137,8 @@ export default function useAuthSessionResolver({
   }, [
     allowAnonymousRefresh,
     mapVerificationErrorMessage,
+    onTokenRefresh,
     onUnauthorized,
-    refreshTokenOnce,
     setIsRestoringAnonymousSession,
     setSnapshot,
     skipTokenValidation,

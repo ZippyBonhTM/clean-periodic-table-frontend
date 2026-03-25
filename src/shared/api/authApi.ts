@@ -1,7 +1,7 @@
 import publicEnv from '@/shared/config/publicEnv';
 import { requestJson } from './httpClient';
-import { ApiError } from './httpClient';
 import type {
+  AuthSessionResponse,
   LoginInput,
   LoginResponse,
   ProfileResponse,
@@ -13,6 +13,7 @@ import type {
 
 let pendingRefreshRequest: Promise<RefreshResponse> | null = null;
 const pendingValidationRequests = new Map<string, Promise<ValidateTokenResponse>>();
+const pendingSessionRequests = new Map<string, Promise<AuthSessionResponse>>();
 
 function resolveAuthRequestBaseUrl(): string {
   if (typeof window !== 'undefined') {
@@ -45,10 +46,6 @@ async function requestRefreshAccessToken(): Promise<RefreshResponse> {
   });
 }
 
-function isUnauthorizedError(error: unknown): error is ApiError {
-  return error instanceof ApiError && (error.statusCode === 401 || error.statusCode === 403);
-}
-
 async function refreshAccessToken(): Promise<RefreshResponse> {
   if (pendingRefreshRequest !== null) {
     return pendingRefreshRequest;
@@ -59,6 +56,37 @@ async function refreshAccessToken(): Promise<RefreshResponse> {
   });
 
   return pendingRefreshRequest;
+}
+
+function buildPendingSessionRequestKey(accessToken?: string | null): string {
+  const normalizedToken = accessToken?.trim() ?? '';
+  return normalizedToken.length > 0 ? normalizedToken : '__anonymous__';
+}
+
+async function requestResolveAuthSession(accessToken?: string | null): Promise<AuthSessionResponse> {
+  const normalizedToken = accessToken?.trim() ?? '';
+
+  return await requestJson<AuthSessionResponse>(resolveAuthRequestBaseUrl(), '/api/auth/session', {
+    method: 'GET',
+    token: normalizedToken.length > 0 ? normalizedToken : undefined,
+    credentials: 'include',
+  });
+}
+
+async function resolveAuthSession(accessToken?: string | null): Promise<AuthSessionResponse> {
+  const requestKey = buildPendingSessionRequestKey(accessToken);
+  const pendingRequest = pendingSessionRequests.get(requestKey);
+
+  if (pendingRequest !== undefined) {
+    return pendingRequest;
+  }
+
+  const nextRequest = requestResolveAuthSession(accessToken).finally(() => {
+    pendingSessionRequests.delete(requestKey);
+  });
+
+  pendingSessionRequests.set(requestKey, nextRequest);
+  return nextRequest;
 }
 
 async function logoutSession(): Promise<void> {
@@ -93,25 +121,13 @@ async function validateAccessToken(accessToken: string): Promise<ValidateTokenRe
 }
 
 async function fetchProfile(accessToken: string): Promise<ProfileResponse> {
-  try {
-    return await requestJson<ProfileResponse>(resolveAuthRequestBaseUrl(), '/api/auth/profile', {
-      method: 'GET',
-      token: accessToken,
-      credentials: 'include',
-    });
-  } catch (caughtError: unknown) {
-    if (!isUnauthorizedError(caughtError)) {
-      throw caughtError;
-    }
+  const sessionResponse = await resolveAuthSession(accessToken);
 
-    const refreshResponse = await refreshAccessToken();
-
-    return await requestJson<ProfileResponse>(resolveAuthRequestBaseUrl(), '/api/auth/profile', {
-      method: 'GET',
-      token: refreshResponse.accessToken,
-      credentials: 'include',
-    });
-  }
+  return {
+    accessToken: sessionResponse.accessToken,
+    userProfile: sessionResponse.userProfile,
+    message: sessionResponse.message,
+  };
 }
 
 export {
@@ -119,6 +135,7 @@ export {
   login,
   logoutSession,
   refreshAccessToken,
+  resolveAuthSession,
   register,
   validateAccessToken,
 };

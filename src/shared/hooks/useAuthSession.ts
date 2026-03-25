@@ -105,7 +105,6 @@ function useAuthSession({
     mapVerificationErrorMessage,
     onTokenRefresh,
     onUnauthorized,
-    refreshTokenOnce,
     setIsRestoringAnonymousSession,
     setSnapshot,
     skipTokenValidation,
