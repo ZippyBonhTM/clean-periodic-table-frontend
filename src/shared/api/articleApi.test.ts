@@ -36,26 +36,46 @@ describe('articleApi', () => {
     vi.resetModules();
   });
 
-  it('fails predictably when the article API is not configured', async () => {
-    delete process.env.NEXT_PUBLIC_ARTICLE_API_URL;
+  it('calls the local article BFF routes from the browser origin', async () => {
+    vi.stubGlobal('window', {
+      location: {
+        origin: 'http://localhost:3000',
+      },
+    });
 
-    const { createArticleApi, ArticleApiConfigurationError } = await import('@/shared/api/articleApi');
+    const fetchSpy = vi.fn(async () => ({
+      ok: true,
+      json: async () => sampleFeedResponse,
+    }));
+
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const { createArticleApi } = await import('@/shared/api/articleApi');
     const api = createArticleApi();
 
-    await expect(api.getGlobalFeed()).rejects.toBeInstanceOf(ArticleApiConfigurationError);
+    await api.getGlobalFeed();
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      new URL('http://localhost:3000/api/article/feed'),
+      expect.any(Object),
+    );
   });
 
   it('keeps slug-based reads and id-based writes unambiguous inside the adapter', async () => {
-    process.env.NEXT_PUBLIC_ARTICLE_API_URL = 'http://localhost:4010';
+    vi.stubGlobal('window', {
+      location: {
+        origin: 'http://localhost:3000',
+      },
+    });
 
     const fetchSpy = vi.fn(async (input: URL | RequestInfo) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
 
       if (
         url.includes('/by-slug/') ||
-        url.endsWith('/api/v1/articles/article-123') ||
-        url.endsWith('/api/v1/articles/article-123/publish') ||
-        url.endsWith('/api/v1/articles/article-123/unpublish')
+        url.endsWith('/api/article/articles/article-123') ||
+        url.endsWith('/api/article/articles/article-123/publish') ||
+        url.endsWith('/api/article/articles/article-123/unpublish')
       ) {
         return {
           ok: true,
@@ -118,32 +138,32 @@ describe('articleApi', () => {
 
     expect(fetchSpy).toHaveBeenNthCalledWith(
       1,
-      new URL('http://localhost:4010/api/v1/articles/by-slug/atomic-orbitals'),
+      new URL('http://localhost:3000/api/article/articles/by-slug/atomic-orbitals'),
       expect.any(Object),
     );
     expect(fetchSpy).toHaveBeenNthCalledWith(
       2,
-      new URL('http://localhost:4010/api/v1/articles/article-123'),
+      new URL('http://localhost:3000/api/article/articles/article-123'),
       expect.any(Object),
     );
     expect(fetchSpy).toHaveBeenNthCalledWith(
       3,
-      new URL('http://localhost:4010/api/v1/articles/article-123'),
+      new URL('http://localhost:3000/api/article/articles/article-123'),
       expect.any(Object),
     );
     expect(fetchSpy).toHaveBeenNthCalledWith(
       4,
-      new URL('http://localhost:4010/api/v1/articles/article-123/publish'),
+      new URL('http://localhost:3000/api/article/articles/article-123/publish'),
       expect.any(Object),
     );
     expect(fetchSpy).toHaveBeenNthCalledWith(
       5,
-      new URL('http://localhost:4010/api/v1/articles/article-123/unpublish'),
+      new URL('http://localhost:3000/api/article/articles/article-123/unpublish'),
       expect.any(Object),
     );
     expect(fetchSpy).toHaveBeenNthCalledWith(
       6,
-      new URL('http://localhost:4010/api/v1/articles/article-123'),
+      new URL('http://localhost:3000/api/article/articles/article-123'),
       expect.objectContaining({
         method: 'DELETE',
       }),
@@ -151,13 +171,17 @@ describe('articleApi', () => {
   });
 
   it('uses the expected public endpoints for search, hashtag feeds, and hashtag suggestions', async () => {
-    process.env.NEXT_PUBLIC_ARTICLE_API_URL = 'http://localhost:4010';
+    vi.stubGlobal('window', {
+      location: {
+        origin: 'http://localhost:3000',
+      },
+    });
 
     const fetchSpy = vi.fn(async (input: URL | RequestInfo) => {
       const url =
         typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
 
-      if (url.includes('/api/v1/hashtags')) {
+      if (url.includes('/api/article/hashtags')) {
         return {
           ok: true,
           json: async () => [
@@ -194,23 +218,27 @@ describe('articleApi', () => {
 
     expect(fetchSpy).toHaveBeenNthCalledWith(
       1,
-      new URL('http://localhost:4010/api/v1/search?q=atomic+orbitals'),
+      new URL('http://localhost:3000/api/article/search?q=atomic+orbitals'),
       expect.any(Object),
     );
     expect(fetchSpy).toHaveBeenNthCalledWith(
       2,
-      new URL('http://localhost:4010/api/v1/feed/hashtag/orbitals?cursor=cursor-1&limit=12'),
+      new URL('http://localhost:3000/api/article/feed/hashtag/orbitals?cursor=cursor-1&limit=12'),
       expect.any(Object),
     );
     expect(fetchSpy).toHaveBeenNthCalledWith(
       3,
-      new URL('http://localhost:4010/api/v1/hashtags?q=or'),
+      new URL('http://localhost:3000/api/article/hashtags?q=or'),
       expect.any(Object),
     );
   });
 
   it('uses the expected private endpoints for owned and saved article lists', async () => {
-    process.env.NEXT_PUBLIC_ARTICLE_API_URL = 'http://localhost:4010';
+    vi.stubGlobal('window', {
+      location: {
+        origin: 'http://localhost:3000',
+      },
+    });
 
     const fetchSpy = vi.fn(async () => ({
       ok: true,
@@ -238,18 +266,22 @@ describe('articleApi', () => {
 
     expect(fetchSpy).toHaveBeenNthCalledWith(
       1,
-      new URL('http://localhost:4010/api/v1/me/articles?cursor=cursor-1&limit=12'),
+      new URL('http://localhost:3000/api/article/me/articles?cursor=cursor-1&limit=12'),
       expect.any(Object),
     );
     expect(fetchSpy).toHaveBeenNthCalledWith(
       2,
-      new URL('http://localhost:4010/api/v1/me/articles/saved?cursor=cursor-2&limit=8'),
+      new URL('http://localhost:3000/api/article/me/articles/saved?cursor=cursor-2&limit=8'),
       expect.any(Object),
     );
   });
 
   it('records article views through the asynchronous engagement endpoint', async () => {
-    process.env.NEXT_PUBLIC_ARTICLE_API_URL = 'http://localhost:4010';
+    vi.stubGlobal('window', {
+      location: {
+        origin: 'http://localhost:3000',
+      },
+    });
 
     const fetchSpy = vi.fn(async () => ({
       ok: true,
@@ -267,7 +299,7 @@ describe('articleApi', () => {
     });
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      new URL('http://localhost:4010/api/v1/articles/article-123/view'),
+      new URL('http://localhost:3000/api/article/articles/article-123/view'),
       expect.objectContaining({
         method: 'POST',
         keepalive: true,
@@ -276,7 +308,11 @@ describe('articleApi', () => {
   });
 
   it('records article save actions through the engagement endpoint', async () => {
-    process.env.NEXT_PUBLIC_ARTICLE_API_URL = 'http://localhost:4010';
+    vi.stubGlobal('window', {
+      location: {
+        origin: 'http://localhost:3000',
+      },
+    });
 
     const fetchSpy = vi.fn(async () => ({
       ok: true,
@@ -294,7 +330,7 @@ describe('articleApi', () => {
     });
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      new URL('http://localhost:4010/api/v1/articles/article-123/save'),
+      new URL('http://localhost:3000/api/article/articles/article-123/save'),
       expect.objectContaining({
         method: 'POST',
         keepalive: true,
@@ -303,7 +339,11 @@ describe('articleApi', () => {
   });
 
   it('records article open actions through the asynchronous engagement endpoint', async () => {
-    process.env.NEXT_PUBLIC_ARTICLE_API_URL = 'http://localhost:4010';
+    vi.stubGlobal('window', {
+      location: {
+        origin: 'http://localhost:3000',
+      },
+    });
 
     const fetchSpy = vi.fn(async () => ({
       ok: true,
@@ -321,7 +361,7 @@ describe('articleApi', () => {
     });
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      new URL('http://localhost:4010/api/v1/articles/article-123/open'),
+      new URL('http://localhost:3000/api/article/articles/article-123/open'),
       expect.objectContaining({
         method: 'POST',
         keepalive: true,
@@ -330,14 +370,18 @@ describe('articleApi', () => {
   });
 
   it('uploads article images through the signed upload flow and normalizes the final file url', async () => {
-    process.env.NEXT_PUBLIC_ARTICLE_API_URL = 'http://localhost:4010';
+    vi.stubGlobal('window', {
+      location: {
+        origin: 'http://localhost:3000',
+      },
+    });
 
     const uploadUrl = 'https://storage.example.com/uploads/article-image-1';
     const publicFileUrl = 'https://cdn.example.com/articles/article-image-1.webp';
     const fetchSpy = vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
 
-      if (url.endsWith('/api/v1/uploads')) {
+      if (url.endsWith('/api/article/uploads')) {
         return {
           ok: true,
           json: async () => ({
@@ -358,7 +402,7 @@ describe('articleApi', () => {
         };
       }
 
-      if (url.endsWith('/api/v1/uploads/confirm')) {
+      if (url.endsWith('/api/article/uploads/confirm')) {
         return {
           ok: true,
           json: async () => ({
@@ -385,7 +429,7 @@ describe('articleApi', () => {
     });
     expect(fetchSpy).toHaveBeenNthCalledWith(
       1,
-      new URL('http://localhost:4010/api/v1/uploads'),
+      new URL('http://localhost:3000/api/article/uploads'),
       expect.any(Object),
     );
     expect(fetchSpy).toHaveBeenNthCalledWith(
@@ -395,7 +439,7 @@ describe('articleApi', () => {
     );
     expect(fetchSpy).toHaveBeenNthCalledWith(
       3,
-      new URL('http://localhost:4010/api/v1/uploads/confirm'),
+      new URL('http://localhost:3000/api/article/uploads/confirm'),
       expect.any(Object),
     );
   });

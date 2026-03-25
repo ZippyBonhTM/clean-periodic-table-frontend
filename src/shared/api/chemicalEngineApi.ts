@@ -1,4 +1,3 @@
-import publicEnv from '@/shared/config/publicEnv';
 import type {
   CreateChemicalEngineReactionAnalyzer,
   ChemicalEngineAnalyzeReactionResponse,
@@ -7,6 +6,14 @@ import type {
 import { ApiError, requestJson } from '@/shared/api/httpClient';
 
 const DEFAULT_CHEMICAL_ENGINE_ANALYZE_PATH = '/chemical/reactions/analyze';
+
+function resolveChemicalEngineRequestBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+
+  return 'http://localhost:3000';
+}
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -161,12 +168,12 @@ export const createChemicalEngineReactionAnalyzer: CreateChemicalEngineReactionA
   async (input) => {
     try {
       const response = await requestJson<unknown>(
-        publicEnv.backendApiUrl,
-        options.path ?? DEFAULT_CHEMICAL_ENGINE_ANALYZE_PATH,
+        resolveChemicalEngineRequestBaseUrl(),
+        `/api${options.path ?? DEFAULT_CHEMICAL_ENGINE_ANALYZE_PATH}`,
         {
           method: 'POST',
           body: input,
-          token: options.token,
+          credentials: 'include',
           signal: options.signal,
         },
       );

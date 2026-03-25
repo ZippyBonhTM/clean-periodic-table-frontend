@@ -1,4 +1,3 @@
-import publicEnv from '@/shared/config/publicEnv';
 import { ApiError, requestJson } from './httpClient';
 
 import type {
@@ -37,6 +36,14 @@ class ArticleApiConfigurationError extends Error {
   }
 }
 
+function resolveArticleApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+
+  return 'http://localhost:3000';
+}
+
 type ArticleUploadReservationResponse = {
   upload_url?: string;
   uploadUrl?: string;
@@ -56,16 +63,6 @@ type ArticleUploadConfirmationResponse = {
   public_file_url?: string;
   publicFileUrl?: string;
 };
-
-function resolveArticleApiBaseUrl(): string {
-  const baseUrl = publicEnv.articleApiUrl;
-
-  if (baseUrl === null) {
-    throw new ArticleApiConfigurationError();
-  }
-
-  return baseUrl;
-}
 
 function buildCursorQuery(input: ArticleCursorInput = {}): string {
   const searchParams = new URLSearchParams();
@@ -105,7 +102,7 @@ function buildHashtagSuggestionsQuery(input: ArticleHashtagSuggestionsInput): st
 
 function buildHashtagFeedPath(input: ArticleHashtagFeedInput): string {
   const encodedHashtag = encodeURIComponent(input.hashtag);
-  return `/api/v1/feed/hashtag/${encodedHashtag}${buildCursorQuery(input)}`;
+  return `/api/article/feed/hashtag/${encodedHashtag}${buildCursorQuery(input)}`;
 }
 
 function resolveArticleUploadFileUrl(
@@ -206,10 +203,11 @@ function createArticleApi(): ArticleApi {
     async getGlobalFeed(input = {}) {
       return await requestJson<ArticleCursorPage<ArticleFeedItem>>(
         resolveArticleApiBaseUrl(),
-        `/api/v1/feed${buildCursorQuery(input)}`,
+        `/api/article/feed${buildCursorQuery(input)}`,
         {
           method: 'GET',
           signal: input.signal,
+          credentials: 'include',
         },
       );
     },
@@ -217,11 +215,11 @@ function createArticleApi(): ArticleApi {
     async getMyArticleById(input) {
       return await requestJson<ArticleDetail>(
         resolveArticleApiBaseUrl(),
-        `/api/v1/articles/${encodeURIComponent(input.articleId)}`,
+        `/api/article/articles/${encodeURIComponent(input.articleId)}`,
         {
           method: 'GET',
-          token: input.token,
           signal: input.signal,
+          credentials: 'include',
         },
       );
     },
@@ -231,11 +229,11 @@ function createArticleApi(): ArticleApi {
 
       return await requestJson<ArticleDetail>(
         resolveArticleApiBaseUrl(),
-        `/api/v1/articles/by-slug/${encodedSlug}`,
+        `/api/article/articles/by-slug/${encodedSlug}`,
         {
           method: 'GET',
-          token: input.token ?? null,
           signal: input.signal,
+          credentials: 'include',
         },
       );
     },
@@ -243,10 +241,11 @@ function createArticleApi(): ArticleApi {
     async searchArticles(input) {
       return await requestJson<ArticleCursorPage<ArticleFeedItem>>(
         resolveArticleApiBaseUrl(),
-        `/api/v1/search${buildSearchQuery(input)}`,
+        `/api/article/search${buildSearchQuery(input)}`,
         {
           method: 'GET',
           signal: input.signal,
+          credentials: 'include',
         },
       );
     },
@@ -258,6 +257,7 @@ function createArticleApi(): ArticleApi {
         {
           method: 'GET',
           signal: input.signal,
+          credentials: 'include',
         },
       );
     },
@@ -265,10 +265,11 @@ function createArticleApi(): ArticleApi {
     async getHashtagSuggestions(input) {
       return await requestJson<ArticleHashtag[]>(
         resolveArticleApiBaseUrl(),
-        `/api/v1/hashtags${buildHashtagSuggestionsQuery(input)}`,
+        `/api/article/hashtags${buildHashtagSuggestionsQuery(input)}`,
         {
           method: 'GET',
           signal: input.signal,
+          credentials: 'include',
         },
       );
     },
@@ -276,11 +277,11 @@ function createArticleApi(): ArticleApi {
     async listMyArticles(input) {
       return await requestJson<ArticleCursorPage<ArticleSummary>>(
         resolveArticleApiBaseUrl(),
-        `/api/v1/me/articles${buildCursorQuery(input)}`,
+        `/api/article/me/articles${buildCursorQuery(input)}`,
         {
           method: 'GET',
-          token: input.token,
           signal: input.signal,
+          credentials: 'include',
         },
       );
     },
@@ -288,11 +289,11 @@ function createArticleApi(): ArticleApi {
     async listSavedArticles(input) {
       return await requestJson<ArticleCursorPage<ArticleSummary>>(
         resolveArticleApiBaseUrl(),
-        `/api/v1/me/articles/saved${buildCursorQuery(input)}`,
+        `/api/article/me/articles/saved${buildCursorQuery(input)}`,
         {
           method: 'GET',
-          token: input.token,
           signal: input.signal,
+          credentials: 'include',
         },
       );
     },
@@ -300,11 +301,11 @@ function createArticleApi(): ArticleApi {
     async createDraft(input) {
       return await requestJson<ArticleDetail>(
         resolveArticleApiBaseUrl(),
-        '/api/v1/articles',
+        '/api/article/articles',
         {
           method: 'POST',
-          token: input.token,
           signal: input.signal,
+          credentials: 'include',
           body: {
             title: input.title,
             markdown_source: input.markdownSource,
@@ -320,11 +321,11 @@ function createArticleApi(): ArticleApi {
     async updateArticle(input) {
       return await requestJson<ArticleDetail>(
         resolveArticleApiBaseUrl(),
-        `/api/v1/articles/${encodeURIComponent(input.articleId)}`,
+        `/api/article/articles/${encodeURIComponent(input.articleId)}`,
         {
           method: 'PUT',
-          token: input.token,
           signal: input.signal,
+          credentials: 'include',
           body: {
             title: input.title,
             markdown_source: input.markdownSource,
@@ -340,11 +341,11 @@ function createArticleApi(): ArticleApi {
     async publishArticle(input) {
       return await requestJson<ArticleDetail>(
         resolveArticleApiBaseUrl(),
-        `/api/v1/articles/${encodeURIComponent(input.articleId)}/publish`,
+        `/api/article/articles/${encodeURIComponent(input.articleId)}/publish`,
         {
           method: 'POST',
-          token: input.token,
           signal: input.signal,
+          credentials: 'include',
         },
       );
     },
@@ -352,11 +353,11 @@ function createArticleApi(): ArticleApi {
     async unpublishArticle(input) {
       return await requestJson<ArticleDetail>(
         resolveArticleApiBaseUrl(),
-        `/api/v1/articles/${encodeURIComponent(input.articleId)}/unpublish`,
+        `/api/article/articles/${encodeURIComponent(input.articleId)}/unpublish`,
         {
           method: 'POST',
-          token: input.token,
           signal: input.signal,
+          credentials: 'include',
         },
       );
     },
@@ -364,11 +365,11 @@ function createArticleApi(): ArticleApi {
     async deleteArticle(input: ArticleDeleteInput) {
       await requestJson<null>(
         resolveArticleApiBaseUrl(),
-        `/api/v1/articles/${encodeURIComponent(input.articleId)}`,
+        `/api/article/articles/${encodeURIComponent(input.articleId)}`,
         {
           method: 'DELETE',
-          token: input.token,
           signal: input.signal,
+          credentials: 'include',
         },
       );
     },
@@ -376,12 +377,12 @@ function createArticleApi(): ArticleApi {
     async recordArticleView(input: ArticleRecordViewInput) {
       await requestJson<null>(
         resolveArticleApiBaseUrl(),
-        `/api/v1/articles/${encodeURIComponent(input.articleId)}/view`,
+        `/api/article/articles/${encodeURIComponent(input.articleId)}/view`,
         {
           method: 'POST',
-          token: input.token ?? null,
           signal: input.signal,
           keepalive: true,
+          credentials: 'include',
         },
       );
     },
@@ -389,12 +390,12 @@ function createArticleApi(): ArticleApi {
     async recordArticleOpen(input: ArticleRecordOpenInput) {
       await requestJson<null>(
         resolveArticleApiBaseUrl(),
-        `/api/v1/articles/${encodeURIComponent(input.articleId)}/open`,
+        `/api/article/articles/${encodeURIComponent(input.articleId)}/open`,
         {
           method: 'POST',
-          token: input.token ?? null,
           signal: input.signal,
           keepalive: true,
+          credentials: 'include',
         },
       );
     },
@@ -402,12 +403,12 @@ function createArticleApi(): ArticleApi {
     async saveArticle(input: ArticleSaveInput) {
       await requestJson<null>(
         resolveArticleApiBaseUrl(),
-        `/api/v1/articles/${encodeURIComponent(input.articleId)}/save`,
+        `/api/article/articles/${encodeURIComponent(input.articleId)}/save`,
         {
           method: 'POST',
-          token: input.token,
           signal: input.signal,
           keepalive: true,
+          credentials: 'include',
         },
       );
     },
@@ -415,11 +416,11 @@ function createArticleApi(): ArticleApi {
     async uploadImage(input): Promise<ArticleImageUploadResult> {
       const reservationResponse = await requestJson<ArticleUploadReservationResponse>(
         resolveArticleApiBaseUrl(),
-        '/api/v1/uploads',
+        '/api/article/uploads',
         {
           method: 'POST',
-          token: input.token,
           signal: input.signal,
+          credentials: 'include',
           body: {
             filename: input.file.name,
             content_type: input.file.type,
@@ -437,11 +438,11 @@ function createArticleApi(): ArticleApi {
 
       const confirmationResponse = await requestJson<ArticleUploadConfirmationResponse>(
         resolveArticleApiBaseUrl(),
-        '/api/v1/uploads/confirm',
+        '/api/article/uploads/confirm',
         {
           method: 'POST',
-          token: input.token,
           signal: input.signal,
+          credentials: 'include',
           body: buildArticleUploadConfirmBody(reservation),
         },
       );

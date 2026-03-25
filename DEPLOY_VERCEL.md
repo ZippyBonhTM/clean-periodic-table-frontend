@@ -13,6 +13,7 @@ Set these variables in Vercel (Production, and Preview if needed):
 
 - `NEXT_PUBLIC_AUTH_API_URL=https://<AUTH_PUBLIC_DOMAIN>`
 - `NEXT_PUBLIC_BACKEND_API_URL=https://<BACKEND_PUBLIC_DOMAIN>`
+- `NEXT_PUBLIC_ARTICLE_API_URL=https://<ARTICLE_PUBLIC_DOMAIN>` if the Article System is enabled
 - `NEXT_PUBLIC_SITE_URL=https://<YOUR_CANONICAL_SITE_DOMAIN>`
 
 `NEXT_PUBLIC_SITE_URL` should always point to the canonical domain you want search engines to index.
@@ -42,4 +43,5 @@ If you use a custom domain, prefer that domain in CORS.
 
 - Vercel is the best compatibility path for Next.js runtime behavior.
 - Keep Auth and Backend on Railway (containerized services).
+- When the Article System is enabled, also set the server runtime env `ARTICLE_API_URL` on Vercel to the private or public Article API origin used by the frontend BFF routes.
 - If using preview deployments, decide whether to include preview domains in CORS.
