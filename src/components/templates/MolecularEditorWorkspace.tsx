@@ -46,7 +46,6 @@ function MolecularEditorWorkspace({ pageMode = 'editor' }: MolecularEditorWorksp
     onTokenRefresh: persistToken,
     onUnauthorized: removeToken,
     allowAnonymousRefresh: isHydrated && !isSilentRefreshBlocked,
-    skipTokenValidation: true,
   });
   const hasValidSession = authSession.status === 'authenticated';
   const tokenStatus: TokenStatusType = authSession.status;

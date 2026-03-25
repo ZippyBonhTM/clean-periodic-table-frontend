@@ -79,7 +79,6 @@ export default function AdminDashboardShell({
     onTokenRefresh: persistToken,
     onUnauthorized: removeToken,
     allowAnonymousRefresh: isHydrated && !isSilentRefreshBlocked,
-    skipTokenValidation: true,
   });
   const navigationItems = buildAdminPanelNavigation(locale);
 
@@ -101,7 +100,7 @@ export default function AdminDashboardShell({
       }}
     >
       <AppShell
-        hasToken={token !== null}
+        hasToken={authSession.status === 'authenticated'}
         authStatus={authSession.status}
         headerDocumentNavigation
         onLogout={onLogout}
