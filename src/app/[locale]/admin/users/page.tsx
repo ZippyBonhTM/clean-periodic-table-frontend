@@ -59,7 +59,6 @@ export default async function LocalizedAdminUsersPage({
       articleFeatureStage={articleFeatureStage}
     >
       <AdminUsersWorkspace
-        key={`${initialFilters.role}:${initialFilters.version}:${initialFilters.status}:${initialFilters.sort}:${initialFilters.query ?? ''}`}
         locale={resolvedLocale}
         adminProfile={adminProfile}
         initialFilters={initialFilters}
