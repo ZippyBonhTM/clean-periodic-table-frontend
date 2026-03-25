@@ -11,6 +11,10 @@ import {
   resolveAuthUpstreamBaseUrl,
   stripForwardedAuthCookieHeader,
 } from '@/shared/auth/authUpstream';
+import {
+  appendResponseSetCookieHeaders,
+  readResponseSetCookieHeaders,
+} from '@/shared/auth/responseSetCookie';
 
 type RouteContext = {
   params: Promise<{ path?: string[] }> | { path?: string[] };
@@ -33,28 +37,6 @@ const ACCESS_TOKEN_RESPONSE_PATHS = new Set([
 ]);
 
 const CLEAR_ACCESS_TOKEN_PATHS = new Set(['logout', 'refresh', 'profile', 'validate-token']);
-
-function copySetCookieHeaders(upstreamResponse: Response, response: NextResponse): void {
-  const headersWithGetSetCookie = upstreamResponse.headers as Headers & {
-    getSetCookie?: () => string[];
-  };
-
-  const cookies = headersWithGetSetCookie.getSetCookie?.() ?? [];
-
-  if (cookies.length > 0) {
-    for (const cookie of cookies) {
-      response.headers.append('set-cookie', cookie);
-    }
-
-    return;
-  }
-
-  const fallbackCookie = upstreamResponse.headers.get('set-cookie');
-
-  if (fallbackCookie) {
-    response.headers.append('set-cookie', fallbackCookie);
-  }
-}
 
 function syncMirroredAccessTokenCookie(
   response: NextResponse,
@@ -179,6 +161,7 @@ async function proxyAuthRequest(request: NextRequest, context: RouteContext): Pr
   }
 
   const responseBody = await upstreamResponse.text();
+  const upstreamSetCookies = readResponseSetCookieHeaders(upstreamResponse);
   const response = new NextResponse(responseBody, { status: upstreamResponse.status });
 
   const responseContentType = upstreamResponse.headers.get('content-type');
@@ -197,8 +180,8 @@ async function proxyAuthRequest(request: NextRequest, context: RouteContext): Pr
     response.headers.set('www-authenticate', responseWwwAuthenticate);
   }
 
-  copySetCookieHeaders(upstreamResponse, response);
   syncMirroredAccessTokenCookie(response, pathSegments[0], upstreamResponse, responseBody);
+  appendResponseSetCookieHeaders(response, upstreamSetCookies);
 
   return response;
 }
