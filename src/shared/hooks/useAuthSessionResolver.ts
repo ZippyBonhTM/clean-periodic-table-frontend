@@ -17,7 +17,7 @@ type UseAuthSessionResolverOptions = {
   allowAnonymousRefresh: boolean;
   mapVerificationErrorMessage: (error: unknown) => string;
   onTokenRefresh: (token: string) => void;
-  onUnauthorized: () => void;
+  onUnauthorized: (options?: { blockSilentRefresh?: boolean; expectedToken?: string | null }) => void;
   refreshTokenOnce: () => Promise<string>;
   setIsRestoringAnonymousSession: React.Dispatch<React.SetStateAction<boolean>>;
   setSnapshot: React.Dispatch<React.SetStateAction<VerificationSnapshot>>;
@@ -125,7 +125,7 @@ export default function useAuthSessionResolver({
               return;
             }
 
-            onUnauthorized();
+            onUnauthorized({ expectedToken: currentToken });
             return;
           }
         }

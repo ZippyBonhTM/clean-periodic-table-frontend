@@ -6,6 +6,7 @@ import type { AuthSessionStatus } from '@/shared/hooks/useAuthSession';
 
 type RemoveTokenOptions = {
   blockSilentRefresh?: boolean;
+  expectedToken?: string | null;
 };
 
 type AdminClientSessionValue = {

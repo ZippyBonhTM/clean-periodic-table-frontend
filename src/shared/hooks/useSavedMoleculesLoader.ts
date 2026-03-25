@@ -15,7 +15,7 @@ type SavedMoleculesSnapshot = {
 
 type UseSavedMoleculesLoaderOptions = {
   mapSavedMoleculesErrorMessage: (error: unknown) => string;
-  onUnauthorized: () => void;
+  onUnauthorized: (options?: { blockSilentRefresh?: boolean; expectedToken?: string | null }) => void;
   refreshTokenOnce: () => Promise<string>;
   reloadVersion: number;
   setSnapshot: React.Dispatch<React.SetStateAction<SavedMoleculesSnapshot>>;
@@ -65,7 +65,7 @@ export default function useSavedMoleculesLoader({
         }
 
         if (isUnauthorizedError(caughtError)) {
-          onUnauthorized();
+          onUnauthorized({ expectedToken: token });
           setSnapshot({
             token,
             data: [],

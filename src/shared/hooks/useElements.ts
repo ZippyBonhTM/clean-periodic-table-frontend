@@ -52,7 +52,7 @@ function mapElementsErrorMessage(error: unknown): string {
 type UseElementsInput = {
   token: string | null;
   onTokenRefresh: (token: string, options?: { clearSilentRefreshBlocked?: boolean }) => void;
-  onUnauthorized: () => void;
+  onUnauthorized: (options?: { blockSilentRefresh?: boolean; expectedToken?: string | null }) => void;
   initialData?: ChemicalElement[] | null;
 };
 
@@ -102,7 +102,7 @@ function useElements({
         }
 
         if (isUnauthorizedError(caughtError)) {
-          onUnauthorized();
+          onUnauthorized({ expectedToken: token });
           setSnapshot({
             token,
             data: [],

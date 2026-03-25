@@ -12,7 +12,7 @@ import type { SavedMoleculesSnapshot } from '@/shared/hooks/savedMolecules.types
 import type { SaveMoleculeInput, SavedMolecule } from '@/shared/types/molecule';
 
 type UseSavedMoleculesMutationsOptions = {
-  onUnauthorized: () => void;
+  onUnauthorized: (options?: { blockSilentRefresh?: boolean; expectedToken?: string | null }) => void;
   refreshTokenOnce: () => Promise<string>;
   setSnapshot: React.Dispatch<React.SetStateAction<SavedMoleculesSnapshot>>;
   sortSavedMolecules: (data: SavedMolecule[]) => SavedMolecule[];
@@ -50,7 +50,7 @@ export default function useSavedMoleculesMutations({
         return result;
       } catch (caughtError: unknown) {
         if (isUnauthorizedError(caughtError)) {
-          onUnauthorized();
+          onUnauthorized({ expectedToken: token });
         }
 
         throw caughtError;
@@ -83,7 +83,7 @@ export default function useSavedMoleculesMutations({
         return result;
       } catch (caughtError: unknown) {
         if (isUnauthorizedError(caughtError)) {
-          onUnauthorized();
+          onUnauthorized({ expectedToken: token });
         }
 
         throw caughtError;
@@ -114,7 +114,7 @@ export default function useSavedMoleculesMutations({
         }));
       } catch (caughtError: unknown) {
         if (isUnauthorizedError(caughtError)) {
-          onUnauthorized();
+          onUnauthorized({ expectedToken: token });
         }
 
         throw caughtError;
