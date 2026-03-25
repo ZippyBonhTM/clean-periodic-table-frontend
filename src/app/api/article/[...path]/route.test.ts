@@ -135,6 +135,190 @@ describe('article proxy route', () => {
     );
   });
 
+  it('recovers the session server-side for protected article draft creation through the backend', async () => {
+    const fetchSpy = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = input instanceof URL ? input : new URL(String(input));
+      const requestHeaders = new Headers(init?.headers);
+      const authorizationHeader = requestHeaders.get('authorization');
+
+      if (url.origin === 'https://auth.example.com' && url.pathname === '/refresh') {
+        return new Response(
+          JSON.stringify({
+            accessToken: 'fresh-token',
+            message: 'Refreshed.',
+          }),
+          {
+            status: 200,
+            headers: {
+              'content-type': 'application/json',
+              'set-cookie': 'refreshToken=new-refresh-token; Path=/; HttpOnly; Secure; SameSite=None',
+            },
+          },
+        );
+      }
+
+      if (
+        url.origin === 'https://auth.example.com' &&
+        url.pathname === '/profile' &&
+        authorizationHeader === 'Bearer fresh-token'
+      ) {
+        return new Response(
+          JSON.stringify({
+            accessToken: 'fresh-token',
+            userProfile: {
+              id: 'user-1',
+              name: 'Ada',
+              email: 'ada@example.com',
+              role: 'USER',
+            },
+            message: 'Profile loaded.',
+          }),
+          {
+            status: 200,
+            headers: {
+              'content-type': 'application/json',
+            },
+          },
+        );
+      }
+
+      if (
+        url.origin === 'https://backend.example.com' &&
+        url.pathname === '/api/v1/articles' &&
+        authorizationHeader === 'Bearer fresh-token'
+      ) {
+        return new Response(
+          JSON.stringify({
+            id: 'draft-1',
+            title: 'Chemistry draft',
+            slug: 'chemistry-draft',
+            status: 'draft',
+            visibility: 'private',
+            markdownSource: '# Hello',
+            excerpt: '',
+            coverImage: null,
+            hashtags: [],
+            author: {
+              id: 'user-1',
+              displayName: null,
+              username: null,
+              profileImage: null,
+            },
+            createdAt: '2026-03-25T10:00:00.000Z',
+            updatedAt: '2026-03-25T10:00:00.000Z',
+            publishedAt: null,
+          }),
+          {
+            status: 201,
+            headers: {
+              'content-type': 'application/json',
+            },
+          },
+        );
+      }
+
+      throw new Error(`Unexpected request to ${url.toString()} (${authorizationHeader ?? 'no-auth'})`);
+    });
+
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const { POST } = await import('@/app/api/article/[...path]/route');
+    const request = new NextRequest('http://localhost:3000/api/article/articles', {
+      method: 'POST',
+      headers: {
+        cookie: 'refreshToken=refresh-cookie',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: 'Chemistry draft',
+        markdown_source: '# Hello',
+        visibility: 'private',
+        hashtags: [],
+      }),
+    });
+
+    const response = await POST(request, {
+      params: Promise.resolve({
+        path: ['articles'],
+      }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(body).toMatchObject({
+      id: 'draft-1',
+      slug: 'chemistry-draft',
+      status: 'draft',
+    });
+  });
+
+  it('proxies owned article detail reads through the backend upstream', async () => {
+    const fetchSpy = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = input instanceof URL ? input : new URL(String(input));
+      const requestHeaders = new Headers(init?.headers);
+      const authorizationHeader = requestHeaders.get('authorization');
+
+      if (
+        url.origin === 'https://backend.example.com' &&
+        url.pathname === '/api/v1/articles/draft-1' &&
+        authorizationHeader === 'Bearer explicit-token'
+      ) {
+        return new Response(
+          JSON.stringify({
+            id: 'draft-1',
+            title: 'Draft',
+            slug: 'draft',
+            status: 'draft',
+            visibility: 'private',
+            markdownSource: '# Draft',
+            excerpt: '',
+            coverImage: null,
+            hashtags: [],
+            author: {
+              id: 'user-1',
+              displayName: null,
+              username: null,
+              profileImage: null,
+            },
+            createdAt: '2026-03-25T10:00:00.000Z',
+            updatedAt: '2026-03-25T10:00:00.000Z',
+            publishedAt: null,
+          }),
+          {
+            status: 200,
+            headers: {
+              'content-type': 'application/json',
+            },
+          },
+        );
+      }
+
+      throw new Error(`Unexpected request to ${url.toString()} (${authorizationHeader ?? 'no-auth'})`);
+    });
+
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const { GET } = await import('@/app/api/article/[...path]/route');
+    const request = new NextRequest('http://localhost:3000/api/article/articles/draft-1', {
+      headers: {
+        authorization: 'Bearer explicit-token',
+      },
+    });
+
+    const response = await GET(request, {
+      params: Promise.resolve({
+        path: ['articles', 'draft-1'],
+      }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      id: 'draft-1',
+      status: 'draft',
+    });
+  });
+
   it('keeps public article reads anonymous when no auth session is available', async () => {
     const fetchSpy = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = input instanceof URL ? input : new URL(String(input));

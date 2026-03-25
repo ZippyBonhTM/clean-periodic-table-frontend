@@ -87,7 +87,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: '/api/v1/articles',
       authMode: 'required',
-      upstream: 'article',
+      upstream: 'backend',
     };
   }
 
@@ -95,7 +95,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: `/api/v1/articles/${encodeURIComponent(secondSegment)}`,
       authMode: 'required',
-      upstream: 'article',
+      upstream: 'backend',
     };
   }
 
@@ -103,7 +103,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: `/api/v1/articles/${encodeURIComponent(secondSegment)}`,
       authMode: 'required',
-      upstream: 'article',
+      upstream: 'backend',
     };
   }
 
