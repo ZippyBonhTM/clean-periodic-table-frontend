@@ -56,6 +56,10 @@ function applyCursorSearchParams(
   }
 }
 
+function resolvePublicArticleReadBaseUrl(): string {
+  return publicEnv.backendApiUrl;
+}
+
 function buildPublicArticleFeedUrl(
   baseUrl: string,
   input: ListPublicArticleFeedServerInput,
@@ -85,18 +89,8 @@ function buildPublicArticleFeedUrl(
 export async function listPublicArticleFeedServer(
   input: ListPublicArticleFeedServerInput = {},
 ): Promise<ListPublicArticleFeedServerResult> {
-  const baseUrl = publicEnv.articleApiUrl;
-
-  if (baseUrl === null) {
-    return {
-      feed: buildEmptyFeed(),
-      isAvailable: false,
-      errorMessage: 'Article API URL is not configured on the frontend runtime.',
-    };
-  }
-
   try {
-    const url = buildPublicArticleFeedUrl(baseUrl, input);
+    const url = buildPublicArticleFeedUrl(resolvePublicArticleReadBaseUrl(), input);
 
     const response = await fetch(url, {
       headers: {
@@ -134,18 +128,11 @@ export async function listPublicArticleFeedServer(
 export async function getPublicArticleBySlugServer(
   input: GetPublicArticleBySlugServerInput,
 ): Promise<GetPublicArticleBySlugServerResult> {
-  const baseUrl = publicEnv.articleApiUrl;
-
-  if (baseUrl === null) {
-    return {
-      article: null,
-      state: 'unavailable',
-      errorMessage: 'Article API URL is not configured on the frontend runtime.',
-    };
-  }
-
   try {
-    const url = new URL(`/api/v1/articles/by-slug/${encodeURIComponent(input.slug)}`, baseUrl);
+    const url = new URL(
+      `/api/v1/articles/by-slug/${encodeURIComponent(input.slug)}`,
+      resolvePublicArticleReadBaseUrl(),
+    );
     const response = await fetch(url, {
       headers: {
         Accept: 'application/json',

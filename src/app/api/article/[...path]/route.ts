@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import {
+  buildBackendUpstreamUrl,
+  resolveBackendUpstreamBaseUrl,
+} from '@/shared/backend/backendUpstream';
+import {
   applyResolvedAuthSessionCookies,
   resolveBearerToken,
   resolveServerAuthSession,
@@ -15,10 +19,12 @@ type RouteContext = {
 };
 
 type ArticleProxyAuthMode = 'public' | 'optional' | 'required';
+type ArticleProxyUpstream = 'article' | 'backend';
 
 type ResolvedArticleProxyTarget = {
   upstreamPath: string;
   authMode: ArticleProxyAuthMode;
+  upstream: ArticleProxyUpstream;
 };
 
 function resolveAllowedArticleUpstreamPath(
@@ -31,6 +37,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: '/api/v1/feed',
       authMode: 'public',
+      upstream: 'backend',
     };
   }
 
@@ -43,6 +50,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: `/api/v1/feed/hashtag/${encodeURIComponent(thirdSegment)}`,
       authMode: 'public',
+      upstream: 'backend',
     };
   }
 
@@ -50,6 +58,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: '/api/v1/search',
       authMode: 'public',
+      upstream: 'backend',
     };
   }
 
@@ -57,6 +66,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: '/api/v1/hashtags',
       authMode: 'public',
+      upstream: 'backend',
     };
   }
 
@@ -69,6 +79,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: `/api/v1/articles/by-slug/${encodeURIComponent(thirdSegment)}`,
       authMode: 'optional',
+      upstream: 'backend',
     };
   }
 
@@ -76,6 +87,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: '/api/v1/articles',
       authMode: 'required',
+      upstream: 'article',
     };
   }
 
@@ -83,6 +95,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: `/api/v1/articles/${encodeURIComponent(secondSegment)}`,
       authMode: 'required',
+      upstream: 'article',
     };
   }
 
@@ -90,6 +103,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: `/api/v1/articles/${encodeURIComponent(secondSegment)}`,
       authMode: 'required',
+      upstream: 'article',
     };
   }
 
@@ -97,6 +111,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: `/api/v1/articles/${encodeURIComponent(secondSegment)}`,
       authMode: 'required',
+      upstream: 'article',
     };
   }
 
@@ -109,6 +124,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: `/api/v1/articles/${encodeURIComponent(secondSegment)}/publish`,
       authMode: 'required',
+      upstream: 'article',
     };
   }
 
@@ -121,6 +137,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: `/api/v1/articles/${encodeURIComponent(secondSegment)}/unpublish`,
       authMode: 'required',
+      upstream: 'article',
     };
   }
 
@@ -133,6 +150,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: `/api/v1/articles/${encodeURIComponent(secondSegment)}/view`,
       authMode: 'optional',
+      upstream: 'article',
     };
   }
 
@@ -145,6 +163,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: `/api/v1/articles/${encodeURIComponent(secondSegment)}/open`,
       authMode: 'optional',
+      upstream: 'article',
     };
   }
 
@@ -157,6 +176,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: `/api/v1/articles/${encodeURIComponent(secondSegment)}/save`,
       authMode: 'required',
+      upstream: 'backend',
     };
   }
 
@@ -169,6 +189,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: '/api/v1/me/articles',
       authMode: 'required',
+      upstream: 'article',
     };
   }
 
@@ -182,6 +203,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: '/api/v1/me/articles/saved',
       authMode: 'required',
+      upstream: 'backend',
     };
   }
 
@@ -189,6 +211,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: '/api/v1/uploads',
       authMode: 'required',
+      upstream: 'article',
     };
   }
 
@@ -201,10 +224,23 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: '/api/v1/uploads/confirm',
       authMode: 'required',
+      upstream: 'article',
     };
   }
 
   return null;
+}
+
+function resolveArticleTargetBaseUrl(target: ResolvedArticleProxyTarget): string | null {
+  return target.upstream === 'backend'
+    ? resolveBackendUpstreamBaseUrl()
+    : resolveArticleUpstreamBaseUrl();
+}
+
+function buildArticleTargetUrl(target: ResolvedArticleProxyTarget): URL | null {
+  return target.upstream === 'backend'
+    ? buildBackendUpstreamUrl(target.upstreamPath)
+    : buildArticleUpstreamApiUrl(target.upstreamPath);
 }
 
 async function proxyArticleRequest(
@@ -219,14 +255,14 @@ async function proxyArticleRequest(
     return NextResponse.json({ message: 'Not found' }, { status: 404 });
   }
 
-  if (resolveArticleUpstreamBaseUrl() === null) {
+  if (resolveArticleTargetBaseUrl(resolvedTarget) === null) {
     return NextResponse.json(
-      { message: 'Article API URL is not configured on the frontend runtime.' },
+      { message: 'Article upstream URL is not configured on the frontend runtime.' },
       { status: 500 },
     );
   }
 
-  const upstreamUrl = buildArticleUpstreamApiUrl(resolvedTarget.upstreamPath);
+  const upstreamUrl = buildArticleTargetUrl(resolvedTarget);
 
   if (upstreamUrl === null) {
     return NextResponse.json(
