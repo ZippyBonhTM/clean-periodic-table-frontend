@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildLocalizedHref,
   buildLocalizedPathname,
   buildLocalizedAppPath,
   isLocalizedAppPath,
@@ -28,6 +29,15 @@ describe('appLocaleRouting', () => {
   it('falls back to the existing public builder for non-localized public app routes', () => {
     expect(buildLocalizedPathname('pt-BR', '/periodic-table')).toBe('/pt/periodic-table');
     expect(buildLocalizedPathname('en-US', '/')).toBe('/en');
+  });
+
+  it('preserves query params when building a localized href', () => {
+    expect(buildLocalizedHref('en-US', '/pt/admin/users', '?q=test&status=active')).toBe(
+      '/en/admin/users?q=test&status=active',
+    );
+    expect(buildLocalizedHref('pt-BR', '/en/articles', 'cursor=next-page')).toBe(
+      '/pt/articles?cursor=next-page',
+    );
   });
 
   it('leaves unrelated non-localized paths untouched', () => {

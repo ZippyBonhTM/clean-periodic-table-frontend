@@ -206,7 +206,7 @@ function AppHeader({
                   status={authStatus}
                 />
               ) : null}
-              <AppHeaderLocaleSwitcher />
+              <AppHeaderLocaleSwitcher documentNavigation={documentNavigation} />
               <Button
                 type="button"
                 variant="ghost"
@@ -339,7 +339,7 @@ function AppHeader({
           </div>
 
           <div className="mt-3">
-            <AppHeaderLocaleSwitcher mobile />
+            <AppHeaderLocaleSwitcher mobile documentNavigation={documentNavigation} />
           </div>
         </header>
       </div>
