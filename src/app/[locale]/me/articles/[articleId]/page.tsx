@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import ArticleAccessRecoveryWorkspace from '@/components/templates/ArticleAccessRecoveryWorkspace';
 import ArticleEditorWorkspace from '@/components/templates/ArticleEditorWorkspace';
 import { getArticleEditorText } from '@/components/templates/articleEditorText';
-import { requireAdminForInternalArticleStage } from '@/shared/admin/serverAdminAccess';
+import { resolveServerArticleStageAccessGate } from '@/shared/admin/serverAdminAccess';
 import {
   getArticleFeatureStage,
   isArticleFeatureEnabled,
@@ -69,7 +70,15 @@ export default async function Page({
     notFound();
   }
 
-  await requireAdminForInternalArticleStage(featureStage);
+  const articleAccess = await resolveServerArticleStageAccessGate(featureStage);
+
+  if (articleAccess === null) {
+    notFound();
+  }
+
+  if (articleAccess.resolution === 'recoverable') {
+    return <ArticleAccessRecoveryWorkspace locale={resolvedLocale} />;
+  }
 
   return (
     <ArticleEditorWorkspace

@@ -98,6 +98,12 @@ Support:
 * Public article discovery
 * Authenticated saved-article library
 
+For environments where the Article System runs in an **internal** stage:
+
+* server-rendered article routes must not fail closed into a permanent public `Not Found` state when a recoverable refresh session still exists
+* internal article content must remain hidden until privileged access is confirmed again
+* frontend recovery states may be used temporarily, but they must not expose internal content before authorization succeeds
+
 ---
 
 ### Search

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import ArticleAccessRecoveryWorkspace from '@/components/templates/ArticleAccessRecoveryWorkspace';
 import ArticleSavedListWorkspace from '@/components/templates/ArticleSavedListWorkspace';
 import { getArticleSavedListText } from '@/components/templates/articleSavedListText';
-import { requireAdminForInternalArticleStage } from '@/shared/admin/serverAdminAccess';
+import { resolveServerArticleStageAccessGate } from '@/shared/admin/serverAdminAccess';
 import {
   buildLocalizedArticleSavedListPath,
 } from '@/shared/articles/articleRouting';
@@ -62,7 +63,15 @@ export default async function LocalizedArticleSavedListPage({
     notFound();
   }
 
-  await requireAdminForInternalArticleStage(featureStage);
+  const articleAccess = await resolveServerArticleStageAccessGate(featureStage);
+
+  if (articleAccess === null) {
+    notFound();
+  }
+
+  if (articleAccess.resolution === 'recoverable') {
+    return <ArticleAccessRecoveryWorkspace locale={resolvedLocale} />;
+  }
 
   return <ArticleSavedListWorkspace locale={resolvedLocale} featureStage={featureStage} />;
 }

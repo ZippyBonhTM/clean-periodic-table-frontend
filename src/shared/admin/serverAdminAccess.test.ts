@@ -194,4 +194,39 @@ describe('serverAdminAccess', () => {
 
     await expect(resolveServerAdminAccessGate()).resolves.toBeNull();
   });
+
+  it('marks internal article stage SSR resolution as recoverable when refresh can still restore the session', async () => {
+    const fetchSpy = vi.fn(async () => {
+      return {
+        ok: false,
+        status: 401,
+        json: async () => null,
+      } satisfies Partial<Response>;
+    });
+
+    vi.stubGlobal('fetch', fetchSpy);
+    vi.resetModules();
+
+    const { resolveServerArticleStageAccessGate } = await import('@/shared/admin/serverAdminAccess');
+
+    await expect(resolveServerArticleStageAccessGate('internal')).resolves.toEqual({
+      resolution: 'recoverable',
+      userProfile: null,
+    });
+  });
+
+  it('does not require admin gating for public article stage', async () => {
+    const fetchSpy = vi.fn();
+
+    vi.stubGlobal('fetch', fetchSpy);
+    vi.resetModules();
+
+    const { resolveServerArticleStageAccessGate } = await import('@/shared/admin/serverAdminAccess');
+
+    await expect(resolveServerArticleStageAccessGate('public')).resolves.toEqual({
+      resolution: 'granted',
+      userProfile: null,
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
 });
