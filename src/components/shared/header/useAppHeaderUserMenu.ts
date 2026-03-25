@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { isAdminUserProfile } from '@/shared/admin/adminAccess';
+import { shouldPersistNegativeAdminSessionCache } from '@/shared/admin/adminSessionErrorHandling';
 import { createAdminApi } from '@/shared/api/adminApi';
 import { fetchProfile, refreshAccessToken } from '@/shared/api/authApi';
 import {
@@ -243,16 +244,20 @@ export default function useAppHeaderUserMenu({
         });
         setHasAdminAccess(nextHasAdminAccess);
       })
-      .catch(() => {
+      .catch((caughtError: unknown) => {
         if (isCancelled) {
           return;
         }
 
-        persistCachedAdminSession({
-          token,
-          hasAdminAccess: false,
-        });
-        setHasAdminAccess(false);
+        fetchedAdminSessionTokenRef.current = null;
+
+        if (shouldPersistNegativeAdminSessionCache(caughtError)) {
+          persistCachedAdminSession({
+            token,
+            hasAdminAccess: false,
+          });
+          setHasAdminAccess(false);
+        }
       });
 
     return () => {
