@@ -115,6 +115,28 @@ export function buildLocalizedPathname(locale: AppLocale, pathname: string | nul
   return pathname;
 }
 
+export function buildLocalizedHref(
+  locale: AppLocale,
+  pathname: string | null,
+  search: string | null | undefined,
+): string | null {
+  const localizedPathname = buildLocalizedPathname(locale, pathname);
+
+  if (localizedPathname === null) {
+    return null;
+  }
+
+  const normalizedSearch = search?.trim() ?? '';
+
+  if (normalizedSearch.length === 0 || normalizedSearch === '?') {
+    return localizedPathname;
+  }
+
+  return normalizedSearch.startsWith('?')
+    ? `${localizedPathname}${normalizedSearch}`
+    : `${localizedPathname}?${normalizedSearch}`;
+}
+
 export function buildLocalizedAppPath(locale: AppLocale, pathname: string): string {
   const normalizedPathname = normalizeAppPathname(pathname);
 

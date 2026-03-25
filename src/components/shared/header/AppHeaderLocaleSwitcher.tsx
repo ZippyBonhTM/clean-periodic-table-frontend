@@ -3,17 +3,21 @@
 import { usePathname, useRouter } from 'next/navigation';
 
 import useAppHeaderText from '@/components/shared/header/useAppHeaderText';
-import { buildLocalizedPathname } from '@/shared/i18n/appLocaleRouting';
+import { buildLocalizedHref } from '@/shared/i18n/appLocaleRouting';
 import useAppLocale from '@/shared/i18n/useAppLocale';
 import type { AppLocale } from '@/shared/i18n/appLocale.types';
 
 type AppHeaderLocaleSwitcherProps = {
   mobile?: boolean;
+  documentNavigation?: boolean;
 };
 
 const LOCALE_OPTIONS: AppLocale[] = ['en-US', 'pt-BR'];
 
-function AppHeaderLocaleSwitcher({ mobile = false }: AppHeaderLocaleSwitcherProps) {
+function AppHeaderLocaleSwitcher({
+  mobile = false,
+  documentNavigation = false,
+}: AppHeaderLocaleSwitcherProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { locale, setLocale } = useAppLocale();
@@ -26,17 +30,17 @@ function AppHeaderLocaleSwitcher({ mobile = false }: AppHeaderLocaleSwitcherProp
 
     setLocale(nextLocale);
 
-    const localizedPathname = buildLocalizedPathname(nextLocale, pathname);
+    const href = buildLocalizedHref(
+      nextLocale,
+      pathname,
+      typeof window === 'undefined' ? '' : window.location.search,
+    );
 
-    if (localizedPathname !== null) {
-      const serializedSearchParams =
-        typeof window === 'undefined'
-          ? ''
-          : new URLSearchParams(window.location.search).toString();
-      const href =
-        serializedSearchParams.length > 0
-          ? `${localizedPathname}?${serializedSearchParams}`
-          : localizedPathname;
+    if (href !== null) {
+      if (documentNavigation && typeof window !== 'undefined') {
+        window.location.replace(href);
+        return;
+      }
 
       router.replace(href);
     }
@@ -60,7 +64,7 @@ function AppHeaderLocaleSwitcher({ mobile = false }: AppHeaderLocaleSwitcherProp
             onClick={() => handleLocaleChange(option)}
             className={`rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] transition-colors ${
               mobile ? 'flex-1' : ''
-              } ${
+            } ${
               isActive
                 ? 'bg-[var(--surface-2)] text-[var(--text-strong)]'
                 : 'text-(--text-muted) hover:text-[var(--text-strong)]'
