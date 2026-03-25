@@ -46,6 +46,27 @@ type BackendAdminSessionResult =
       userProfile: null;
     };
 
+type ServerAdminAccessGate =
+  | {
+      resolution: 'granted';
+      userProfile: AuthUserProfile;
+    }
+  | {
+      resolution: 'recoverable';
+      userProfile: null;
+    };
+
+function hasRefreshTokenCookie(cookieHeader: string | null): boolean {
+  if (cookieHeader === null || cookieHeader.trim().length === 0) {
+    return false;
+  }
+
+  return cookieHeader
+    .split(';')
+    .map((cookie) => cookie.trim())
+    .some((cookie) => cookie.startsWith('refreshToken=') && cookie.length > 'refreshToken='.length);
+}
+
 async function requestServerAuthJson<ResponseType>(
   path: string,
   input: ServerAuthRequestInput = {},
@@ -154,6 +175,13 @@ async function requestServerAdminSession(token: string): Promise<BackendAdminSes
   };
 }
 
+async function hasRecoverableRefreshSession(): Promise<boolean> {
+  const requestHeaders = await headers();
+  const cookieHeader = stripForwardedAuthCookieHeader(requestHeaders.get('cookie'));
+
+  return hasRefreshTokenCookie(cookieHeader);
+}
+
 async function resolveAuthTokensForServerRequests(): Promise<string[]> {
   const requestCookies = await cookies();
   const mirroredAccessToken = requestCookies.get(SERVER_ACCESS_TOKEN_COOKIE_KEY)?.value?.trim() ?? '';
@@ -234,6 +262,71 @@ async function resolveServerUserProfile(): Promise<AuthUserProfile | null> {
   return null;
 }
 
+async function resolveServerAdminAccessGate(): Promise<ServerAdminAccessGate | null> {
+  const authorizationSource = resolveAdminAuthorizationSource();
+  const hasRecoverableSession = await hasRecoverableRefreshSession();
+
+  if (authorizationSource === 'legacy-auth') {
+    const legacyProfile = await resolveServerUserProfileFromLegacyAuth();
+
+    if (legacyProfile !== null) {
+      return isAdminUserProfile(legacyProfile)
+        ? {
+            resolution: 'granted',
+            userProfile: legacyProfile,
+          }
+        : null;
+    }
+
+    return hasRecoverableSession
+      ? {
+          resolution: 'recoverable',
+          userProfile: null,
+        }
+      : null;
+  }
+
+  const backendProfile = await resolveServerUserProfileFromBackend();
+
+  if (backendProfile.resolution === 'granted') {
+    return {
+      resolution: 'granted',
+      userProfile: backendProfile.userProfile,
+    };
+  }
+
+  if (backendProfile.resolution === 'forbidden') {
+    return null;
+  }
+
+  if (authorizationSource === 'backend') {
+    return hasRecoverableSession
+      ? {
+          resolution: 'recoverable',
+          userProfile: null,
+        }
+      : null;
+  }
+
+  const legacyProfile = await resolveServerUserProfileFromLegacyAuth();
+
+  if (legacyProfile !== null) {
+    return isAdminUserProfile(legacyProfile)
+      ? {
+          resolution: 'granted',
+          userProfile: legacyProfile,
+        }
+      : null;
+  }
+
+  return hasRecoverableSession
+    ? {
+        resolution: 'recoverable',
+        userProfile: null,
+      }
+    : null;
+}
+
 export async function requireServerAdminAccess(): Promise<AuthUserProfile> {
   const userProfile = await resolveServerUserProfile();
 
@@ -253,3 +346,5 @@ export async function requireAdminForInternalArticleStage(
 
   await requireServerAdminAccess();
 }
+
+export { resolveServerAdminAccessGate };

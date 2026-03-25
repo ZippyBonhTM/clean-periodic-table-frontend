@@ -14,6 +14,18 @@ export const adminWorkspaceTextEn = {
     },
     serverGuardLabel: 'Guard mode',
     serverGuardValue: 'Server-side deny by default',
+    recoveryTitle: 'Restoring admin access…',
+    recoveryDescription:
+      'The protected session is still being revalidated for this load. As soon as the client confirms the admin role again, the panel resumes without leaving this route.',
+    recoveryPendingTitle: 'Admin session recovering',
+    recoveryPendingDescription: 'Please wait while privileged access is confirmed again.',
+    recoveryDeniedTitle: 'Admin access could not be confirmed',
+    recoveryDeniedDescription:
+      'The server could not confirm a valid admin session for this load. If the session really expired, sign in again; otherwise, return to a regular route and reopen the panel after the session finishes recovering.',
+    recoveryUnavailableTitle: 'Could not restore admin access right now',
+    recoveryUnavailableDescription:
+      'Admin revalidation failed for this attempt. Try again or return to a public route until the session stabilizes.',
+    recoveryBackToSite: 'Back to site',
   },
   sections: {
     overview: {

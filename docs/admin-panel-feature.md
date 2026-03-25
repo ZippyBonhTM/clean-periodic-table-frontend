@@ -27,7 +27,8 @@ The frontend currently includes these admin areas:
 All admin routes are:
 
 - server-guarded
-- deny-by-default on auth uncertainty
+- deny-by-default on confirmed non-admin access
+- allowed to render a recovery shell when the server cannot confirm admin access yet but the browser still carries a refresh session
 - noindex
 - resolved through an admin authorization bridge on the frontend
 - backed by a whitelisted `/api/admin/*` proxy for privileged account operations
@@ -50,6 +51,7 @@ The auth profile shown in the header is informational only and must not be treat
 - `/[locale]/admin*` requires `ADMIN`
 - internal Article routes require `ADMIN` while the Article feature stage is `internal`
 - non-admin users receive the shared 404 page
+- recoverable admin sessions no longer fall straight into the shared 404 page during SSR; they now hand off to a client recovery state and only reveal privileged content after the admin session is confirmed again
 - metadata for internal article previews does not expose preview content publicly
 
 ## User Directory Semantics

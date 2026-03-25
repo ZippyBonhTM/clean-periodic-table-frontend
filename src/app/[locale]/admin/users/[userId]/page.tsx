@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import AdminDashboardShell from '@/components/templates/AdminDashboardShell';
 import AdminUserDetailWorkspace from '@/components/templates/AdminUserDetailWorkspace';
 import { buildAdminPageMetadata } from '@/shared/admin/adminPageMetadata';
-import { requireServerAdminAccess } from '@/shared/admin/serverAdminAccess';
+import { resolveServerAdminAccessGate } from '@/shared/admin/serverAdminAccess';
 import { getArticleFeatureStage } from '@/shared/config/articleFeature';
 import { resolveAppLocaleFromSegment } from '@/shared/i18n/appLocaleRouting';
 
@@ -38,18 +38,23 @@ export default async function LocalizedAdminUserDetailPage({
     notFound();
   }
 
-  const adminProfile = await requireServerAdminAccess();
+  const adminAccess = await resolveServerAdminAccessGate();
+
+  if (adminAccess === null) {
+    notFound();
+  }
+
   const articleFeatureStage = getArticleFeatureStage();
 
   return (
     <AdminDashboardShell
       locale={resolvedLocale}
-      adminProfile={adminProfile}
+      adminProfile={adminAccess.userProfile}
       articleFeatureStage={articleFeatureStage}
     >
       <AdminUserDetailWorkspace
         locale={resolvedLocale}
-        adminProfile={adminProfile}
+        adminProfile={adminAccess.userProfile}
         userId={userId}
       />
     </AdminDashboardShell>

@@ -23,7 +23,7 @@ import type { AuthUserProfile } from '@/shared/types/auth';
 
 type AdminUserDetailWorkspaceProps = {
   locale: AppLocale;
-  adminProfile: AuthUserProfile;
+  adminProfile: AuthUserProfile | null;
   userId: string;
 };
 
@@ -125,7 +125,7 @@ export default function AdminUserDetailWorkspace({
 
     const normalizedReason = normalizeReason(roleReason);
 
-    if (userDetail.id === adminProfile.id && userDetail.role === 'ADMIN' && selectedRole === 'USER') {
+    if (adminProfile !== null && userDetail.id === adminProfile.id && userDetail.role === 'ADMIN' && selectedRole === 'USER') {
       setFeedback({
         type: 'error',
         message: text.userDetail.selfRoleWarning,
@@ -174,7 +174,7 @@ export default function AdminUserDetailWorkspace({
     } finally {
       setActiveAction(null);
     }
-  }, [adminApi, adminProfile.id, applyUserDrafts, roleReason, selectedRole, text.userDetail.actionFeedbackSuccess, text.userDetail.roleReasonPlaceholder, text.userDetail.selfRoleWarning, text.userDetail.unavailable, token, userDetail, userId]);
+  }, [adminApi, adminProfile, applyUserDrafts, roleReason, selectedRole, text.userDetail.actionFeedbackSuccess, text.userDetail.roleReasonPlaceholder, text.userDetail.selfRoleWarning, text.userDetail.unavailable, token, userDetail, userId]);
 
   const submitModeration = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -411,7 +411,7 @@ export default function AdminUserDetailWorkspace({
                   <label htmlFor="admin-user-role-reason" className="text-[11px] font-black uppercase tracking-[0.18em] text-(--text-muted)">{text.userDetail.roleReasonLabel}</label>
                   <textarea id="admin-user-role-reason" value={roleReason} onChange={(event) => setRoleReason(event.target.value)} placeholder={text.userDetail.roleReasonPlaceholder} className={`${TEXTAREA_CLASS} mt-3`} />
                 </div>
-                {userDetail.id === adminProfile.id && userDetail.role === 'ADMIN' && selectedRole === 'USER' ? (
+                {adminProfile !== null && userDetail.id === adminProfile.id && userDetail.role === 'ADMIN' && selectedRole === 'USER' ? (
                   <p className="text-sm leading-7 text-amber-200">{text.userDetail.selfRoleWarning}</p>
                 ) : null}
                 <Button type="submit" variant="secondary" size="lg" className="w-full rounded-xl" disabled={!canUseRoleAction || activeAction !== null}>
