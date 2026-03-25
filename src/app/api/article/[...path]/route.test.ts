@@ -34,7 +34,7 @@ describe('article proxy route', () => {
     vi.unstubAllGlobals();
   });
 
-  it('recovers the session server-side for protected article routes', async () => {
+  it('recovers the session server-side for protected owned article routes through the backend', async () => {
     const fetchSpy = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = input instanceof URL ? input : new URL(String(input));
       const requestHeaders = new Headers(init?.headers);
@@ -82,7 +82,7 @@ describe('article proxy route', () => {
       }
 
       if (
-        url.origin === 'https://article.example.com' &&
+        url.origin === 'https://backend.example.com' &&
         url.pathname === '/api/v1/me/articles' &&
         authorizationHeader === 'Bearer fresh-token'
       ) {
