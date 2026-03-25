@@ -189,7 +189,7 @@ function resolveAllowedArticleUpstreamPath(
     return {
       upstreamPath: '/api/v1/me/articles',
       authMode: 'required',
-      upstream: 'article',
+      upstream: 'backend',
     };
   }
 
