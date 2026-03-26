@@ -14,6 +14,7 @@ export const articleEditorTextEn = {
       'Optional. Upload a cover image to highlight the article in feed cards and the article detail header.',
     coverImageEmpty: 'No cover image selected yet.',
     markdownLabel: 'Markdown source',
+    markdownToolsLabel: 'Markdown tools',
     markdownPlaceholder: '# Start here\n\nWrite your article in Markdown.',
     visibilityLabel: 'Visibility',
     visibilityPublic: 'Public',
@@ -62,6 +63,8 @@ export const articleEditorTextEn = {
     coverUploadSucceeded: 'Cover image uploaded successfully.',
     coverCleared: 'Cover image removed from this draft.',
     uploadFailed: 'We could not upload this image right now.',
+    uploadUnavailable:
+      'Image uploads are not available in this environment yet. The editor still works, but media depends on the storage service.',
     uploadFailedNetwork: 'We could not upload this image. Check your connection and try again.',
     uploadInvalidType: 'Only JPEG, PNG, and WebP images are allowed.',
     uploadTooLarge: 'This image is too large. The limit is 5MB.',

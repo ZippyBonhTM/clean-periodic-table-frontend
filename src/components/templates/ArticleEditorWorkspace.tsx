@@ -34,6 +34,10 @@ import {
   validateArticlePublishInput,
 } from '@/shared/articles/articleEditorUtils';
 import {
+  applyArticleEditorCommand,
+  type ArticleEditorCommand,
+} from '@/shared/articles/articleEditorCommands';
+import {
   buildLocalizedArticleEditorPath,
   buildLocalizedArticlePrivateListPath,
 } from '@/shared/articles/articleRouting';
@@ -45,6 +49,21 @@ import type { ArticleDetail, ArticleStatus, ArticleVisibility } from '@/shared/t
 
 const AuthModal = dynamic(() => import('@/components/organisms/auth/AuthModal'));
 const ARTICLE_EDITOR_AUTOSAVE_DELAY_MS = 45_000;
+const ARTICLE_EDITOR_CANVAS_HEIGHT_CLASS = 'h-[720px]';
+const ARTICLE_EDITOR_TOOLBAR: ReadonlyArray<{ command: ArticleEditorCommand; label: string }> = [
+  { command: 'h1', label: 'H1' },
+  { command: 'h2', label: 'H2' },
+  { command: 'h3', label: 'H3' },
+  { command: 'bold', label: 'B' },
+  { command: 'italic', label: 'I' },
+  { command: 'quote', label: '"' },
+  { command: 'bullet-list', label: 'UL' },
+  { command: 'numbered-list', label: 'OL' },
+  { command: 'code-block', label: '{}' },
+  { command: 'link', label: 'Link' },
+  { command: 'image', label: 'Img' },
+  { command: 'divider', label: '---' },
+];
 
 type ArticleEditorWorkspaceProps = {
   locale: AppLocale;
@@ -57,6 +76,7 @@ function resolveMutationErrorMessage(
   text: ReturnType<typeof getArticleEditorText>,
   fallbackMessage: string,
   networkMessage: string,
+  notFoundMessage = fallbackMessage,
 ): string {
   if (error instanceof ArticleApiConfigurationError) {
     return text.notices.unavailable;
@@ -64,6 +84,10 @@ function resolveMutationErrorMessage(
 
   if (error instanceof ApiError && error.statusCode === 0) {
     return networkMessage;
+  }
+
+  if (error instanceof ApiError && error.statusCode === 404) {
+    return notFoundMessage;
   }
 
   if (error instanceof ApiError && error.message.trim().length > 0) {
@@ -203,6 +227,7 @@ export default function ArticleEditorWorkspace({
   const [hasLoadedRecoveryState, setHasLoadedRecoveryState] = useState(false);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const coverImageInputRef = useRef<HTMLInputElement | null>(null);
+  const markdownInputRef = useRef<HTMLTextAreaElement | null>(null);
   const resolvedSessionMessage = resolveSessionWorkspaceMessage(authSession.message, authText);
   const workspaceHref = buildLocalizedArticlePrivateListPath(locale);
   const recoveryStorageKey = useMemo(
@@ -594,6 +619,7 @@ export default function ArticleEditorWorkspace({
             text,
             text.notices.uploadFailed,
             text.notices.uploadFailedNetwork,
+            text.notices.uploadUnavailable,
           ),
         );
       } finally {
@@ -646,6 +672,7 @@ export default function ArticleEditorWorkspace({
             text,
             text.notices.uploadFailed,
             text.notices.uploadFailedNetwork,
+            text.notices.uploadUnavailable,
           ),
         );
       } finally {
@@ -779,6 +806,31 @@ export default function ArticleEditorWorkspace({
     setFeedbackError(null);
     setFeedbackSuccess(text.notices.recoveryDiscarded);
   }, [clearRecoveryRecord, text.notices.recoveryDiscarded]);
+
+  const onApplyMarkdownCommand = useCallback(
+    (command: ArticleEditorCommand) => {
+      const textarea = markdownInputRef.current;
+
+      if (textarea === null) {
+        return;
+      }
+
+      const nextState = applyArticleEditorCommand({
+        value: markdownSource,
+        selectionStart: textarea.selectionStart,
+        selectionEnd: textarea.selectionEnd,
+        command,
+      });
+
+      setMarkdownSource(nextState.value);
+
+      requestAnimationFrame(() => {
+        textarea.focus();
+        textarea.setSelectionRange(nextState.selectionStart, nextState.selectionEnd);
+      });
+    },
+    [markdownSource],
+  );
 
   useEffect(() => {
     if (!hasValidSession || token === null || isLoadingArticle || loadError !== null) {
@@ -1223,16 +1275,36 @@ export default function ArticleEditorWorkspace({
                   >
                     {text.form.markdownLabel}
                   </label>
-                  <textarea
-                    id="article-editor-markdown"
-                    name="article-editor-markdown"
-                    value={markdownSource}
-                    onChange={(event) => setMarkdownSource(event.target.value)}
-                    placeholder={text.form.markdownPlaceholder}
-                    rows={16}
-                    spellCheck={false}
-                    className="notranslate min-h-80 w-full rounded-2xl border border-(--border-subtle) bg-(--surface-overlay-soft) px-3 py-2.5 font-mono text-sm text-foreground outline-none transition-colors focus:border-(--accent)"
-                  />
+                  <div className="overflow-hidden rounded-[1.8rem] border border-(--border-subtle) bg-(--surface-overlay-soft)">
+                    <div className="flex flex-wrap items-center gap-2 border-b border-(--border-subtle) px-3 py-3">
+                      <p className="mr-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-(--text-muted)">
+                        {text.form.markdownToolsLabel}
+                      </p>
+                      {ARTICLE_EDITOR_TOOLBAR.map((action) => (
+                        <Button
+                          key={action.command}
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onApplyMarkdownCommand(action.command)}
+                          disabled={activeMutation !== null || isLoadingArticle}
+                          className="min-w-0 rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em]"
+                        >
+                          {action.label}
+                        </Button>
+                      ))}
+                    </div>
+                    <textarea
+                      ref={markdownInputRef}
+                      id="article-editor-markdown"
+                      name="article-editor-markdown"
+                      value={markdownSource}
+                      onChange={(event) => setMarkdownSource(event.target.value)}
+                      placeholder={text.form.markdownPlaceholder}
+                      spellCheck={false}
+                      className={`notranslate ${ARTICLE_EDITOR_CANVAS_HEIGHT_CLASS} w-full resize-y overflow-y-auto bg-transparent px-4 py-4 font-mono text-sm leading-7 text-foreground outline-none`}
+                    />
+                  </div>
                 </div>
 
                 {feedbackError !== null ? (
@@ -1420,10 +1492,14 @@ export default function ArticleEditorWorkspace({
                   {text.form.previewLabel}
                 </p>
                 {renderedPreview !== null ? (
-                  <MarkdownContent
-                    content={renderedPreview}
-                    className="space-y-4 text-sm leading-7 text-(--text-strong)"
-                  />
+                  <div
+                    className={`${ARTICLE_EDITOR_CANVAS_HEIGHT_CLASS} overflow-y-auto rounded-[1.6rem] border border-(--border-subtle) bg-(--surface-overlay-soft) p-4`}
+                  >
+                    <MarkdownContent
+                      content={renderedPreview}
+                      className="space-y-4 text-sm leading-7 text-(--text-strong)"
+                    />
+                  </div>
                 ) : (
                   <p className="text-sm text-(--text-muted)">{text.notices.emptyPreview}</p>
                 )}
