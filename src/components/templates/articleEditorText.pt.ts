@@ -14,6 +14,7 @@ export const articleEditorTextPt = {
       'Opcional. Envie uma imagem de capa para destacar o artigo nos cards do feed e no cabeçalho do detalhe.',
     coverImageEmpty: 'Nenhuma imagem de capa foi selecionada ainda.',
     markdownLabel: 'Markdown',
+    markdownToolsLabel: 'Ferramentas de markdown',
     markdownPlaceholder: '# Comece aqui\n\nEscreva seu artigo em Markdown.',
     visibilityLabel: 'Visibilidade',
     visibilityPublic: 'Público',
@@ -62,6 +63,8 @@ export const articleEditorTextPt = {
     coverUploadSucceeded: 'Imagem de capa enviada com sucesso.',
     coverCleared: 'Imagem de capa removida deste rascunho.',
     uploadFailed: 'Não foi possível enviar esta imagem agora.',
+    uploadUnavailable:
+      'O upload de imagens ainda não está disponível neste ambiente. O editor continua usável, mas a mídia depende do serviço de storage.',
     uploadFailedNetwork:
       'Não foi possível enviar esta imagem. Verifique sua conexão e tente de novo.',
     uploadInvalidType: 'Somente imagens JPEG, PNG e WebP são permitidas.',
