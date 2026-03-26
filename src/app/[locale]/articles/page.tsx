@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
-import ArticleAccessRecoveryWorkspace from '@/components/templates/ArticleAccessRecoveryWorkspace';
 import ArticleFeedWorkspace from '@/components/templates/ArticleFeedWorkspace';
 import { getArticleFeedText } from '@/components/templates/articleFeedText';
 import { listPublicArticleFeedServer } from '@/shared/api/articleServerApi';
@@ -106,7 +105,7 @@ export default async function LocalizedArticleFeedPage({
   }
 
   if (articleAccess.resolution === 'recoverable') {
-    return <ArticleAccessRecoveryWorkspace locale={resolvedLocale} />;
+    notFound();
   }
 
   const { feed, isAvailable, errorMessage } = await listPublicArticleFeedServer({

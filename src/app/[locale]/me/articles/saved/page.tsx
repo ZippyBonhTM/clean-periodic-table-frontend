@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
-import ArticleAccessRecoveryWorkspace from '@/components/templates/ArticleAccessRecoveryWorkspace';
 import ArticleSavedListWorkspace from '@/components/templates/ArticleSavedListWorkspace';
 import { getArticleSavedListText } from '@/components/templates/articleSavedListText';
 import { resolveServerArticleStageAccessGate } from '@/shared/admin/serverAdminAccess';
@@ -70,7 +69,7 @@ export default async function LocalizedArticleSavedListPage({
   }
 
   if (articleAccess.resolution === 'recoverable') {
-    return <ArticleAccessRecoveryWorkspace locale={resolvedLocale} />;
+    notFound();
   }
 
   return <ArticleSavedListWorkspace locale={resolvedLocale} featureStage={featureStage} />;

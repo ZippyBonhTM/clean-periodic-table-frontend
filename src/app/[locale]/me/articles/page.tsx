@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
-import ArticleAccessRecoveryWorkspace from '@/components/templates/ArticleAccessRecoveryWorkspace';
 import ArticlePrivateListWorkspace from '@/components/templates/ArticlePrivateListWorkspace';
 import { getArticlePrivateListText } from '@/components/templates/articlePrivateListText';
 import { resolveServerArticleStageAccessGate } from '@/shared/admin/serverAdminAccess';
@@ -76,7 +75,7 @@ export default async function LocalizedArticlePrivateListPage({
   }
 
   if (articleAccess.resolution === 'recoverable') {
-    return <ArticleAccessRecoveryWorkspace locale={resolvedLocale} />;
+    notFound();
   }
 
   return (

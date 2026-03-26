@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
-import ArticleAccessRecoveryWorkspace from '@/components/templates/ArticleAccessRecoveryWorkspace';
 import ArticleDetailWorkspace from '@/components/templates/ArticleDetailWorkspace';
 import { getArticleDetailText } from '@/components/templates/articleDetailText';
 import { getPublicArticleBySlugServer } from '@/shared/api/articleServerApi';
@@ -143,7 +142,7 @@ export default async function LocalizedArticleDetailPage({
   }
 
   if (articleAccess.resolution === 'recoverable') {
-    return <ArticleAccessRecoveryWorkspace locale={resolvedLocale} />;
+    notFound();
   }
 
   const result = await getPublicArticleBySlugServer({ slug });

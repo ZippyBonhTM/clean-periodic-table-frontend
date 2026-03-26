@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
-import ArticleAccessRecoveryWorkspace from '@/components/templates/ArticleAccessRecoveryWorkspace';
 import ArticleEditorWorkspace from '@/components/templates/ArticleEditorWorkspace';
 import { getArticleEditorText } from '@/components/templates/articleEditorText';
 import { resolveServerArticleStageAccessGate } from '@/shared/admin/serverAdminAccess';
@@ -77,7 +76,7 @@ export default async function Page({
   }
 
   if (articleAccess.resolution === 'recoverable') {
-    return <ArticleAccessRecoveryWorkspace locale={resolvedLocale} />;
+    notFound();
   }
 
   return (
