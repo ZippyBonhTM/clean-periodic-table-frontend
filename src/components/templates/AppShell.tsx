@@ -40,10 +40,10 @@ function AppShell({
   const [viewportMainHeight, setViewportMainHeight] = useState<number | null>(null);
   const [viewportMainGutter, setViewportMainGutter] = useState<number | null>(null);
   const shellClassName = showFooter
-    ? 'mx-auto flex min-h-screen w-full max-w-[var(--app-max-width)] flex-col gap-4 px-[var(--app-inline-padding)] py-5 md:py-8'
+    ? 'app-shell-viewport mx-auto flex min-h-screen w-full max-w-[var(--app-max-width)] flex-col gap-4 px-[var(--app-inline-padding)]'
     : viewportMain
       ? 'app-shell-viewport mx-auto flex w-full max-w-[var(--app-max-width)] flex-col px-[var(--app-inline-padding)]'
-      : 'mx-auto flex min-h-screen w-full max-w-[var(--app-max-width)] flex-col gap-4 px-[var(--app-inline-padding)] py-5 md:py-8';
+      : 'app-shell-viewport mx-auto flex min-h-screen w-full max-w-[var(--app-max-width)] flex-col gap-4 px-[var(--app-inline-padding)]';
   const mainClassName = !showFooter && !viewportMain ? 'flex-1' : 'flex-1 min-h-0';
 
   useEffect(() => {
